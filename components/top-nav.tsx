@@ -23,6 +23,12 @@ export async function TopNav() {
               >
                 Library
               </Link>
+              <Link
+                href="/settings"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Settings
+              </Link>
               {user.role === "admin" && (
                 <Link
                   href="/admin"
