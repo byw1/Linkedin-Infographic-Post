@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getRenderQueue } from "@/lib/queue";
-import { isStorageConfigured, StorageNotConfiguredError } from "@/lib/storage";
+import { isStorageConfigured, refreshUrl, StorageNotConfiguredError } from "@/lib/storage";
 
 const Body = z.object({
   html: z.string().min(1).max(2_000_000),
@@ -37,6 +37,13 @@ export async function POST(req: Request) {
   const slugs = Object.keys(parsed.data.mapping);
   const entityCount = slugs.length;
 
+  // Re-sign every logo URL so puppeteer in the worker can load them, even if
+  // the bucket is private and the URL the client received earlier expired.
+  const freshMapping: Record<string, string> = {};
+  for (const [slug, url] of Object.entries(parsed.data.mapping)) {
+    freshMapping[slug] = (await refreshUrl(url)) ?? url;
+  }
+
   const render = await prisma.render.create({
     data: {
       userId: user.id,
@@ -53,7 +60,7 @@ export async function POST(req: Request) {
       renderId: render.id,
       userId: user.id,
       html: parsed.data.html,
-      mapping: parsed.data.mapping,
+      mapping: freshMapping,
       width: parsed.data.width,
     },
     { jobId: render.id },

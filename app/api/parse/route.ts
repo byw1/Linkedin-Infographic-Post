@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { extractEntities, hashHtml } from "@/lib/parser";
 import { cacheParse, getCachedParse } from "@/lib/cache";
+import { refreshUrl } from "@/lib/storage";
 import type { ResolvedEntity } from "@/types/entity";
 
 const Body = z.object({
@@ -30,7 +31,14 @@ export async function POST(req: Request) {
 
   const cached = await getCachedParse<ResolvedEntity[]>(hash);
   if (cached) {
-    return NextResponse.json({ hash, entities: cached });
+    // Re-sign URLs in case the cached ones expired.
+    const refreshed = await Promise.all(
+      cached.map(async (e) => ({
+        ...e,
+        logo_url: e.logo_url ? ((await refreshUrl(e.logo_url)) ?? e.logo_url) : undefined,
+      })),
+    );
+    return NextResponse.json({ hash, entities: refreshed });
   }
 
   const extracted = extractEntities(html);
@@ -44,19 +52,27 @@ export async function POST(req: Request) {
         });
   const knownMap = new Map(known.map((k) => [k.slug, k]));
 
-  const resolved: ResolvedEntity[] = extracted.map((e) => {
-    const k = knownMap.get(e.slug);
-    return {
-      slug: e.slug,
-      count: e.count,
-      shape_hint: e.shape_hint,
-      size_hint: e.size_hint,
-      resolved: Boolean(k),
-      logo_url: k?.logoUrl,
-      display_name: k?.displayName,
-    };
-  });
+  const resolved: ResolvedEntity[] = await Promise.all(
+    extracted.map(async (e) => {
+      const k = knownMap.get(e.slug);
+      const logo_url = k ? ((await refreshUrl(k.logoUrl)) ?? k.logoUrl) : undefined;
+      return {
+        slug: e.slug,
+        count: e.count,
+        shape_hint: e.shape_hint,
+        size_hint: e.size_hint,
+        resolved: Boolean(k),
+        logo_url,
+        display_name: k?.displayName,
+      };
+    }),
+  );
 
-  await cacheParse(hash, resolved);
+  // Cache the parse result (with the underlying stored URL) — we re-sign on
+  // hit. We strip the volatile signature here so the cache key is stable.
+  await cacheParse(
+    hash,
+    resolved.map((e) => ({ ...e, logo_url: knownMap.get(e.slug)?.logoUrl ?? e.logo_url })),
+  );
   return NextResponse.json({ hash, entities: resolved });
 }

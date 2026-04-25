@@ -13,32 +13,71 @@ interface Entity {
   lastUsedAt: string;
 }
 
+interface PageState {
+  entities: Entity[];
+  nextCursor: string | null;
+}
+
+const PAGE_SIZE = 60;
+
 export function LibraryGrid() {
-  const [entities, setEntities] = useState<Entity[] | null>(null);
+  const [state, setState] = useState<PageState | null>(null);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [loadingMore, startLoadMore] = useTransition();
 
-  async function load(q: string) {
-    const params = new URLSearchParams();
+  async function loadFirstPage(q: string) {
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
     if (q) params.set("search", q);
     const res = await fetch(`/api/library?${params}`);
     if (!res.ok) return;
     const data = await res.json();
-    setEntities(data.entities);
+    setState({ entities: data.entities, nextCursor: data.next_cursor ?? null });
+  }
+
+  function loadMore() {
+    if (!state?.nextCursor) return;
+    startLoadMore(async () => {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        cursor: state.nextCursor!,
+      });
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/library?${params}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setState((prev) =>
+        prev
+          ? {
+              entities: [...prev.entities, ...data.entities],
+              nextCursor: data.next_cursor ?? null,
+            }
+          : { entities: data.entities, nextCursor: data.next_cursor ?? null },
+      );
+    });
   }
 
   useEffect(() => {
-    void load(search);
+    void loadFirstPage(search);
   }, [search]);
+
+  const entities = state?.entities ?? null;
 
   return (
     <div className="space-y-4">
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name or slug..."
-        className="h-9 w-full max-w-sm rounded-md border bg-background px-3 text-sm"
-      />
+      <div className="flex flex-wrap items-center gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or slug..."
+          className="h-9 w-full max-w-sm rounded-md border bg-background px-3 text-sm"
+        />
+        {entities && (
+          <span className="text-xs text-muted-foreground">
+            {entities.length} shown{state?.nextCursor ? " · more available" : ""}
+          </span>
+        )}
+      </div>
 
       {entities === null && (
         <p className="text-sm text-muted-foreground">Loading...</p>
@@ -50,20 +89,34 @@ export function LibraryGrid() {
         </p>
       )}
       {entities && entities.length > 0 && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {entities.map((e) => (
-            <LibraryCard
-              key={e.id}
-              entity={e}
-              editing={editingId === e.id}
-              onEdit={() => setEditingId(e.id)}
-              onDone={() => {
-                setEditingId(null);
-                void load(search);
-              }}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {entities.map((e) => (
+              <LibraryCard
+                key={e.id}
+                entity={e}
+                editing={editingId === e.id}
+                onEdit={() => setEditingId(e.id)}
+                onDone={() => {
+                  setEditingId(null);
+                  void loadFirstPage(search);
+                }}
+              />
+            ))}
+          </div>
+          {state?.nextCursor && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="inline-flex h-9 items-center rounded-md border px-4 text-sm hover:bg-secondary disabled:opacity-50"
+              >
+                {loadingMore ? "Loading..." : "Load more"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -83,6 +136,7 @@ function LibraryCard({
   const [name, setName] = useState(entity.displayName);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
 
   function save() {
     setError(null);
@@ -127,16 +181,30 @@ function LibraryCard({
   return (
     <div className="space-y-2 rounded-md border p-3">
       <div className="flex items-start gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={entity.logoUrl}
-          alt={entity.slug}
-          className={
-            entity.shapePreference === "circle"
-              ? "h-16 w-16 rounded-full object-cover"
-              : "h-16 w-16 rounded-md object-cover"
-          }
-        />
+        {imgError ? (
+          <div
+            className={
+              entity.shapePreference === "circle"
+                ? "flex h-16 w-16 items-center justify-center rounded-full border bg-destructive/10 text-[10px] text-destructive"
+                : "flex h-16 w-16 items-center justify-center rounded-md border bg-destructive/10 text-[10px] text-destructive"
+            }
+            title="Logo failed to load. Try Replace logo."
+          >
+            broken
+          </div>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={entity.logoUrl}
+            alt={entity.slug}
+            onError={() => setImgError(true)}
+            className={
+              entity.shapePreference === "circle"
+                ? "h-16 w-16 rounded-full object-cover"
+                : "h-16 w-16 rounded-md object-cover"
+            }
+          />
+        )}
         <div className="min-w-0 flex-1 space-y-0.5">
           {editing ? (
             <input

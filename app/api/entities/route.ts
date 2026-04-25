@@ -5,7 +5,12 @@ import { z } from "zod";
 import crypto from "node:crypto";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { isStorageConfigured, StorageNotConfiguredError, uploadFile } from "@/lib/storage";
+import {
+  isStorageConfigured,
+  refreshUrl,
+  StorageNotConfiguredError,
+  uploadFile,
+} from "@/lib/storage";
 import { normalizeSlug, slugToDisplayName } from "@/lib/slug-utils";
 
 const FormSchema = z.object({
@@ -203,7 +208,12 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ entity, logo_url: logoUrl });
+  // Re-sign so the client can immediately render a preview, even if the
+  // bucket is private.
+  const readableUrl = (await refreshUrl(logoUrl)) ?? logoUrl;
+  return NextResponse.json(
+    { entity: { ...entity, logoUrl: readableUrl }, logo_url: readableUrl },
+  );
 }
 
 function extensionFor(contentType: string): string {

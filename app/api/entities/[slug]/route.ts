@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { normalizeSlug } from "@/lib/slug-utils";
+import { refreshUrl } from "@/lib/storage";
 
 const PatchBody = z.object({
   display_name: z.string().trim().min(1).max(120).optional(),
@@ -26,7 +27,8 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     where: { userId_slug: { userId: user.id, slug } },
   });
   if (!entity) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ entity });
+  const logoUrl = (await refreshUrl(entity.logoUrl)) ?? entity.logoUrl;
+  return NextResponse.json({ entity: { ...entity, logoUrl } });
 }
 
 export async function PATCH(req: Request, { params }: { params: { slug: string } }) {
