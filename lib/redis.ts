@@ -10,6 +10,10 @@ if (!url && process.env.NODE_ENV === "production") {
 const options: RedisOptions = {
   maxRetriesPerRequest: null,
   enableReadyCheck: true,
+  // Railway's private network resolves to IPv6 only. ioredis defaults to
+  // IPv4 (family: 4), which produces ECONNREFUSED. family: 0 lets DNS
+  // return either, which works on Railway and locally.
+  family: 0,
 };
 
 export const redis =
