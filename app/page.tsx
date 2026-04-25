@@ -2,6 +2,8 @@ import Link from "next/link";
 import { auth, isFirstRun, signOut } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   if (await isFirstRun()) redirect("/setup");
   const session = await auth();

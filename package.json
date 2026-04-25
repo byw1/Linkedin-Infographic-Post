@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "worker": "tsx workers/render-worker.ts",
-    "worker:build": "tsc -p tsconfig.worker.json",
+    "worker:build": "tsc -p tsconfig.worker.json && tsc-alias -p tsconfig.worker.json",
     "worker:start": "node dist/workers/render-worker.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -54,6 +54,7 @@
     "postcss": "^8.4.49",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.15",
+    "tsc-alias": "^1.8.10",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

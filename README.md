@@ -166,7 +166,6 @@ admin-issued invite links, in-app `/admin` for invites, auth providers,
 storage, and allowlist. S3 / Redis / BullMQ wiring, parser + replacer +
 Puppeteer exporter, render worker, both Dockerfiles, Vitest tests.
 
-Not yet built: API routes (`/api/parse`, `/api/entities*`,
+Not yet built: core product API routes (`/api/parse`, `/api/entities*`,
 `/api/render*`, `/api/library`, `/api/me`), upload dropzone, entity
-resolver UI, library grid, render preview page, the first
-`prisma migrate dev` migration.
+resolver UI, library grid, render preview page.
