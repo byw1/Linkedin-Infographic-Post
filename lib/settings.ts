@@ -48,20 +48,39 @@ function envAllowedEmails(): string[] {
 }
 
 function envStorage(): StorageSettings | null {
-  const endpoint = process.env.S3_ENDPOINT;
-  const accessKey = process.env.S3_ACCESS_KEY;
-  const secretKey = process.env.S3_SECRET_KEY;
-  const bucket = process.env.S3_BUCKET;
-  const publicUrl = process.env.S3_PUBLIC_URL;
-  if (!endpoint || !accessKey || !secretKey || !bucket || !publicUrl) return null;
+  // Prefer the AWS SDK's standard names (AWS_*) and fall back to our
+  // earlier S3_* names for back-compat. Either set works.
+  const endpoint = process.env.AWS_ENDPOINT_URL ?? process.env.S3_ENDPOINT;
+  const accessKey = process.env.AWS_ACCESS_KEY_ID ?? process.env.S3_ACCESS_KEY;
+  const secretKey = process.env.AWS_SECRET_ACCESS_KEY ?? process.env.S3_SECRET_KEY;
+  const bucket = process.env.AWS_S3_BUCKET_NAME ?? process.env.S3_BUCKET;
+  const region =
+    process.env.AWS_DEFAULT_REGION ?? process.env.AWS_REGION ?? process.env.S3_REGION ?? "auto";
+
+  if (!endpoint || !accessKey || !secretKey || !bucket) return null;
+
+  // S3_PUBLIC_URL is optional. If unset, derive from endpoint+bucket so
+  // path-style buckets (Railway Bucket, MinIO) work out of the box when
+  // public read is enabled.
+  const explicitPublic = process.env.S3_PUBLIC_URL;
+  const publicUrl = explicitPublic
+    ? explicitPublic.replace(/\/$/, "")
+    : `${endpoint.replace(/\/$/, "")}/${bucket}`;
+
+  // Path-style is required for MinIO and most self-hosted buckets.
+  // Default to true unless explicitly opted out via S3_FORCE_PATH_STYLE=false.
+  const forcePathStyle = process.env.S3_FORCE_PATH_STYLE
+    ? process.env.S3_FORCE_PATH_STYLE === "true"
+    : true;
+
   return {
     endpoint,
-    region: process.env.S3_REGION ?? "auto",
+    region,
     accessKey,
     secretKey,
     bucket,
     publicUrl,
-    forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+    forcePathStyle,
   };
 }
 
