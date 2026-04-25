@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import Nodemailer from "next-auth/providers/nodemailer";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db";
+import { getBootstrapAdminEmail, getSettings } from "@/lib/settings";
 
 declare module "next-auth" {
   interface Session {
@@ -17,15 +18,12 @@ declare module "next-auth" {
   }
 }
 
-const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS ?? "")
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
-
-function isAllowed(email: string | null | undefined): boolean {
+async function isAllowed(email: string | null | undefined): Promise<boolean> {
   if (!email) return false;
-  if (ALLOWED_EMAILS.length === 0) return false;
-  return ALLOWED_EMAILS.includes(email.toLowerCase());
+  const lower = email.toLowerCase();
+  if (getBootstrapAdminEmail() === lower) return true;
+  const { allowedEmails } = await getSettings();
+  return allowedEmails.includes(lower);
 }
 
 const providers: NextAuthConfig["providers"] = [
@@ -59,6 +57,7 @@ export const {
 } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "database" },
+  trustHost: true,
   providers,
   pages: {
     signIn: "/auth/signin",
@@ -76,12 +75,17 @@ export const {
   },
   events: {
     async signIn({ user }) {
-      if (user.id) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
-      }
+      if (!user.id) return;
+      const email = user.email?.toLowerCase();
+      const bootstrap = getBootstrapAdminEmail();
+      const shouldPromote = email && bootstrap && email === bootstrap;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginAt: new Date(),
+          ...(shouldPromote ? { role: "admin" } : {}),
+        },
+      });
     },
   },
 });
@@ -92,4 +96,12 @@ export async function requireUser() {
     throw new Response("Unauthorized", { status: 401 });
   }
   return session.user;
+}
+
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (user.role !== "admin") {
+    throw new Response("Forbidden", { status: 403 });
+  }
+  return user;
 }

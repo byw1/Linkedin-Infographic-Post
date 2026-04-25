@@ -104,6 +104,14 @@ model Render {
   @@map("renders")
 }
 
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("settings")
+}
+
 enum Role {
   user
   admin

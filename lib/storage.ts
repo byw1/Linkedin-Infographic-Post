@@ -1,26 +1,42 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSettings, type StorageSettings } from "@/lib/settings";
 
-const s3 = new S3Client({
-  region: process.env.S3_REGION ?? "auto",
-  endpoint: process.env.S3_ENDPOINT,
-  forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY ?? "",
-    secretAccessKey: process.env.S3_SECRET_KEY ?? "",
-  },
-});
+export class StorageNotConfiguredError extends Error {
+  constructor() {
+    super("Storage is not configured. Set credentials in /admin → Storage.");
+    this.name = "StorageNotConfiguredError";
+  }
+}
+
+async function getStorageOrThrow(): Promise<StorageSettings> {
+  const { storage } = await getSettings();
+  if (!storage) throw new StorageNotConfiguredError();
+  return storage;
+}
+
+function buildClient(s: StorageSettings): S3Client {
+  return new S3Client({
+    region: s.region,
+    endpoint: s.endpoint,
+    forcePathStyle: s.forcePathStyle,
+    credentials: {
+      accessKeyId: s.accessKey,
+      secretAccessKey: s.secretKey,
+    },
+  });
+}
 
 export async function uploadFile(
   key: string,
   body: Buffer,
   contentType: string,
 ): Promise<string> {
-  const bucket = process.env.S3_BUCKET;
-  if (!bucket) throw new Error("S3_BUCKET is not configured");
+  const s = await getStorageOrThrow();
+  const client = buildClient(s);
 
-  await s3.send(
+  await client.send(
     new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: s.bucket,
       Key: key,
       Body: body,
       ContentType: contentType,
@@ -28,7 +44,11 @@ export async function uploadFile(
     }),
   );
 
-  const publicBase = process.env.S3_PUBLIC_URL?.replace(/\/$/, "");
-  if (!publicBase) throw new Error("S3_PUBLIC_URL is not configured");
+  const publicBase = s.publicUrl.replace(/\/$/, "");
   return `${publicBase}/${key}`;
+}
+
+export async function isStorageConfigured(): Promise<boolean> {
+  const { storage } = await getSettings();
+  return storage !== null;
 }

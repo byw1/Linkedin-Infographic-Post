@@ -19,13 +19,21 @@ export default async function HomePage() {
             <div className="text-sm">
               Signed in as <span className="font-medium">{session.user.email}</span>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Link
                 href="/library"
                 className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 Open library
               </Link>
+              {session.user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-secondary"
+                >
+                  Admin
+                </Link>
+              )}
               <form
                 action={async () => {
                   "use server";

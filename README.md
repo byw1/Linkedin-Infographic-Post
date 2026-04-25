@@ -60,8 +60,7 @@ Requires Node 20+, a running Postgres, and a running Redis.
 
 ```bash
 cp .env.example .env.local
-# Fill in DATABASE_URL, REDIS_URL, AUTH_SECRET, GOOGLE_CLIENT_*,
-# ALLOWED_EMAILS, and S3_* if you want PNG export to work locally.
+# Fill in the 4 required vars. Storage/allowlist configured in /admin.
 
 npm install
 npx prisma migrate dev
@@ -69,19 +68,43 @@ npm run dev          # web on :3000
 npm run worker       # render worker (separate terminal)
 ```
 
-### Environment variables
+## Deploy on Railway
 
-See `.env.example` for the full list. Key ones:
+The setup is intentionally minimal. Storage credentials and the email
+allowlist live in the database and are managed from `/admin` inside the
+running app — not in env vars.
 
-- `DATABASE_URL` — Postgres connection string (Railway-managed)
-- `REDIS_URL` — Redis connection string (Railway-managed)
-- `AUTH_SECRET` — `openssl rand -base64 32`
-- `AUTH_TRUST_HOST=true` (for Railway / proxies)
-- `NEXTAUTH_URL` — full origin, e.g. `https://logoswap.yourdomain.com`
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-- `ALLOWED_EMAILS` — comma-separated allowlist (no DB migration to add/remove)
-- `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_PUBLIC_URL`
-- `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium` (worker container)
+### One-time Railway setup
+
+1. **Create a project** → add **PostgreSQL** and **Redis** managed services.
+2. **Add a `web` service** from this GitHub repo. Build = `Dockerfile`.
+3. **Add a `worker` service** from the same repo. Build = `Dockerfile.worker`.
+4. On **both** services, set these 4 secrets:
+   ```
+   DATABASE_URL=${{Postgres.DATABASE_URL}}
+   REDIS_URL=${{Redis.REDIS_URL}}
+   AUTH_SECRET=<openssl rand -base64 32>
+   GOOGLE_CLIENT_ID=<from Google Cloud Console>
+   GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+   BOOTSTRAP_ADMIN_EMAIL=<your email>
+   ```
+5. Generate a domain on the `web` service. Add it as the redirect URI
+   in the Google OAuth client: `https://<domain>/api/auth/callback/google`.
+
+That's the entire Railway-side setup. No `NEXTAUTH_URL`,
+`AUTH_TRUST_HOST`, `ALLOWED_EMAILS`, or `S3_*` required.
+
+### First-time in-app setup
+
+1. Visit `https://<your-domain>` and sign in with Google as the
+   `BOOTSTRAP_ADMIN_EMAIL`. The signIn callback bypasses the allowlist
+   for that email and grants the `admin` role.
+2. Open `/admin`:
+   - **Storage** — paste R2 / MinIO endpoint, bucket, public URL, and keys.
+     Saved to the `settings` table; the worker reads them per-render, so no
+     restart needed.
+   - **Email allowlist** — add the emails of friends who should be able
+     to sign in. Saved to the `settings` table.
 
 ## Tests
 
@@ -91,19 +114,6 @@ npm test
 
 Vitest covers `lib/parser.ts` (10 tests) and `lib/replacer.ts` (6 tests).
 Add more under `tests/` or co-located as `lib/**/*.test.ts`.
-
-## Deploy on Railway
-
-Five services in one project:
-
-1. **Postgres** — Railway-managed; sets `DATABASE_URL`
-2. **Redis** — Railway-managed; sets `REDIS_URL`
-3. **web** — this repo, `Dockerfile`. Runs `prisma migrate deploy` then `next start`
-4. **worker** — this repo, `Dockerfile.worker`. Runs `node dist/workers/render-worker.js`
-5. **MinIO** *(optional)* — only if you don't want Cloudflare R2
-
-Set the env vars from `.env.example` on **both** the web and worker
-services. Add a custom domain on the web service.
 
 ## How it works
 
@@ -127,13 +137,16 @@ services. Add a custom domain on the web service.
 
 Every Prisma query filters by `user_id`. The `entities` table has a
 `UNIQUE(user_id, slug)`, so two users can both have a `tesla` entity and
-they stay independent. Sign-in is gated by an email allowlist; emails
-not in `ALLOWED_EMAILS` are rejected at the `signIn` callback before any
-database row is created beyond the Auth.js account record.
+they stay independent. Sign-in is gated by a database-backed email
+allowlist (managed from `/admin`); the `BOOTSTRAP_ADMIN_EMAIL` is always
+allowed and is auto-promoted to `admin` on first login. Emails not on
+the allowlist are rejected at the `signIn` callback before any user row
+is created.
 
 ## Status
 
 V1 scaffolding. Working: project setup, Prisma schema, Auth.js with
+DB-backed allowlist + bootstrap admin, in-app `/admin` for storage and
 allowlist, S3 / Redis / BullMQ wiring, parser + replacer + Puppeteer
 exporter, render worker, both Dockerfiles, Vitest tests.
 
