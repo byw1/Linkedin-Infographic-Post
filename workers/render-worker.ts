@@ -2,7 +2,7 @@ import { Worker } from "bullmq";
 import { htmlToPng } from "@/lib/exporter";
 import { uploadFile } from "@/lib/storage";
 import { prisma } from "@/lib/db";
-import { redis } from "@/lib/redis";
+import { getRedis } from "@/lib/redis";
 import { replaceEntities } from "@/lib/replacer";
 import { RENDER_QUEUE_NAME, type RenderJob } from "@/lib/queue";
 
@@ -46,7 +46,7 @@ const worker = new Worker<RenderJob>(
     }
   },
   {
-    connection: redis,
+    connection: getRedis(),
     concurrency: Number(process.env.RENDER_CONCURRENCY ?? 2),
   },
 );

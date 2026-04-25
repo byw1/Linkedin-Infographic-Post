@@ -3,7 +3,9 @@ import { getSettings, type StorageSettings } from "@/lib/settings";
 
 export class StorageNotConfiguredError extends Error {
   constructor() {
-    super("Storage is not configured. Set credentials in /admin → Storage.");
+    super(
+      "Storage is not configured. Set S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET, and S3_PUBLIC_URL on the web and worker services.",
+    );
     this.name = "StorageNotConfiguredError";
   }
 }
