@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique
+  name        String?
+  image       String?   @map("image_url")
+  role        Role      @default(user)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz(6)
+  emailVerified DateTime? @map("email_verified") @db.Timestamptz(6)
+
+  accounts Account[]
+  sessions Session[]
+  entities Entity[]
+  renders  Render[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @map("user_id") @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id") @db.Uuid
+  expires      DateTime @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime @db.Timestamptz(6)
+
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Entity {
+  id              String       @id @default(uuid()) @db.Uuid
+  userId          String       @map("user_id") @db.Uuid
+  slug            String
+  displayName     String       @map("display_name")
+  type            EntityType
+  shapePreference ShapePref    @default(square) @map("shape_preference")
+  logoUrl         String       @map("logo_url")
+  sourceUrl       String?      @map("source_url")
+  usageCount      Int          @default(0) @map("usage_count")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt      DateTime     @default(now()) @map("last_used_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, slug])
+  @@index([userId, slug], name: "idx_entities_user_slug")
+  @@index([userId, lastUsedAt(sort: Desc)], name: "idx_entities_user_last_used")
+  @@map("entities")
+}
+
+model Render {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  filename      String?
+  entityCount   Int?         @map("entity_count")
+  unknownCount  Int?         @map("unknown_count")
+  pngUrl        String?      @map("png_url")
+  status        RenderStatus @default(pending)
+  errorMessage  String?      @map("error_message")
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt   DateTime?    @map("completed_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)], name: "idx_renders_user")
+  @@map("renders")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum EntityType {
+  company
+  person
+  brand
+  team
+  product
+  org
+  other
+}
+
+enum ShapePref {
+  square
+  circle
+  auto
+}
+
+enum RenderStatus {
+  pending
+  rendering
+  complete
+  failed
+}
