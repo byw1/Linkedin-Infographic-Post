@@ -91,12 +91,47 @@ export async function POST(req: Request) {
       const json = await req.json();
       const parsed = FormSchema.extend({
         url: z.string().url().optional(),
+        existing_slug: z.string().min(1).max(120).optional(),
       }).safeParse(json);
       if (!parsed.success) {
         return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
       }
+      // "Use existing logo from library" — copy logoUrl from another entity.
+      if (parsed.data.existing_slug) {
+        const sourceSlug = normalizeSlug(parsed.data.existing_slug);
+        const targetSlug = normalizeSlug(parsed.data.slug);
+        if (!sourceSlug || !targetSlug) {
+          return NextResponse.json({ error: "Invalid slug." }, { status: 400 });
+        }
+        const source = await prisma.entity.findUnique({
+          where: { userId_slug: { userId: user.id, slug: sourceSlug } },
+        });
+        if (!source) {
+          return NextResponse.json({ error: "Source entity not found." }, { status: 404 });
+        }
+        const entity = await prisma.entity.upsert({
+          where: { userId_slug: { userId: user.id, slug: targetSlug } },
+          create: {
+            userId: user.id,
+            slug: targetSlug,
+            displayName: parsed.data.display_name ?? source.displayName,
+            type: parsed.data.type ?? source.type,
+            shapePreference: parsed.data.shape ?? source.shapePreference,
+            logoUrl: source.logoUrl,
+            sourceUrl: source.sourceUrl,
+          },
+          update: {
+            displayName: parsed.data.display_name ?? undefined,
+            type: parsed.data.type ?? undefined,
+            shapePreference: parsed.data.shape ?? undefined,
+            logoUrl: source.logoUrl,
+            sourceUrl: source.sourceUrl ?? undefined,
+          },
+        });
+        return NextResponse.json({ entity, logo_url: source.logoUrl });
+      }
       if (!parsed.data.url) {
-        return NextResponse.json({ error: "Provide a url." }, { status: 400 });
+        return NextResponse.json({ error: "Provide a url or existing_slug." }, { status: 400 });
       }
       payload = { ...parsed.data, urlInput: parsed.data.url };
     }

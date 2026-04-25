@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import type { ResolvedEntity } from "@/types/entity";
+import { LibraryPicker } from "@/components/library-picker";
 
 interface Props {
   html: string;
@@ -93,22 +94,18 @@ export function EntityResolver({
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Resolved
           </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             {resolved.map((e) => (
-              <div key={e.slug} className="flex items-center gap-3 rounded-md border p-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={e.logo_url ?? ""}
-                  alt={e.slug}
-                  className="h-10 w-10 rounded-sm object-cover"
-                />
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium">
-                    {e.display_name ?? e.slug}
-                  </div>
-                  <div className="text-xs text-muted-foreground">×{e.count}</div>
-                </div>
-              </div>
+              <ResolvedCard
+                key={e.slug}
+                entity={e}
+                onResolved={(logoUrl, displayName) =>
+                  update(e.slug, { resolved: true, logo_url: logoUrl, display_name: displayName })
+                }
+                onUnresolve={() =>
+                  update(e.slug, { resolved: false, logo_url: undefined, display_name: undefined })
+                }
+              />
             ))}
           </div>
         </section>
@@ -136,6 +133,165 @@ function UnknownCard({
 }: {
   entity: ResolvedEntity;
   onResolved: (logoUrl: string, displayName: string) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  return (
+    <>
+      <div className="flex flex-col gap-3 rounded-md border p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <div className="font-medium">{entity.slug}</div>
+            <div className="text-xs text-muted-foreground">
+              ×{entity.count} · {entity.shape_hint}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+          >
+            Use from library
+          </button>
+        </div>
+        <UploadControls
+          entity={entity}
+          onResolved={onResolved}
+        />
+      </div>
+      <LibraryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={async (picked) => {
+          setPickerOpen(false);
+          const res = await fetch("/api/entities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              slug: entity.slug,
+              existing_slug: picked.slug,
+              display_name: picked.displayName,
+              shape: entity.shape_hint,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            onResolved(data.logo_url, data.entity?.displayName ?? picked.displayName);
+          }
+        }}
+      />
+    </>
+  );
+}
+
+function ResolvedCard({
+  entity,
+  onResolved,
+  onUnresolve,
+}: {
+  entity: ResolvedEntity;
+  onResolved: (logoUrl: string, displayName: string) => void;
+  onUnresolve: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <div className="space-y-3 rounded-md border p-3">
+      <div className="flex items-start gap-3">
+        <div className="relative">
+          {imgError ? (
+            <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-destructive/10 text-xs text-destructive">
+              broken
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={entity.logo_url ?? ""}
+              alt={entity.slug}
+              onError={() => setImgError(true)}
+              className={
+                entity.shape_hint === "circle"
+                  ? "h-16 w-16 rounded-full object-cover"
+                  : "h-16 w-16 rounded-md object-cover"
+              }
+            />
+          )}
+        </div>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <div className="truncate text-sm font-medium">
+            {entity.display_name ?? entity.slug}
+          </div>
+          <div className="truncate text-xs text-muted-foreground">{entity.slug}</div>
+          <div className="text-xs text-muted-foreground">
+            ×{entity.count} · {entity.shape_hint}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          {editing ? "Done" : "Replace"}
+        </button>
+      </div>
+
+      {editing && (
+        <div className="space-y-2 border-t pt-3">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+          >
+            Use from library
+          </button>
+          <UploadControls entity={entity} onResolved={onResolved} compact />
+          <button
+            type="button"
+            onClick={onUnresolve}
+            className="text-xs text-muted-foreground hover:text-destructive"
+          >
+            Clear (mark unresolved)
+          </button>
+        </div>
+      )}
+
+      <LibraryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={async (picked) => {
+          setPickerOpen(false);
+          const res = await fetch("/api/entities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              slug: entity.slug,
+              existing_slug: picked.slug,
+              display_name: picked.displayName,
+              shape: entity.shape_hint,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            onResolved(data.logo_url, data.entity?.displayName ?? picked.displayName);
+            setImgError(false);
+            setEditing(false);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+function UploadControls({
+  entity,
+  onResolved,
+  compact,
+}: {
+  entity: ResolvedEntity;
+  onResolved: (logoUrl: string, displayName: string) => void;
+  compact?: boolean;
 }) {
   const [urlInput, setUrlInput] = useState("");
   const [pending, startTransition] = useTransition();
@@ -182,20 +338,15 @@ function UnknownCard({
       }
       const data = await res.json();
       onResolved(data.logo_url, data.entity?.displayName ?? entity.slug);
+      setUrlInput("");
     });
   }
 
   return (
-    <div className="space-y-2 rounded-md border p-3">
-      <div className="flex items-center justify-between">
-        <div className="font-medium">{entity.slug}</div>
-        <div className="text-xs text-muted-foreground">
-          ×{entity.count} · {entity.shape_hint}
-        </div>
-      </div>
+    <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
         <label className="inline-flex h-8 cursor-pointer items-center rounded-md border px-3 text-xs hover:bg-secondary">
-          {pending ? "Uploading..." : "Upload file"}
+          {pending ? "Uploading..." : compact ? "Upload" : "Upload file"}
           <input
             type="file"
             accept="image/*"
@@ -225,7 +376,18 @@ function UnknownCard({
           Save URL
         </button>
       </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p className="text-xs text-destructive">
+          {error}
+          {error.toLowerCase().includes("unsupported") && (
+            <>
+              {" "}
+              · Try downloading the image and uploading the file instead — sites
+              like LinkedIn often block server-side fetching.
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }
