@@ -18,16 +18,23 @@ export interface EmailSettings {
   from: string;
 }
 
+export interface GoogleAuthSettings {
+  clientId: string;
+  clientSecret: string;
+}
+
 export type SettingsMap = {
   allowedEmails: string[];
   storage: StorageSettings | null;
   email: EmailSettings | null;
+  google: GoogleAuthSettings | null;
 };
 
 const DEFAULTS: SettingsMap = {
   allowedEmails: [],
   storage: null,
   email: null,
+  google: null,
 };
 
 const TTL_MS = 30_000;
@@ -73,6 +80,13 @@ function envEmail(): EmailSettings | null {
   };
 }
 
+function envGoogle(): GoogleAuthSettings | null {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+  return { clientId, clientSecret };
+}
+
 async function loadFromDb(): Promise<Partial<SettingsMap>> {
   try {
     const rows = await prisma.setting.findMany();
@@ -86,6 +100,8 @@ async function loadFromDb(): Promise<Partial<SettingsMap>> {
         map.storage = (row.value as unknown as StorageSettings) ?? null;
       } else if (row.key === "email") {
         map.email = (row.value as unknown as EmailSettings) ?? null;
+      } else if (row.key === "google") {
+        map.google = (row.value as unknown as GoogleAuthSettings) ?? null;
       }
     }
     return map;
@@ -102,6 +118,7 @@ export async function getSettings(force = false): Promise<SettingsMap> {
     allowedEmails: fromDb.allowedEmails?.length ? fromDb.allowedEmails : envAllowedEmails(),
     storage: fromDb.storage ?? envStorage(),
     email: fromDb.email ?? envEmail(),
+    google: fromDb.google ?? envGoogle(),
   };
 
   cache = { value: merged, expiresAt: Date.now() + TTL_MS };

@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { auth, signIn, signOut } from "@/lib/auth";
+import { auth, isFirstRun, signOut } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
+  if (await isFirstRun()) redirect("/setup");
   const session = await auth();
 
   return (
@@ -50,19 +52,12 @@ export default async function HomePage() {
             </div>
           </div>
         ) : (
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo: "/" });
-            }}
+          <Link
+            href="/auth/signin"
+            className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              Sign in with Google
-            </button>
-          </form>
+            Sign in
+          </Link>
         )}
       </div>
     </main>

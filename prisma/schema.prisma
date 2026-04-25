@@ -8,21 +8,42 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(uuid()) @db.Uuid
-  email       String    @unique
-  name        String?
-  image       String?   @map("image_url")
-  role        Role      @default(user)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz(6)
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  name          String?
+  image         String?   @map("image_url")
+  role          Role      @default(user)
+  passwordHash  String?   @map("password_hash")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz(6)
   emailVerified DateTime? @map("email_verified") @db.Timestamptz(6)
 
-  accounts Account[]
-  sessions Session[]
-  entities Entity[]
-  renders  Render[]
+  accounts        Account[]
+  sessions        Session[]
+  entities        Entity[]
+  renders         Render[]
+  invitesCreated  Invite[]  @relation("InviteCreatedBy")
+  invitesRedeemed Invite[]  @relation("InviteRedeemedBy")
 
   @@map("users")
+}
+
+model Invite {
+  id          String    @id @default(uuid()) @db.Uuid
+  token       String    @unique
+  email       String?
+  role        Role      @default(user)
+  note        String?
+  createdById String    @map("created_by_id") @db.Uuid
+  createdBy   User      @relation("InviteCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt      DateTime? @map("used_at") @db.Timestamptz(6)
+  usedById    String?   @map("used_by_id") @db.Uuid
+  usedBy      User?     @relation("InviteRedeemedBy", fields: [usedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdById, createdAt(sort: Desc)], name: "idx_invites_creator")
+  @@map("invites")
 }
 
 model Account {

@@ -1,28 +1,26 @@
-import { signIn } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { isFirstRun } from "@/lib/auth";
+import { getSettings } from "@/lib/settings";
+import { SignInForm } from "@/components/auth/sign-in-form";
 
-export default function SignInPage() {
+export const dynamic = "force-dynamic";
+
+export default async function SignInPage() {
+  if (await isFirstRun()) redirect("/setup");
+  const { google } = await getSettings();
+  const googleEnabled = Boolean(google?.clientId && google?.clientSecret);
+
   return (
-    <main className="container mx-auto flex max-w-md flex-col items-center justify-center py-24">
-      <div className="w-full space-y-6 rounded-lg border p-8">
+    <main className="container mx-auto flex max-w-md flex-col py-16">
+      <div className="space-y-6 rounded-lg border p-8">
         <div>
-          <h1 className="text-2xl font-bold">Sign in to LogoSwap</h1>
+          <h1 className="text-2xl font-bold">Sign in</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Invite-only. Use the email address you were granted access with.
+            Use the email and password you set up. Don&apos;t have an account?
+            Ask the admin for an invite link.
           </p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: "/" });
-          }}
-        >
-          <button
-            type="submit"
-            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Continue with Google
-          </button>
-        </form>
+        <SignInForm googleEnabled={googleEnabled} />
       </div>
     </main>
   );

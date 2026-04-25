@@ -17,7 +17,7 @@ your library compounds.
 | UI | Tailwind CSS + shadcn/ui primitives |
 | Database | Postgres via Prisma |
 | Cache / Queue | Redis (sessions, parse cache, BullMQ render queue) |
-| Auth | Auth.js (NextAuth v5) — Google SSO + email magic links + email allowlist |
+| Auth | Auth.js (NextAuth v5) — email + password by default, optional Google SSO, invite-link onboarding |
 | Storage | S3-compatible (Cloudflare R2 recommended; MinIO works the same) |
 | HTML parse | `cheerio` |
 | PNG export | `puppeteer-core` + Chromium, in a separate worker service |
@@ -79,32 +79,34 @@ running app — not in env vars.
 1. **Create a project** → add **PostgreSQL** and **Redis** managed services.
 2. **Add a `web` service** from this GitHub repo. Build = `Dockerfile`.
 3. **Add a `worker` service** from the same repo. Build = `Dockerfile.worker`.
-4. On **both** services, set these 4 secrets:
+4. On **both** services, set these **3 secrets**:
    ```
    DATABASE_URL=${{Postgres.DATABASE_URL}}
    REDIS_URL=${{Redis.REDIS_URL}}
    AUTH_SECRET=<openssl rand -base64 32>
-   GOOGLE_CLIENT_ID=<from Google Cloud Console>
-   GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
-   BOOTSTRAP_ADMIN_EMAIL=<your email>
    ```
-5. Generate a domain on the `web` service. Add it as the redirect URI
-   in the Google OAuth client: `https://<domain>/api/auth/callback/google`.
+5. Generate a domain on the `web` service.
 
 That's the entire Railway-side setup. No `NEXTAUTH_URL`,
-`AUTH_TRUST_HOST`, `ALLOWED_EMAILS`, or `S3_*` required.
+`AUTH_TRUST_HOST`, `GOOGLE_*`, `BOOTSTRAP_ADMIN_EMAIL`,
+`ALLOWED_EMAILS`, or `S3_*` required.
 
 ### First-time in-app setup
 
-1. Visit `https://<your-domain>` and sign in with Google as the
-   `BOOTSTRAP_ADMIN_EMAIL`. The signIn callback bypasses the allowlist
-   for that email and grants the `admin` role.
+1. Visit `https://<your-domain>` — you'll land on the **`/setup`** wizard
+   because no users exist yet. Create the first account with email +
+   password. That account is automatically the admin.
 2. Open `/admin`:
+   - **Invites** — generate a shareable link, send it to a friend in
+     iMessage / Slack. They open it, set their own password, and they're
+     in. Links expire in 14 days.
+   - **Sign-in providers** — *optional.* Paste Google OAuth credentials
+     to add a "Continue with Google" button. Add the callback URL
+     `https://<your-domain>/api/auth/callback/google` in Google Cloud
+     Console.
    - **Storage** — paste R2 / MinIO endpoint, bucket, public URL, and keys.
      Saved to the `settings` table; the worker reads them per-render, so no
      restart needed.
-   - **Email allowlist** — add the emails of friends who should be able
-     to sign in. Saved to the `settings` table.
 
 ## Tests
 
@@ -133,22 +135,36 @@ Add more under `tests/` or co-located as `lib/**/*.test.ts`.
 7. Client polls `GET /api/render/:id` and offers a download once status
    is `complete`.
 
+## Auth model
+
+- **Email + password** is the default. Passwords are hashed with bcrypt
+  (12 rounds) and stored in `users.password_hash`. Sessions are JWTs
+  (required by Auth.js when using the Credentials provider).
+- **Invite links** are single-use, optionally email-locked, default 14-day
+  TTL. Stored in the `invites` table. Admin generates from `/admin`,
+  recipient sets their own password at `/invite/<token>`.
+- **Google SSO is optional.** Paste OAuth credentials in
+  `/admin → Sign-in providers` to enable. The provider list is rebuilt
+  per request from settings (cached 30s), so changes don't require a
+  redeploy. Google sign-in only works for users who already exist —
+  Google auth doesn't auto-provision accounts; you still go through
+  invite or setup first.
+
 ## Multi-user isolation
 
-Every Prisma query filters by `user_id`. The `entities` table has a
+Every Prisma query filters by `user_id`. The `entities` table has
 `UNIQUE(user_id, slug)`, so two users can both have a `tesla` entity and
-they stay independent. Sign-in is gated by a database-backed email
-allowlist (managed from `/admin`); the `BOOTSTRAP_ADMIN_EMAIL` is always
-allowed and is auto-promoted to `admin` on first login. Emails not on
-the allowlist are rejected at the `signIn` callback before any user row
-is created.
+they stay independent. The only ways to create a user are the first-run
+`/setup` wizard (creates the admin, then locks itself) and admin-issued
+invites — there's no public sign-up.
 
 ## Status
 
 V1 scaffolding. Working: project setup, Prisma schema, Auth.js with
-DB-backed allowlist + bootstrap admin, in-app `/admin` for storage and
-allowlist, S3 / Redis / BullMQ wiring, parser + replacer + Puppeteer
-exporter, render worker, both Dockerfiles, Vitest tests.
+email+password Credentials + optional Google, first-run setup wizard,
+admin-issued invite links, in-app `/admin` for invites, auth providers,
+storage, and allowlist. S3 / Redis / BullMQ wiring, parser + replacer +
+Puppeteer exporter, render worker, both Dockerfiles, Vitest tests.
 
 Not yet built: API routes (`/api/parse`, `/api/entities*`,
 `/api/render*`, `/api/library`, `/api/me`), upload dropzone, entity
