@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getRenderQueue } from "@/lib/queue";
-import { isStorageConfigured, refreshUrl, StorageNotConfiguredError } from "@/lib/storage";
+import { isStorageConfigured, refreshServerUrl, StorageNotConfiguredError } from "@/lib/storage";
 
 const Body = z.object({
   html: z.string().min(1).max(2_000_000),
@@ -37,11 +37,13 @@ export async function POST(req: Request) {
   const slugs = Object.keys(parsed.data.mapping);
   const entityCount = slugs.length;
 
-  // Re-sign every logo URL so puppeteer in the worker can load them, even if
-  // the bucket is private and the URL the client received earlier expired.
+  // The mapping the browser gave us has /api/files/... proxy URLs (which
+  // require a session cookie). The worker can't use those — it's on the
+  // private network and authenticates differently. Convert each to a
+  // presigned S3 URL the worker's puppeteer can fetch directly.
   const freshMapping: Record<string, string> = {};
   for (const [slug, url] of Object.entries(parsed.data.mapping)) {
-    freshMapping[slug] = (await refreshUrl(url)) ?? url;
+    freshMapping[slug] = (await refreshServerUrl(url)) ?? url;
   }
 
   const render = await prisma.render.create({

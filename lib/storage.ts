@@ -31,11 +31,16 @@ function buildClient(s: StorageSettings): S3Client {
   });
 }
 
-// Whether the user explicitly set S3_PUBLIC_URL. If they did, we trust their
-// CDN/public-bucket setup and serve direct URLs. If not, we presign so private
-// buckets (Railway Bucket, default MinIO) work without extra config.
+// Whether the user explicitly set S3_PUBLIC_URL. If they did, the bucket is
+// reachable directly from browsers (CDN or public bucket) and we serve direct
+// URLs. If not, we proxy browser reads through /api/files and presign for
+// worker reads.
 function publicUrlIsExplicit(): boolean {
   return Boolean(process.env.S3_PUBLIC_URL);
+}
+
+function pathStyleUrl(s: StorageSettings, key: string): string {
+  return `${s.publicUrl.replace(/\/$/, "")}/${key}`;
 }
 
 export async function uploadFile(
@@ -56,34 +61,45 @@ export async function uploadFile(
     }),
   );
 
-  return getReadUrlSync(s, key);
+  // We always store the path-style URL so we can recover the key later.
+  return pathStyleUrl(s, key);
 }
 
-function getReadUrlSync(s: StorageSettings, key: string): string {
-  // Always returns the path-style URL. Caller decides whether to presign via
-  // getReadUrl() (async) when needed.
-  const base = s.publicUrl.replace(/\/$/, "");
-  return `${base}/${key}`;
+// Browser-bound URL: what we hand to <img src="...">. Defaults to a relative
+// path served by /api/files/[...key], which authenticates and streams from
+// the bucket. Skip the proxy and use the direct URL when the user has
+// configured a public-readable bucket via S3_PUBLIC_URL.
+export function getBrowserUrl(key: string): string {
+  if (publicUrlIsExplicit() && process.env.S3_PUBLIC_URL) {
+    return `${process.env.S3_PUBLIC_URL.replace(/\/$/, "")}/${key}`;
+  }
+  return `/api/files/${key}`;
 }
 
-export async function getReadUrl(key: string): Promise<string> {
+// Server-bound URL: what we hand to puppeteer in the worker. The worker
+// container is on Railway's private network and can reach the bucket
+// endpoint directly, so a presigned URL works. Public URL takes precedence
+// when configured.
+export async function getServerUrl(key: string): Promise<string> {
   const s = await getStorageOrThrow();
   if (publicUrlIsExplicit()) {
-    return getReadUrlSync(s, key);
+    return pathStyleUrl(s, key);
   }
   const client = buildClient(s);
   const command = new GetObjectCommand({ Bucket: s.bucket, Key: key });
   return getSignedUrl(client, command, { expiresIn: SIGNED_URL_TTL_SECONDS });
 }
 
-// Given a URL we previously generated and stored in the DB, recover the
-// underlying object key. Works for both ${endpoint}/${bucket}/${key} (the
-// auto-derived public URL) and ${S3_PUBLIC_URL}/${key} (explicit CDN). Falls
-// back to null if the URL doesn't match a known prefix.
+// Recover the object key from a URL we previously generated. Handles:
+//   - the path-style ${endpoint}/${bucket}/${key} prefix (what's in the DB)
+//   - the explicit S3_PUBLIC_URL prefix (CDN case)
+//   - our /api/files/${key} proxy path (what the browser uses)
+// Strips any query string.
 export function extractKeyFromUrl(url: string, s: StorageSettings): string | null {
-  // Strip any query string (e.g., presign params from a previous round).
   const clean = url.split("?")[0];
-
+  if (clean.startsWith("/api/files/")) {
+    return clean.slice("/api/files/".length);
+  }
   const candidates = [
     `${s.endpoint.replace(/\/$/, "")}/${s.bucket}/`,
     `${s.publicUrl.replace(/\/$/, "")}/`,
@@ -94,21 +110,40 @@ export function extractKeyFromUrl(url: string, s: StorageSettings): string | nul
   return null;
 }
 
-// Convert a stored URL (which may or may not be browser-loadable depending on
-// bucket access) into a freshly-signed URL. If we can't recover the key, we
-// return the input unchanged so the caller still gets *something*.
-export async function refreshUrl(storedUrl: string | null | undefined): Promise<string | null> {
+// Convert a stored URL into a browser-loadable URL. Falls back to the input
+// if we can't recover a key (e.g., legacy data or unknown prefix).
+export async function refreshBrowserUrl(
+  storedUrl: string | null | undefined,
+): Promise<string | null> {
   if (!storedUrl) return null;
   try {
     const s = await getStorageOrThrow();
-    if (publicUrlIsExplicit()) return storedUrl;
     const key = extractKeyFromUrl(storedUrl, s);
     if (!key) return storedUrl;
-    return await getReadUrl(key);
+    return getBrowserUrl(key);
   } catch {
     return storedUrl;
   }
 }
+
+// Convert a stored URL into a server-loadable URL (for the render worker).
+export async function refreshServerUrl(
+  storedUrl: string | null | undefined,
+): Promise<string | null> {
+  if (!storedUrl) return null;
+  try {
+    const s = await getStorageOrThrow();
+    const key = extractKeyFromUrl(storedUrl, s);
+    if (!key) return storedUrl;
+    return await getServerUrl(key);
+  } catch {
+    return storedUrl;
+  }
+}
+
+// Back-compat alias. Existing callers that previously called refreshUrl()
+// were all browser-bound; keep the name working.
+export const refreshUrl = refreshBrowserUrl;
 
 export async function isStorageConfigured(): Promise<boolean> {
   const { storage } = await getSettings();
