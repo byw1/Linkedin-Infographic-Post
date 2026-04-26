@@ -35,6 +35,11 @@ const worker = new Worker<RenderJob>(
       return { url };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      console.error(
+        `[render-worker] render ${renderId} (user ${userId}) failed: ${message}`,
+        stack ?? "",
+      );
       await prisma.render.update({
         where: { id: renderId },
         data: {

@@ -40,16 +40,31 @@ export function RenderPoller({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border p-4 text-sm">
-        {state.status === "pending" && "Queued — waiting for the worker..."}
-        {state.status === "rendering" && "Rendering in headless Chrome..."}
-        {state.status === "complete" && "Done."}
-        {state.status === "failed" && (
-          <span className="text-destructive">
-            Render failed: {state.error_message ?? "unknown error"}
-          </span>
-        )}
-      </div>
+      {state.status === "pending" && (
+        <div className="rounded-md border p-4 text-sm">
+          Queued — waiting for the worker...
+        </div>
+      )}
+      {state.status === "rendering" && (
+        <div className="rounded-md border p-4 text-sm">
+          Rendering in headless Chrome...
+        </div>
+      )}
+      {state.status === "complete" && (
+        <div className="rounded-md border p-4 text-sm">Done.</div>
+      )}
+      {state.status === "failed" && (
+        <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-4">
+          <div className="text-sm font-medium text-destructive">Render failed</div>
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-sm bg-background p-2 text-xs text-destructive">
+            {state.error_message ?? "No error message captured. Check the worker logs in Railway for details."}
+          </pre>
+          <p className="text-xs text-muted-foreground">
+            Render IDs: <code>{renderId}</code>. Search Railway worker logs for{" "}
+            <code>{renderId}</code> to find the full stack.
+          </p>
+        </div>
+      )}
 
       {state.png_url && (
         <div className="space-y-3">

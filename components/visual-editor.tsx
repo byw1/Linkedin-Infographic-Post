@@ -34,11 +34,16 @@ export function VisualEditor({
   const onSlugClickRef = useRef<(slug: string) => void>(() => {});
   const entitiesRef = useRef<ResolvedEntity[]>(entities);
   entitiesRef.current = entities;
+  const observersRef = useRef<{ ro?: ResizeObserver; mo?: MutationObserver }>({});
 
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rendering, startRender] = useTransition();
   const [iframeReady, setIframeReady] = useState(false);
+  const [contentSize, setContentSize] = useState<{ width: number; height: number }>({
+    width: 720,
+    height: 600,
+  });
 
   // srcDoc is computed exactly once per uploaded HTML. Entity changes are
   // applied imperatively to the iframe DOM below — keeps scroll position
@@ -89,6 +94,30 @@ export function VisualEditor({
         }
       }
 
+      // Track the document's actual rendered size so the iframe shrinks to
+      // its content. Body width is usually constrained by the user's CSS
+      // (e.g. max-width: 640px); we follow it instead of stretching to the
+      // page. Height tracks scrollHeight so nothing gets clipped.
+      const measure = () => {
+        if (!doc.body || !doc.documentElement) return;
+        const root = doc.documentElement;
+        const body = doc.body;
+        const width = Math.max(body.scrollWidth, body.offsetWidth, root.clientWidth);
+        const height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight);
+        setContentSize((prev) =>
+          prev.width === width && prev.height === height ? prev : { width, height },
+        );
+      };
+      measure();
+      // Re-measure when content (charts, images, replaced logos) changes.
+      const ro = new ResizeObserver(measure);
+      ro.observe(doc.body);
+      ro.observe(doc.documentElement);
+      // Mutation observer catches our own DOM swaps too.
+      const mo = new MutationObserver(measure);
+      mo.observe(doc.body, { childList: true, subtree: true, attributes: true });
+      observersRef.current = { ro, mo };
+
       setIframeReady(true);
     }
 
@@ -97,6 +126,9 @@ export function VisualEditor({
 
     return () => {
       iframe.removeEventListener("load", setup);
+      observersRef.current.ro?.disconnect();
+      observersRef.current.mo?.disconnect();
+      observersRef.current = {};
       setIframeReady(false);
     };
   }, [srcDoc]);
@@ -252,13 +284,23 @@ export function VisualEditor({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <div className="overflow-hidden rounded-lg border bg-muted">
+      <div className="flex justify-center">
         <iframe
           ref={iframeRef}
           title="infographic preview"
           srcDoc={srcDoc}
+          // allow-scripts so embedded chart libraries (Chart.js, etc.) render
+          // in the preview the same way they will in the exported PNG. We keep
+          // allow-same-origin so this component can attach click handlers to
+          // [data-entity] elements inside.
           sandbox="allow-same-origin allow-scripts"
-          className="h-[80vh] w-full bg-white"
+          scrolling="no"
+          style={{
+            width: `${contentSize.width}px`,
+            height: `${contentSize.height}px`,
+            maxWidth: "100%",
+          }}
+          className="block rounded-md border bg-white"
         />
       </div>
 
