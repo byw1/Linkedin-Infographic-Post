@@ -57,7 +57,6 @@ export function VisualEditor({
     function setup() {
       const doc = iframe!.contentDocument;
       if (!doc) return;
-      if (doc.body) doc.body.style.margin = "0";
 
       originalsRef.current = new WeakMap();
 
