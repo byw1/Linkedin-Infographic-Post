@@ -3,10 +3,10 @@
 import { useState } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { UploadDropzone } from "@/components/upload-dropzone";
-import { EntityResolver } from "@/components/entity-resolver";
+import { VisualEditor } from "@/components/visual-editor";
 import { RenderPoller } from "@/components/render-poller";
 
-type Stage = "upload" | "resolve" | "render";
+type Stage = "upload" | "edit" | "render";
 
 export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
   const [stage, setStage] = useState<Stage>("upload");
@@ -27,11 +27,11 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
     return <RenderPoller renderId={renderId} onReset={reset} />;
   }
 
-  if (stage === "resolve") {
+  if (stage === "edit") {
     return (
-      <EntityResolver
+      <VisualEditor
         html={html}
-        initialEntities={entities}
+        entities={entities}
         onEntitiesChange={setEntities}
         onBack={() => setStage("upload")}
         storageReady={storageReady}
@@ -59,7 +59,7 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
         setHtml(parsedHtml);
         setFilename(name);
         setEntities(parsed);
-        setStage("resolve");
+        setStage("edit");
       }}
     />
   );
