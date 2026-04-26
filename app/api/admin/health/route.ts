@@ -60,22 +60,32 @@ export async function GET() {
 
   // Worker queue
   try {
-    const counts = await getRenderQueue().getJobCounts(
+    const queue = getRenderQueue();
+    const counts = await queue.getJobCounts(
       "active",
       "waiting",
       "delayed",
       "completed",
       "failed",
     );
-    const workers = await getRenderQueue().getWorkersCount();
+    const workers = await queue.getWorkers();
+    const workerInfo = workers.map((w) => ({
+      name: w.name ?? "unnamed",
+      addr: w.addr ?? "unknown",
+      idle: w.idle ?? null,
+    }));
     checks.push({
       name: "worker",
-      status: workers > 0 ? "ok" : "warn",
+      status: workers.length > 0 ? "ok" : "warn",
       detail:
-        workers > 0
-          ? `${workers} worker(s) connected`
-          : "No worker process is consuming the queue.",
-      meta: { workers, ...counts },
+        workers.length > 0
+          ? `${workers.length} worker(s) connected`
+          : "No worker process is consuming the queue. Deploy the worker service in Railway (Dockerfile.worker) and confirm REDIS_URL matches the web service's value.",
+      meta: {
+        workers: workers.length,
+        ...counts,
+        ...(workerInfo.length > 0 ? { connected: workerInfo } : {}),
+      },
     });
   } catch (err) {
     checks.push({
