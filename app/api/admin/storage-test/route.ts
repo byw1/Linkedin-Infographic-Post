@@ -54,12 +54,27 @@ export async function POST() {
     );
   }
 
+  const rawPublicUrl = process.env.S3_PUBLIC_URL;
+  let publicUrlMode = "auto (proxied via /api/files)";
+  if (rawPublicUrl) {
+    try {
+      const u = new URL(rawPublicUrl);
+      if (u.protocol === "http:" || u.protocol === "https:") {
+        publicUrlMode = `explicit: ${rawPublicUrl}`;
+      } else {
+        publicUrlMode = `INVALID (${rawPublicUrl}) — ignored, proxying via /api/files`;
+      }
+    } catch {
+      publicUrlMode = `INVALID (${rawPublicUrl}) — ignored, proxying via /api/files`;
+    }
+  }
+
   const config = {
     endpoint: maskUrl(storage.endpoint),
     region: storage.region,
     bucket: storage.bucket,
     forcePathStyle: storage.forcePathStyle,
-    publicUrlMode: process.env.S3_PUBLIC_URL ? "explicit" : "auto",
+    publicUrlMode,
     accessKey: maskKey(storage.accessKey),
   };
 

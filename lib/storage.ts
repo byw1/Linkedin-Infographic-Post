@@ -31,16 +31,25 @@ function buildClient(s: StorageSettings): S3Client {
   });
 }
 
-// Whether the user explicitly set S3_PUBLIC_URL. If they did, the bucket is
-// reachable directly from browsers (CDN or public bucket) and we serve direct
-// URLs. If not, we proxy browser reads through /api/files and presign for
-// worker reads.
-function publicUrlIsExplicit(): boolean {
-  return Boolean(process.env.S3_PUBLIC_URL);
+// S3_PUBLIC_URL is only honored when it parses as a real http(s) URL. This
+// guards against placeholder strings like "<see note below>" or "???" that
+// people sometimes paste from docs into Railway env vars.
+function explicitPublicUrl(): string | null {
+  const v = process.env.S3_PUBLIC_URL;
+  if (!v) return null;
+  try {
+    const u = new URL(v);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return v.replace(/\/$/, "");
+  } catch {
+    return null;
+  }
 }
 
-function pathStyleUrl(s: StorageSettings, key: string): string {
-  return `${s.publicUrl.replace(/\/$/, "")}/${key}`;
+// What we put in the DB. Always uses endpoint+bucket so extractKeyFromUrl
+// can always recover the key, regardless of how S3_PUBLIC_URL is configured.
+function canonicalStoredUrl(s: StorageSettings, key: string): string {
+  return `${s.endpoint.replace(/\/$/, "")}/${s.bucket}/${key}`;
 }
 
 export async function uploadFile(
@@ -61,57 +70,57 @@ export async function uploadFile(
     }),
   );
 
-  // We always store the path-style URL so we can recover the key later.
-  return pathStyleUrl(s, key);
+  return canonicalStoredUrl(s, key);
 }
 
-// Browser-bound URL: what we hand to <img src="...">. Defaults to a relative
-// path served by /api/files/[...key], which authenticates and streams from
-// the bucket. Skip the proxy and use the direct URL when the user has
-// configured a public-readable bucket via S3_PUBLIC_URL.
+// Browser-bound URL: what we hand to <img src="...">. Defaults to the
+// /api/files proxy, which always works regardless of bucket access. Skips
+// the proxy when S3_PUBLIC_URL is a valid http(s) URL (CDN / public bucket).
 export function getBrowserUrl(key: string): string {
-  if (publicUrlIsExplicit() && process.env.S3_PUBLIC_URL) {
-    return `${process.env.S3_PUBLIC_URL.replace(/\/$/, "")}/${key}`;
-  }
+  const explicit = explicitPublicUrl();
+  if (explicit) return `${explicit}/${key}`;
   return `/api/files/${key}`;
 }
 
-// Server-bound URL: what we hand to puppeteer in the worker. The worker
-// container is on Railway's private network and can reach the bucket
-// endpoint directly, so a presigned URL works. Public URL takes precedence
-// when configured.
+// Server-bound URL: what we hand to puppeteer in the worker. Worker is on
+// Railway's private network and can reach the bucket directly, so a
+// presigned URL works. Public URL takes precedence when configured.
 export async function getServerUrl(key: string): Promise<string> {
+  const explicit = explicitPublicUrl();
+  if (explicit) return `${explicit}/${key}`;
   const s = await getStorageOrThrow();
-  if (publicUrlIsExplicit()) {
-    return pathStyleUrl(s, key);
-  }
   const client = buildClient(s);
   const command = new GetObjectCommand({ Bucket: s.bucket, Key: key });
   return getSignedUrl(client, command, { expiresIn: SIGNED_URL_TTL_SECONDS });
 }
 
-// Recover the object key from a URL we previously generated. Handles:
-//   - the path-style ${endpoint}/${bucket}/${key} prefix (what's in the DB)
-//   - the explicit S3_PUBLIC_URL prefix (CDN case)
-//   - our /api/files/${key} proxy path (what the browser uses)
-// Strips any query string.
+// Recover the object key from a URL we previously generated. Tries, in order:
+//   1. The /api/files/<key> proxy path (what the browser sends back).
+//   2. An explicit, valid S3_PUBLIC_URL prefix.
+//   3. The endpoint+bucket prefix (current canonical form).
+//   4. A regex fallback for legacy URLs stored when S3_PUBLIC_URL was bogus
+//      — looks for the last "/(logos|renders)/<rest>" tail.
 export function extractKeyFromUrl(url: string, s: StorageSettings): string | null {
   const clean = url.split("?")[0];
+
   if (clean.startsWith("/api/files/")) {
     return clean.slice("/api/files/".length);
   }
-  const candidates = [
-    `${s.endpoint.replace(/\/$/, "")}/${s.bucket}/`,
-    `${s.publicUrl.replace(/\/$/, "")}/`,
-  ];
-  for (const prefix of candidates) {
-    if (clean.startsWith(prefix)) return clean.slice(prefix.length);
+
+  const explicit = explicitPublicUrl();
+  if (explicit && clean.startsWith(`${explicit}/`)) {
+    return clean.slice(`${explicit}/`.length);
   }
+
+  const endpointPrefix = `${s.endpoint.replace(/\/$/, "")}/${s.bucket}/`;
+  if (clean.startsWith(endpointPrefix)) return clean.slice(endpointPrefix.length);
+
+  const tail = clean.match(/((?:logos|renders)\/[^?#]+)$/);
+  if (tail) return tail[1];
+
   return null;
 }
 
-// Convert a stored URL into a browser-loadable URL. Falls back to the input
-// if we can't recover a key (e.g., legacy data or unknown prefix).
 export async function refreshBrowserUrl(
   storedUrl: string | null | undefined,
 ): Promise<string | null> {
@@ -126,7 +135,6 @@ export async function refreshBrowserUrl(
   }
 }
 
-// Convert a stored URL into a server-loadable URL (for the render worker).
 export async function refreshServerUrl(
   storedUrl: string | null | undefined,
 ): Promise<string | null> {
@@ -141,8 +149,6 @@ export async function refreshServerUrl(
   }
 }
 
-// Back-compat alias. Existing callers that previously called refreshUrl()
-// were all browser-bound; keep the name working.
 export const refreshUrl = refreshBrowserUrl;
 
 export async function isStorageConfigured(): Promise<boolean> {
