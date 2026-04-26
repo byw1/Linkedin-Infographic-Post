@@ -169,7 +169,11 @@ export function VisualEditor({
           ref={iframeRef}
           title="infographic preview"
           srcDoc={renderedHtml}
-          sandbox="allow-same-origin"
+          // allow-scripts so embedded chart libraries (Chart.js, etc.) render
+          // in the preview the same way they will in the exported PNG. We keep
+          // allow-same-origin so this component can attach click handlers to
+          // [data-entity] elements inside.
+          sandbox="allow-same-origin allow-scripts"
           className="h-[80vh] w-full bg-white"
         />
       </div>

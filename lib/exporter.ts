@@ -43,6 +43,13 @@ export async function htmlToPng(html: string, width = 720): Promise<Buffer> {
       );
     });
 
+    // Charting libraries (Chart.js, etc.) render to <canvas> after their
+    // scripts run; networkidle0 fires before the animation finishes. Wait
+    // briefly so canvases are drawn before screenshot.
+    if ((await page.$$("canvas")).length > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
     const bodyHandle = await page.$("body");
     const box = bodyHandle ? await bodyHandle.boundingBox() : null;
     if (box) {

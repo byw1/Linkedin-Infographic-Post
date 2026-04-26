@@ -61,4 +61,20 @@ describe("replaceEntities", () => {
     const $ = cheerio.load(out);
     expect($('img[data-entity="tesla"]').length).toBe(1);
   });
+
+  it("copies the class attribute so CSS-based sizing still applies", () => {
+    const classed = `<div data-entity="alex" class="host-circle"></div>`;
+    const out = replaceEntities(classed, { alex: "https://cdn.example.com/alex.png" });
+    const $ = cheerio.load(out);
+    expect($("img.host-circle").length).toBe(1);
+    expect($("img").attr("class")).toBe("host-circle");
+  });
+
+  it("always emits display:block and background:#fff in inline style", () => {
+    const out = replaceEntities(html, mapping);
+    const $ = cheerio.load(out);
+    const style = $('img[alt="tesla"]').attr("style") ?? "";
+    expect(style).toContain("display:block");
+    expect(style).toContain("background:#fff");
+  });
 });

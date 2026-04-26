@@ -15,6 +15,8 @@ export function replaceEntities(html: string, mapping: EntityMapping): string {
 
     const $el = $(el);
     const style = $el.attr("style") ?? "";
+    const className = $el.attr("class");
+    const id = $el.attr("id");
 
     const width = parseStyleValue(style, "width");
     const height = parseStyleValue(style, "height");
@@ -22,6 +24,10 @@ export function replaceEntities(html: string, mapping: EntityMapping): string {
     const margin = parseStyleValue(style, "margin-bottom");
     const flexShrink = parseStyleValue(style, "flex-shrink");
 
+    // Inline styles override class CSS, so we always set the placeholder
+    // background and object-fit. Width/height/border-radius are only set
+    // inline when they were inline on the source — otherwise we leave them
+    // off so the preserved class can still drive sizing (e.g. .host-circle).
     const imgStyle = [
       width && `width:${width}`,
       height && `height:${height}`,
@@ -30,6 +36,7 @@ export function replaceEntities(html: string, mapping: EntityMapping): string {
       flexShrink && `flex-shrink:${flexShrink}`,
       "object-fit:cover",
       "background:#fff",
+      "display:block",
     ]
       .filter(Boolean)
       .join(";");
@@ -39,6 +46,9 @@ export function replaceEntities(html: string, mapping: EntityMapping): string {
       .attr("alt", slug)
       .attr("data-entity", slug)
       .attr("style", imgStyle);
+
+    if (className) $img.attr("class", className);
+    if (id) $img.attr("id", id);
 
     $el.replaceWith($img);
   });
