@@ -136,7 +136,24 @@ function LibraryCard({
   const [name, setName] = useState(entity.displayName);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [imgError, setImgError] = useState(false);
+  const [imgError, setImgError] = useState<string | null>(null);
+
+  async function diagnoseImage() {
+    try {
+      const res = await fetch(entity.logoUrl, { credentials: "same-origin" });
+      const status = `${res.status} ${res.statusText}`;
+      const ct = res.headers.get("content-type") ?? "";
+      if (res.ok) {
+        // Image fetched fine — must be a render issue rather than HTTP.
+        setImgError(`fetched ${status} (${ct}) but <img> rejected the bytes`);
+        return;
+      }
+      const body = await res.text().catch(() => "");
+      setImgError(body ? `${status}: ${body.slice(0, 200)}` : status);
+    } catch (err) {
+      setImgError(`network error: ${(err as Error).message}`);
+    }
+  }
 
   function save() {
     setError(null);
@@ -191,14 +208,14 @@ function LibraryCard({
   return (
     <div className="space-y-2 rounded-md border p-3">
       <div className="flex items-start gap-3">
-        {imgError ? (
+        {imgError !== null ? (
           <div
             className={
               entity.shapePreference === "circle"
                 ? "flex h-16 w-16 items-center justify-center rounded-full border bg-destructive/10 text-[10px] text-destructive"
                 : "flex h-16 w-16 items-center justify-center rounded-md border bg-destructive/10 text-[10px] text-destructive"
             }
-            title="Logo failed to load. Try Replace logo."
+            title={imgError || "Logo failed to load."}
           >
             broken
           </div>
@@ -207,7 +224,10 @@ function LibraryCard({
           <img
             src={entity.logoUrl}
             alt={entity.slug}
-            onError={() => setImgError(true)}
+            onError={() => {
+              setImgError("");
+              void diagnoseImage();
+            }}
             className={
               entity.shapePreference === "circle"
                 ? "h-16 w-16 rounded-full object-cover"
@@ -235,6 +255,11 @@ function LibraryCard({
         </div>
       </div>
 
+      {imgError && (
+        <p className="break-words text-xs text-destructive">
+          <span className="font-medium">Image load failed:</span> {imgError}
+        </p>
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       <div className="flex flex-wrap gap-2">

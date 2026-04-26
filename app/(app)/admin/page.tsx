@@ -6,6 +6,7 @@ import { InvitesForm } from "@/components/admin/invites-form";
 import { GoogleAuthForm } from "@/components/admin/google-auth-form";
 import { HealthStatus } from "@/components/admin/health-status";
 import { ConfigView } from "@/components/admin/config-view";
+import { StorageTest } from "@/components/admin/storage-test";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function AdminPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Health</h2>
         <HealthStatus />
+        <StorageTest />
       </section>
 
       <section className="space-y-3">
