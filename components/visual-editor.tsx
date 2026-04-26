@@ -27,8 +27,13 @@ export function VisualEditor({
   storageReady,
 }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const originalHtmlRef = useRef<Map<string, string>>(new Map());
+  // Per-element snapshot of the original placeholder HTML, used to revert
+  // on unresolve. WeakMap so we can transfer the snapshot from the
+  // placeholder div to its <img> replacement and back.
+  const originalsRef = useRef<WeakMap<Element, string>>(new WeakMap());
   const onSlugClickRef = useRef<(slug: string) => void>(() => {});
+  const entitiesRef = useRef<ResolvedEntity[]>(entities);
+  entitiesRef.current = entities;
 
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,15 +41,15 @@ export function VisualEditor({
   const [iframeReady, setIframeReady] = useState(false);
 
   // srcDoc is computed exactly once per uploaded HTML. Entity changes are
-  // applied imperatively to the iframe DOM below — that's what stops the
-  // scroll from jumping back to the top and the charts from re-animating.
+  // applied imperatively to the iframe DOM below — keeps scroll position
+  // and stops charts from re-animating on every edit.
   const srcDoc = useMemo(() => html, [html]);
 
-  // Keep the click handler ref pointing at the current setActiveSlug.
   onSlugClickRef.current = setActiveSlug;
 
-  // Initial setup: snapshot every placeholder's outerHTML so we can revert
-  // on unresolve, and attach click + outline handlers to each.
+  // Initial setup: snapshot every placeholder, attach handlers, and apply
+  // any entities already marked resolved (which is the common case — the
+  // library auto-resolves them on parse).
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -54,16 +59,36 @@ export function VisualEditor({
       if (!doc) return;
       if (doc.body) doc.body.style.margin = "0";
 
-      originalHtmlRef.current.clear();
+      originalsRef.current = new WeakMap();
 
-      doc.querySelectorAll<HTMLElement>("[data-entity]").forEach((el) => {
+      const all = Array.from(
+        doc.querySelectorAll<HTMLElement>("[data-entity]"),
+      ).filter((el) => {
         const slug = el.getAttribute("data-entity");
-        if (!slug || slug.startsWith("unknown")) return;
-        if (!originalHtmlRef.current.has(slug)) {
-          originalHtmlRef.current.set(slug, el.outerHTML);
-        }
-        attachInteractivity(el, slug);
+        return slug && !slug.startsWith("unknown");
       });
+
+      // Snapshot every placeholder before any mutation.
+      for (const el of all) {
+        originalsRef.current.set(el, el.outerHTML);
+      }
+
+      // Apply current resolutions or attach handlers, in document order so
+      // multiple instances of the same slug each get the right element.
+      const resolvedBySlug = new Map<string, ResolvedEntity>();
+      for (const e of entitiesRef.current) {
+        if (e.resolved && e.logo_url) resolvedBySlug.set(e.slug, e);
+      }
+
+      for (const el of all) {
+        const slug = el.getAttribute("data-entity")!;
+        const entity = resolvedBySlug.get(slug);
+        if (entity) {
+          replaceWithImg(el, entity);
+        } else {
+          attachInteractivity(el, slug);
+        }
+      }
 
       setIframeReady(true);
     }
@@ -77,29 +102,32 @@ export function VisualEditor({
     };
   }, [srcDoc]);
 
-  // Each time entities change, mutate the iframe DOM so it matches the
-  // current resolution state. Doesn't trigger an iframe reload.
+  // Subsequent edits — diff entities state against iframe DOM and apply
+  // changes without rebuilding srcDoc.
   useEffect(() => {
     if (!iframeReady) return;
     const doc = iframeRef.current?.contentDocument;
     if (!doc) return;
 
     for (const e of entities) {
-      const el = doc.querySelector<HTMLElement>(`[data-entity="${cssEscape(e.slug)}"]`);
-      if (!el) continue;
-      const isImg = el.tagName === "IMG";
+      const els = doc.querySelectorAll<HTMLElement>(
+        `[data-entity="${cssEscape(e.slug)}"]`,
+      );
+      els.forEach((el) => {
+        const isImg = el.tagName === "IMG";
 
-      if (e.resolved && e.logo_url) {
-        if (isImg) {
-          if ((el as HTMLImageElement).src !== e.logo_url) {
-            (el as HTMLImageElement).src = e.logo_url;
+        if (e.resolved && e.logo_url) {
+          if (isImg) {
+            if ((el as HTMLImageElement).src !== e.logo_url) {
+              (el as HTMLImageElement).src = e.logo_url;
+            }
+          } else {
+            replaceWithImg(el, e);
           }
-        } else {
-          replaceWithImg(el, e);
+        } else if (isImg) {
+          revertToPlaceholder(el);
         }
-      } else if (isImg) {
-        revertToPlaceholder(el, e.slug);
-      }
+      });
     }
   }, [entities, iframeReady]);
 
@@ -168,20 +196,28 @@ export function VisualEditor({
     const inline = el.getAttribute("style") ?? "";
     img.setAttribute("style", buildImgStyle(inline));
 
+    // Carry the original snapshot over so unresolve can restore the right
+    // placeholder for THIS instance (slugs may appear multiple times with
+    // different inline sizes).
+    const snapshot = originalsRef.current.get(el);
+    if (snapshot) originalsRef.current.set(img, snapshot);
+
     el.replaceWith(img);
     attachInteractivity(img, entity.slug);
   }
 
-  function revertToPlaceholder(el: HTMLElement, slug: string) {
+  function revertToPlaceholder(el: HTMLElement) {
     const doc = el.ownerDocument;
-    const original = originalHtmlRef.current.get(slug);
+    const original = originalsRef.current.get(el);
     if (!original) return;
     const tmp = doc.createElement("div");
     tmp.innerHTML = original;
     const fresh = tmp.firstElementChild as HTMLElement | null;
     if (!fresh) return;
+    originalsRef.current.set(fresh, original);
     el.replaceWith(fresh);
-    attachInteractivity(fresh, slug);
+    const slug = fresh.getAttribute("data-entity");
+    if (slug) attachInteractivity(fresh, slug);
   }
 
   return (
@@ -254,8 +290,7 @@ export function VisualEditor({
 }
 
 // Style builder mirroring lib/replacer.ts but operating on a raw style
-// string (since we can't import cheerio in the browser). Keeps the
-// editor preview byte-equivalent to what the worker will render.
+// string (since we can't import cheerio in the browser).
 function buildImgStyle(inline: string): string {
   const width = parseStyleValue(inline, "width");
   const height = parseStyleValue(inline, "height");
@@ -282,7 +317,6 @@ function parseStyleValue(style: string, prop: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-// Minimal CSS.escape polyfill for slug values (alphanumeric + dashes only).
 function cssEscape(s: string): string {
   return s.replace(/(["\\])/g, "\\$1");
 }
