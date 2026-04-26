@@ -186,7 +186,19 @@ export async function POST(req: Request) {
   const ext = extensionFor(logoType);
   const fingerprint = crypto.randomBytes(4).toString("hex");
   const key = `logos/${user.id}/${slug}-${fingerprint}${ext}`;
-  const logoUrl = await uploadFile(key, logoBytes, logoType);
+  let logoUrl: string;
+  try {
+    logoUrl = await uploadFile(key, logoBytes, logoType);
+  } catch (err) {
+    console.error(`[entities] uploadFile failed for ${key}`, err);
+    if (err instanceof StorageNotConfiguredError) {
+      return NextResponse.json({ error: err.message }, { status: 503 });
+    }
+    return NextResponse.json(
+      { error: `Storage upload failed: ${(err as Error).message}` },
+      { status: 502 },
+    );
+  }
 
   const entity = await prisma.entity.upsert({
     where: { userId_slug: { userId: user.id, slug } },

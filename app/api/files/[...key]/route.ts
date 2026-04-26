@@ -49,20 +49,34 @@ export async function GET(
       new GetObjectCommand({ Bucket: storage.bucket, Key: key }),
     );
     const body = result.Body;
-    if (!body) return new Response("Not found", { status: 404 });
+    if (!body) {
+      console.error(`[files] ${key}: GetObject returned empty body`);
+      return new Response("Not found", { status: 404 });
+    }
+
+    // SDK Body in Node.js is a Readable. Buffer it (logos are <100KB,
+    // renders ~1-2MB) — simpler than wrestling with stream conversion
+    // across runtimes, and avoids transformToWebStream shape issues.
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of body as unknown as AsyncIterable<Uint8Array>) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
 
     const headers: Record<string, string> = {
       "Content-Type": result.ContentType ?? "application/octet-stream",
       "Cache-Control": "private, max-age=86400",
+      "Content-Length": String(buffer.byteLength),
     };
-    if (typeof result.ContentLength === "number") {
-      headers["Content-Length"] = String(result.ContentLength);
-    }
 
-    return new Response((body as { transformToWebStream: () => ReadableStream }).transformToWebStream(), {
-      headers,
-    });
-  } catch {
-    return new Response("Not found", { status: 404 });
+    return new Response(buffer, { headers });
+  } catch (err) {
+    console.error(`[files] ${key}: GetObject failed`, err);
+    const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata
+      ?.httpStatusCode;
+    if (status === 404 || (err as { name?: string }).name === "NoSuchKey") {
+      return new Response("Not found", { status: 404 });
+    }
+    return new Response(`Storage error: ${(err as Error).message}`, { status: 502 });
   }
 }

@@ -167,6 +167,7 @@ function LibraryCard({
   }
 
   function replaceLogo(file: File) {
+    setError(null);
     const form = new FormData();
     form.append("slug", entity.slug);
     form.append("type", entity.type);
@@ -174,7 +175,16 @@ function LibraryCard({
     form.append("file", file);
     startTransition(async () => {
       const res = await fetch("/api/entities", { method: "POST", body: form });
-      if (res.ok) onDone();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg =
+          typeof data?.error === "string"
+            ? data.error
+            : `Replace failed (${res.status}).`;
+        setError(msg);
+        return;
+      }
+      onDone();
     });
   }
 
