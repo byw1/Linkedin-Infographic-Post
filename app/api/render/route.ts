@@ -29,6 +29,24 @@ export async function POST(req: Request) {
     );
   }
 
+  // No point queueing if no worker is around to pick it up — the job would
+  // sit in the queue or fail opaquely. Tell the user up front.
+  try {
+    const workers = await getRenderQueue().getWorkersCount();
+    if (workers === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No render worker is connected. Deploy the worker service in Railway (Dockerfile.worker) — see /admin → Health.",
+        },
+        { status: 503 },
+      );
+    }
+  } catch {
+    // If we can't reach Redis to count workers, fall through and let the
+    // queue.add call surface the real error.
+  }
+
   const parsed = Body.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
