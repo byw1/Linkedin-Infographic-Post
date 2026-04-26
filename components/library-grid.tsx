@@ -141,17 +141,26 @@ function LibraryCard({
   async function diagnoseImage() {
     try {
       const res = await fetch(entity.logoUrl, { credentials: "same-origin" });
-      const status = `${res.status} ${res.statusText}`;
+      const status = `${res.status} ${res.statusText}`.trim();
       const ct = res.headers.get("content-type") ?? "";
       if (res.ok) {
-        // Image fetched fine — must be a render issue rather than HTTP.
-        setImgError(`fetched ${status} (${ct}) but <img> rejected the bytes`);
+        setImgError(
+          `fetched ${status} (${ct}) but <img> rejected the bytes — URL: ${entity.logoUrl}`,
+        );
         return;
       }
       const body = await res.text().catch(() => "");
-      setImgError(body ? `${status}: ${body.slice(0, 200)}` : status);
+      const isHtml = ct.includes("text/html") || body.startsWith("<!DOCTYPE");
+      const detail = isHtml
+        ? `framework 404 page (route /api/files/[...key] not deployed yet — redeploy) at ${entity.logoUrl}`
+        : body
+          ? `${status}: ${body.slice(0, 200)} — URL: ${entity.logoUrl}`
+          : `${status} — URL: ${entity.logoUrl}`;
+      setImgError(detail);
     } catch (err) {
-      setImgError(`network error: ${(err as Error).message}`);
+      setImgError(
+        `network error: ${(err as Error).message} — URL: ${entity.logoUrl}`,
+      );
     }
   }
 
