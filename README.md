@@ -5,9 +5,9 @@ infographics with real logos from a learned, per-user library. Built for
 a small invite-only group of LinkedIn posters.
 
 Drop in HTML → resolved entities are auto-filled from your library →
-upload logos for the unknowns once → server-side Puppeteer renders a
-sharp 2×-resolution PNG ready to post. Each logo gets uploaded once;
-your library compounds.
+upload logos for the unknowns once → the browser renders a sharp
+2×-resolution PNG ready to post. Each logo gets uploaded once; your
+library compounds.
 
 ## Stack
 
@@ -16,12 +16,12 @@ your library compounds.
 | Framework | Next.js 14 (App Router), TypeScript strict |
 | UI | Tailwind CSS + shadcn/ui primitives |
 | Database | Postgres via Prisma |
-| Cache / Queue | Redis (sessions, parse cache, BullMQ render queue) |
+| Cache | Redis (sessions, parse cache, rate limiting) |
 | Auth | Auth.js (NextAuth v5) — email + password by default, optional Google SSO, invite-link onboarding |
 | Storage | S3-compatible (Cloudflare R2 recommended; MinIO works the same) |
-| HTML parse | `cheerio` |
-| PNG export | `puppeteer-core` + Chromium, in a separate worker service |
-| Hosting | Railway (Postgres + Redis + web + worker services) |
+| HTML parse | `cheerio` (server, parse only) |
+| PNG export | `html-to-image`, in the user's browser |
+| Hosting | Railway (Postgres + Redis + web service) |
 
 ## Repo layout
 
@@ -33,26 +33,18 @@ lib/
   auth.ts                  Auth.js config + allowlist guard
   db.ts                    Prisma client
   redis.ts                 ioredis client
-  queue.ts                 BullMQ render queue
   storage.ts               S3-compatible upload
   cache.ts                 Redis parse cache
   ratelimit.ts             @upstash/ratelimit
   parser.ts                extractEntities(html)
-  replacer.ts              replaceEntities(html, mapping)
-  exporter.ts              htmlToPng() via Puppeteer
   slug-utils.ts            Slug helpers
-workers/
-  render-worker.ts         BullMQ worker (separate process)
 prisma/
   schema.prisma            Users, accounts, sessions, entities, renders
 tests/
-  parser.test.ts           10 tests
-  replacer.test.ts         6 tests
+  parser.test.ts           Parser unit tests
 types/                     Shared TS types
 Dockerfile                 Web service
-Dockerfile.worker          Worker (with Chromium runtime deps)
 railway.json               Railway config for the web service
-railway.worker.json        Railway config for the worker service
 ```
 
 ## Local development
@@ -61,12 +53,11 @@ Requires Node 20+, a running Postgres, and a running Redis.
 
 ```bash
 cp .env.example .env.local
-# Fill in the 4 required vars. Storage/allowlist configured in /admin.
+# Fill in the required vars. Storage/allowlist configured in /admin.
 
 npm install
 npx prisma migrate dev
 npm run dev          # web on :3000
-npm run worker       # render worker (separate terminal)
 ```
 
 ## Deploy on Railway
@@ -80,15 +71,13 @@ running app — not in env vars.
 1. **Create a project** → add **PostgreSQL** and **Redis** managed services.
 2. **Add a `web` service** from this GitHub repo. Config-as-code path =
    `railway.json` (builds `Dockerfile`).
-3. **Add a `worker` service** from the same repo. Config-as-code path =
-   `railway.worker.json` (builds `Dockerfile.worker`).
-4. On **both** services, set these **3 secrets**:
+3. On the `web` service, set these **3 secrets**:
    ```
    DATABASE_URL=${{Postgres.DATABASE_URL}}
    REDIS_URL=${{Redis.REDIS_URL}}
    AUTH_SECRET=<openssl rand -base64 32>
    ```
-5. Generate a domain on the `web` service.
+4. Generate a domain on the `web` service.
 
 That's the entire Railway-side setup. No `NEXTAUTH_URL`,
 `AUTH_TRUST_HOST`, `GOOGLE_*`, `BOOTSTRAP_ADMIN_EMAIL`,
@@ -108,7 +97,7 @@ That's the entire Railway-side setup. No `NEXTAUTH_URL`,
      `https://<your-domain>/api/auth/callback/google` in Google Cloud
      Console.
    - **Storage** — paste R2 / MinIO endpoint, bucket, public URL, and keys.
-     Saved to the `settings` table; the worker reads them per-render, so no
+     Saved to the `settings` table; the next render reads them, so no
      restart needed.
 
 ## Tests
@@ -116,9 +105,6 @@ That's the entire Railway-side setup. No `NEXTAUTH_URL`,
 ```bash
 npm test
 ```
-
-Vitest covers `lib/parser.ts` (10 tests) and `lib/replacer.ts` (6 tests).
-Add more under `tests/` or co-located as `lib/**/*.test.ts`.
 
 ## How it works
 
@@ -129,14 +115,13 @@ Add more under `tests/` or co-located as `lib/**/*.test.ts`.
 3. The webapp looks each slug up in the user's `entities` table.
 4. Resolved entities auto-fill; unresolved ones prompt for a file upload
    or image URL — saved to S3 and back into the user's library.
-5. `lib/replacer.ts` swaps every green placeholder for an `<img>` tag
-   that preserves width / height / border-radius / margins.
-6. The render is queued on BullMQ. The worker launches headless Chrome,
-   waits for all images to load, auto-sizes the viewport to content
-   height, screenshots at 2× DPR, uploads the PNG to S3, and updates the
-   `renders` row with the public URL.
-7. Client polls `GET /api/render/:id` and offers a download once status
-   is `complete`.
+5. The visual editor mounts the original HTML in an iframe and swaps
+   each placeholder for an `<img>` tag in-place, preserving width /
+   height / border-radius / margins.
+6. On render, the browser snapshots the iframe with `html-to-image`
+   (2× pixel ratio) and `POST`s the PNG blob to `/api/render`. The web
+   service uploads to S3, records a row in `renders`, and returns the
+   public URL.
 
 ## Auth model
 
@@ -160,15 +145,3 @@ Every Prisma query filters by `user_id`. The `entities` table has
 they stay independent. The only ways to create a user are the first-run
 `/setup` wizard (creates the admin, then locks itself) and admin-issued
 invites — there's no public sign-up.
-
-## Status
-
-V1 scaffolding. Working: project setup, Prisma schema, Auth.js with
-email+password Credentials + optional Google, first-run setup wizard,
-admin-issued invite links, in-app `/admin` for invites, auth providers,
-storage, and allowlist. S3 / Redis / BullMQ wiring, parser + replacer +
-Puppeteer exporter, render worker, both Dockerfiles, Vitest tests.
-
-Not yet built: core product API routes (`/api/parse`, `/api/entities*`,
-`/api/render*`, `/api/library`, `/api/me`), upload dropzone, entity
-resolver UI, library grid, render preview page.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import * as htmlToImage from "html-to-image";
 import type { ResolvedEntity } from "@/types/entity";
 import { EditorPanel } from "@/components/editor-panel";
 
@@ -9,7 +10,7 @@ interface Props {
   entities: ResolvedEntity[];
   onEntitiesChange: (next: ResolvedEntity[]) => void;
   onBack: () => void;
-  onRender: (mapping: Record<string, string>) => Promise<void>;
+  onRender: (png: Blob, entityCount: number) => Promise<void>;
   storageReady: boolean;
 }
 
@@ -40,10 +41,9 @@ export function VisualEditor({
   const [error, setError] = useState<string | null>(null);
   const [rendering, startRender] = useTransition();
   const [iframeReady, setIframeReady] = useState(false);
-  // Lock width to the worker's puppeteer viewport (lib/exporter.ts), so the
-  // preview lays out at the same size as the rendered PNG. Letting the iframe
-  // shrink-wrap to body.scrollWidth collapses to ~content width whenever the
-  // user's HTML uses flex/inline-block, which doesn't reflect the export.
+  // Lock width to the export width so the iframe lays out at the same size
+  // we'll snapshot. Letting it shrink-wrap to body.scrollWidth collapses to
+  // ~content width whenever the user's HTML uses flex/inline-block.
   const RENDER_WIDTH = 720;
   const [contentHeight, setContentHeight] = useState<number>(600);
 
@@ -176,17 +176,53 @@ export function VisualEditor({
       setError("Storage isn't configured. PNG export is disabled.");
       return;
     }
-    const mapping: Record<string, string> = {};
-    for (const e of entities) {
-      if (e.logo_url) mapping[e.slug] = e.logo_url;
-    }
     startRender(async () => {
       try {
-        await onRender(mapping);
+        const blob = await captureIframe();
+        await onRender(blob, entities.length);
       } catch (err) {
         setError((err as Error).message);
       }
     });
+  }
+
+  async function captureIframe(): Promise<Blob> {
+    const iframe = iframeRef.current;
+    const doc = iframe?.contentDocument;
+    if (!iframe || !doc?.body) throw new Error("Preview isn't ready yet.");
+
+    // Wait one frame for any pending DOM swaps to settle.
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+    // Make sure every <img> inside the preview has actually loaded —
+    // html-to-image embeds bitmaps as it walks the DOM, and a
+    // not-yet-loaded <img> would serialize to a 0×0 placeholder.
+    const imgs = Array.from(doc.images);
+    await Promise.all(
+      imgs.map((img) =>
+        img.complete && img.naturalWidth > 0
+          ? Promise.resolve()
+          : new Promise<void>((resolve) => {
+              const done = () => resolve();
+              img.addEventListener("load", done, { once: true });
+              img.addEventListener("error", done, { once: true });
+              setTimeout(done, 5000);
+            }),
+      ),
+    );
+
+    // backgroundColor is a fallback for transparent regions of the capture.
+    // The body's own background (if set in the user's CSS) renders on top of
+    // it via html-to-image's per-element walk. White matches the iframe
+    // element's bg-white, so an HTML without a body bg looks the same in
+    // PNG and preview.
+    const blob = await htmlToImage.toBlob(doc.body, {
+      pixelRatio: 2,
+      cacheBust: true,
+      backgroundColor: "#ffffff",
+    });
+    if (!blob) throw new Error("Failed to render PNG from preview.");
+    return blob;
   }
 
   // ---- iframe DOM helpers --------------------------------------------------

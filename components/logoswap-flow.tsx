@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { VisualEditor } from "@/components/visual-editor";
-import { RenderPoller } from "@/components/render-poller";
+import { RenderResult } from "@/components/render-result";
 
 type Stage = "upload" | "edit" | "render";
 
@@ -13,18 +13,18 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
   const [html, setHtml] = useState<string>("");
   const [filename, setFilename] = useState<string | null>(null);
   const [entities, setEntities] = useState<ResolvedEntity[]>([]);
-  const [renderId, setRenderId] = useState<string | null>(null);
+  const [pngUrl, setPngUrl] = useState<string | null>(null);
 
   function reset() {
     setStage("upload");
     setHtml("");
     setFilename(null);
     setEntities([]);
-    setRenderId(null);
+    setPngUrl(null);
   }
 
-  if (stage === "render" && renderId) {
-    return <RenderPoller renderId={renderId} onReset={reset} />;
+  if (stage === "render" && pngUrl) {
+    return <RenderResult pngUrl={pngUrl} onReset={reset} />;
   }
 
   if (stage === "edit") {
@@ -35,12 +35,13 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
         onEntitiesChange={setEntities}
         onBack={() => setStage("upload")}
         storageReady={storageReady}
-        onRender={async (mapping) => {
-          const res = await fetch("/api/render", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ html, mapping, filename }),
-          });
+        onRender={async (png, entityCount) => {
+          const form = new FormData();
+          form.append("file", png, filename ? `${filename}.png` : "render.png");
+          if (filename) form.append("filename", filename);
+          form.append("entity_count", String(entityCount));
+
+          const res = await fetch("/api/render", { method: "POST", body: form });
           if (!res.ok) {
             const raw = await res.text().catch(() => "");
             let detail = raw;
@@ -52,10 +53,10 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
               // raw wasn't JSON — keep the body text as-is
             }
             const summary = detail.trim().slice(0, 500) || res.statusText || "no response body";
-            throw new Error(`Render request failed (${res.status}): ${summary}`);
+            throw new Error(`Render upload failed (${res.status}): ${summary}`);
           }
           const data = await res.json();
-          setRenderId(data.render_id);
+          setPngUrl(data.png_url);
           setStage("render");
         }}
       />

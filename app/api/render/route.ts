@@ -4,23 +4,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { getRenderQueue } from "@/lib/queue";
-import { isStorageConfigured, refreshServerUrl, StorageNotConfiguredError } from "@/lib/storage";
+import {
+  getBrowserUrl,
+  isStorageConfigured,
+  StorageNotConfiguredError,
+  uploadFile,
+} from "@/lib/storage";
+import { randomUUID } from "node:crypto";
 
-// Mapping values can be either an absolute URL (CDN / public bucket via
-// S3_PUBLIC_URL) or the /api/files/<key> proxy path that getBrowserUrl
-// returns for private buckets. The render route converts whichever form
-// it gets into a presigned S3 URL via refreshServerUrl below.
-const LogoRef = z.string().refine(
-  (v) => v.startsWith("/api/files/") || /^https?:\/\//i.test(v),
-  { message: "Expected an absolute http(s) URL or an /api/files/<key> path" },
-);
+const MAX_PNG_BYTES = 12 * 1024 * 1024; // 12 MB — generous; a 720×4000@2x PNG is well under
 
-const Body = z.object({
-  html: z.string().min(1).max(2_000_000),
-  mapping: z.record(LogoRef),
+const Meta = z.object({
   filename: z.string().max(120).optional(),
-  width: z.number().int().min(320).max(2000).optional(),
+  entity_count: z.coerce.number().int().min(0).optional(),
 });
 
 export async function POST(req: Request) {
@@ -38,70 +34,58 @@ export async function POST(req: Request) {
     );
   }
 
-  // No point queueing if no worker is around to pick it up — the job would
-  // sit in the queue or fail opaquely. Tell the user up front.
-  try {
-    const workers = await getRenderQueue().getWorkersCount();
-    if (workers === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "No render worker is connected. Deploy the worker service in Railway (Dockerfile.worker) — see /admin → Health.",
-        },
-        { status: 503 },
-      );
-    }
-  } catch {
-    // If we can't reach Redis to count workers, fall through and let the
-    // queue.add call surface the real error.
+  const form = await req.formData().catch(() => null);
+  if (!form) {
+    return NextResponse.json(
+      { error: "Expected multipart/form-data with a `file` field." },
+      { status: 400 },
+    );
   }
 
-  const parsed = Body.safeParse(await req.json());
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  const file = form.get("file");
+  if (!(file instanceof Blob) || file.size === 0) {
+    return NextResponse.json(
+      { error: "Missing PNG blob under `file`." },
+      { status: 400 },
+    );
+  }
+  if (file.size > MAX_PNG_BYTES) {
+    return NextResponse.json(
+      { error: `PNG too large (${file.size} bytes; max ${MAX_PNG_BYTES}).` },
+      { status: 413 },
+    );
   }
 
-  const slugs = Object.keys(parsed.data.mapping);
-  const entityCount = slugs.length;
-
-  // The mapping the browser gave us has /api/files/... proxy URLs (which
-  // require a session cookie). The worker can't use those — it's on the
-  // private network and authenticates differently. Convert each to a
-  // presigned S3 URL the worker's puppeteer can fetch directly.
-  const freshMapping: Record<string, string> = {};
-  for (const [slug, url] of Object.entries(parsed.data.mapping)) {
-    freshMapping[slug] = (await refreshServerUrl(url)) ?? url;
+  const meta = Meta.safeParse({
+    filename: form.get("filename") ?? undefined,
+    entity_count: form.get("entity_count") ?? undefined,
+  });
+  if (!meta.success) {
+    return NextResponse.json({ error: meta.error.flatten() }, { status: 400 });
   }
 
-  const render = await prisma.render.create({
+  const renderId = randomUUID();
+  const key = `renders/${user.id}/${renderId}.png`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  await uploadFile(key, buffer, "image/png");
+
+  await prisma.render.create({
     data: {
+      id: renderId,
       userId: user.id,
-      filename: parsed.data.filename ?? null,
-      entityCount,
+      filename: meta.data.filename ?? null,
+      entityCount: meta.data.entity_count ?? null,
       unknownCount: 0,
-      status: "pending",
+      status: "complete",
+      pngUrl: getBrowserUrl(key),
+      completedAt: new Date(),
     },
   });
 
-  await getRenderQueue().add(
-    "render",
-    {
-      renderId: render.id,
-      userId: user.id,
-      html: parsed.data.html,
-      mapping: freshMapping,
-      width: parsed.data.width,
-    },
-    { jobId: render.id },
-  );
-
-  // Bump usage counters for resolved entities. Best-effort.
-  if (slugs.length > 0) {
-    await prisma.entity.updateMany({
-      where: { userId: user.id, slug: { in: slugs } },
-      data: { usageCount: { increment: 1 }, lastUsedAt: new Date() },
-    });
-  }
-
-  return NextResponse.json({ render_id: render.id, status: "pending" });
+  return NextResponse.json({
+    render_id: renderId,
+    png_url: getBrowserUrl(key),
+    status: "complete",
+  });
 }
