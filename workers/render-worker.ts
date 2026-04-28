@@ -3,7 +3,6 @@ import { htmlToPng } from "@/lib/exporter";
 import { uploadFile } from "@/lib/storage";
 import { prisma } from "@/lib/db";
 import { getRedis } from "@/lib/redis";
-import { replaceEntities } from "@/lib/replacer";
 import { RENDER_QUEUE_NAME, type RenderJob } from "@/lib/queue";
 
 const worker = new Worker<RenderJob>(
@@ -17,8 +16,10 @@ const worker = new Worker<RenderJob>(
     });
 
     try {
-      const finalHtml = replaceEntities(html, mapping);
-      const png = await htmlToPng(finalHtml, width ?? 720);
+      // Pass the original HTML straight through. The exporter does the
+      // placeholder→<img> swap in-page so the worker's render matches what
+      // the iframe shows in the editor exactly.
+      const png = await htmlToPng(html, mapping, width ?? 720);
 
       const key = `renders/${userId}/${renderId}.png`;
       const url = await uploadFile(key, png, "image/png");

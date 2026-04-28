@@ -1,6 +1,14 @@
 import puppeteer, { type Browser } from "puppeteer-core";
 
-export async function htmlToPng(html: string, width = 720): Promise<Buffer> {
+export interface Mapping {
+  [slug: string]: string;
+}
+
+export async function htmlToPng(
+  html: string,
+  mapping: Mapping,
+  width = 720,
+): Promise<Buffer> {
   let stage = "launch";
   let browser: Browser | null = null;
   try {
@@ -19,30 +27,64 @@ export async function htmlToPng(html: string, width = 720): Promise<Buffer> {
     const page = await browser.newPage();
     await page.setViewport({ width, height: 100, deviceScaleFactor: 2 });
 
-    // If the user uploaded a complete document, hand it to Chromium as-is
-    // — wrapping it in a fresh <body> nests the user's <html>/<body> and
-    // strips their body-level styles (notably `background`), which made
-    // the rendered PNG light-mode even when the iframe preview was dark.
-    // For bare fragments, add minimal scaffolding so charset and a sensible
-    // default font are available.
-    const isFullDoc = /<\s*(?:!doctype\s+html|html\b|body\b)/i.test(html);
-    const content = isFullDoc
-      ? html
-      : `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  </style>
-</head>
-<body>${html}</body>
-</html>`;
+    // Hand the HTML to Chromium as-is and do the placeholder→<img> swap
+    // in-page, the same way the editor's iframe does. The earlier path
+    // round-tripped through cheerio (which re-serializes the document and
+    // can move <style> blocks between head/body) and then layered our own
+    // <body> wrapper on top, both of which silently dropped user body-level
+    // styling — so the rendered PNG ended up on a white body even when the
+    // preview was dark. setContent + in-page swap keeps the worker's render
+    // environment identical to the iframe's.
 
     // networkidle2 (≤ 2 lingering connections for 500ms) instead of 0,
     // since some chart CDNs leave keep-alive sockets open.
     stage = "setContent";
-    await page.setContent(content, { waitUntil: "networkidle2", timeout: 30_000 });
+    await page.setContent(html, { waitUntil: "networkidle2", timeout: 30_000 });
+
+    stage = "applyMapping";
+    await page.evaluate((m: Mapping) => {
+      function parseStyleValue(style: string, prop: string): string | null {
+        const re = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, "i");
+        const match = style.match(re);
+        return match ? match[1].trim() : null;
+      }
+      function buildImgStyle(inline: string): string {
+        const w = parseStyleValue(inline, "width");
+        const h = parseStyleValue(inline, "height");
+        const r = parseStyleValue(inline, "border-radius");
+        const mb = parseStyleValue(inline, "margin-bottom");
+        const fs = parseStyleValue(inline, "flex-shrink");
+        return [
+          w && `width:${w}`,
+          h && `height:${h}`,
+          r && `border-radius:${r}`,
+          mb && `margin-bottom:${mb}`,
+          fs && `flex-shrink:${fs}`,
+          "object-fit:cover",
+          "background:#fff",
+          "display:block",
+        ]
+          .filter(Boolean)
+          .join(";");
+      }
+
+      const all = Array.from(document.querySelectorAll<HTMLElement>("[data-entity]"));
+      for (const el of all) {
+        const slug = el.getAttribute("data-entity");
+        if (!slug) continue;
+        const url = m[slug];
+        if (!url) continue;
+        const img = document.createElement("img");
+        img.setAttribute("src", url);
+        img.setAttribute("alt", slug);
+        img.setAttribute("data-entity", slug);
+        if (el.className) img.className = el.className;
+        if (el.id) img.id = el.id;
+        const inline = el.getAttribute("style") ?? "";
+        img.setAttribute("style", buildImgStyle(inline));
+        el.replaceWith(img);
+      }
+    }, mapping);
 
     stage = "waitForImages";
     await page.evaluate(() => {
