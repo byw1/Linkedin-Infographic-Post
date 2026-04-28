@@ -223,15 +223,24 @@ export function VisualEditor({
     const width = Math.max(root.scrollWidth, doc.body.scrollWidth, RENDER_WIDTH);
     const height = Math.max(root.scrollHeight, doc.body.scrollHeight);
 
+    // backgroundColor paints the canvas BEFORE the SVG is composited on
+    // top. Default body margin is 8px, so if the user's <body> is dark but
+    // <html> is transparent, the 8px gap shows whatever this color is.
+    // Using the body's actual bg (falling back to <html>, then white)
+    // makes the gap match the body and kills the thin white edges.
+    const win = iframe.contentWindow;
+    const isOpaque = (c: string) =>
+      !!c && c !== "transparent" && !/^rgba?\([^)]*,\s*0\s*\)$/i.test(c);
+    const bodyBg = win ? win.getComputedStyle(doc.body).backgroundColor : "";
+    const htmlBg = win ? win.getComputedStyle(root).backgroundColor : "";
+    const canvasBg = isOpaque(bodyBg) ? bodyBg : isOpaque(htmlBg) ? htmlBg : "#ffffff";
+
     const blob = await htmlToImage.toBlob(root, {
       pixelRatio: 2,
       cacheBust: true,
       width,
       height,
-      // Fallback for transparent regions of the capture; matches the iframe
-      // element's bg-white so a user HTML without its own background stays
-      // visually identical between preview and PNG.
-      backgroundColor: "#ffffff",
+      backgroundColor: canvasBg,
     });
     if (!blob) throw new Error("Failed to render PNG from preview.");
     return blob;
