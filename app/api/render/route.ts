@@ -12,7 +12,17 @@ import {
 } from "@/lib/storage";
 import { randomUUID } from "node:crypto";
 
-const MAX_PNG_BYTES = 12 * 1024 * 1024; // 12 MB — generous; a 720×4000@2x PNG is well under
+// Single-image renders top out around a few MB; multi-slide PDFs (carousel
+// mode) can run 20–40 MB at 2× resolution, so the ceiling has to be
+// considerably higher. Storage upload still streams the bytes, so the
+// number is mostly there to bound malicious uploads.
+const MAX_BYTES = 60 * 1024 * 1024; // 60 MB
+
+const ALLOWED_TYPES = new Set(["image/png", "application/pdf"]);
+const EXT_BY_TYPE: Record<string, string> = {
+  "image/png": "png",
+  "application/pdf": "pdf",
+};
 
 const Meta = z.object({
   filename: z.string().max(120).optional(),
@@ -45,14 +55,22 @@ export async function POST(req: Request) {
   const file = form.get("file");
   if (!(file instanceof Blob) || file.size === 0) {
     return NextResponse.json(
-      { error: "Missing PNG blob under `file`." },
+      { error: "Missing PNG/PDF blob under `file`." },
       { status: 400 },
     );
   }
-  if (file.size > MAX_PNG_BYTES) {
+  if (file.size > MAX_BYTES) {
     return NextResponse.json(
-      { error: `PNG too large (${file.size} bytes; max ${MAX_PNG_BYTES}).` },
+      { error: `File too large (${file.size} bytes; max ${MAX_BYTES}).` },
       { status: 413 },
+    );
+  }
+
+  const contentType = file.type || "image/png";
+  if (!ALLOWED_TYPES.has(contentType)) {
+    return NextResponse.json(
+      { error: `Unsupported content type: ${contentType}. Expected PNG or PDF.` },
+      { status: 415 },
     );
   }
 
@@ -65,11 +83,16 @@ export async function POST(req: Request) {
   }
 
   const renderId = randomUUID();
-  const key = `renders/${user.id}/${renderId}.png`;
+  const ext = EXT_BY_TYPE[contentType];
+  const key = `renders/${user.id}/${renderId}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  await uploadFile(key, buffer, "image/png");
+  await uploadFile(key, buffer, contentType);
 
+  // The Render row keeps the public URL in pngUrl regardless of MIME so
+  // the existing library / history paths keep working without a schema
+  // change. The browser disambiguates by the file extension on the URL.
+  const publicUrl = getBrowserUrl(key);
   await prisma.render.create({
     data: {
       id: renderId,
@@ -78,14 +101,14 @@ export async function POST(req: Request) {
       entityCount: meta.data.entity_count ?? null,
       unknownCount: 0,
       status: "complete",
-      pngUrl: getBrowserUrl(key),
+      pngUrl: publicUrl,
       completedAt: new Date(),
     },
   });
 
   return NextResponse.json({
     render_id: renderId,
-    png_url: getBrowserUrl(key),
+    png_url: publicUrl,
     status: "complete",
   });
 }

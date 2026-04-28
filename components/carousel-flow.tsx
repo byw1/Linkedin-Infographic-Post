@@ -2,44 +2,48 @@
 
 import { useState } from "react";
 import type { ResolvedEntity } from "@/types/entity";
-import { UploadDropzone } from "@/components/upload-dropzone";
-import { VisualEditor } from "@/components/visual-editor";
+import {
+  CarouselUploadDropzone,
+  type CarouselSlide,
+} from "@/components/carousel-upload-dropzone";
+import { CarouselEditor } from "@/components/carousel-editor";
 import { RenderResult } from "@/components/render-result";
 
 type Stage = "upload" | "edit" | "render";
 
-export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
+export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
   const [stage, setStage] = useState<Stage>("upload");
-  const [html, setHtml] = useState<string>("");
-  const [filename, setFilename] = useState<string | null>(null);
+  const [slides, setSlides] = useState<CarouselSlide[]>([]);
+  const [zipName, setZipName] = useState<string | null>(null);
   const [entities, setEntities] = useState<ResolvedEntity[]>([]);
-  const [pngUrl, setPngUrl] = useState<string | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   function reset() {
     setStage("upload");
-    setHtml("");
-    setFilename(null);
+    setSlides([]);
+    setZipName(null);
     setEntities([]);
-    setPngUrl(null);
+    setPdfUrl(null);
   }
 
-  if (stage === "render" && pngUrl) {
-    return <RenderResult url={pngUrl} onReset={reset} />;
+  if (stage === "render" && pdfUrl) {
+    return <RenderResult url={pdfUrl} kind="pdf" onReset={reset} />;
   }
 
   if (stage === "edit") {
     return (
-      <VisualEditor
-        html={html}
+      <CarouselEditor
+        slides={slides}
         entities={entities}
         onEntitiesChange={setEntities}
         onBack={() => setStage("upload")}
         storageReady={storageReady}
-        onRender={async (png, entityCount) => {
+        onRendered={async (pdf, totalEntities) => {
+          const baseName = zipName?.replace(/\.zip$/i, "") ?? "carousel";
           const form = new FormData();
-          form.append("file", png, filename ? `${filename}.png` : "render.png");
-          if (filename) form.append("filename", filename);
-          form.append("entity_count", String(entityCount));
+          form.append("file", pdf, `${baseName}.pdf`);
+          form.append("filename", baseName);
+          form.append("entity_count", String(totalEntities));
 
           const res = await fetch("/api/render", { method: "POST", body: form });
           if (!res.ok) {
@@ -50,13 +54,13 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
               if (typeof data?.error === "string") detail = data.error;
               else if (data?.error) detail = JSON.stringify(data.error);
             } catch {
-              // raw wasn't JSON — keep the body text as-is
+              // raw kept
             }
             const summary = detail.trim().slice(0, 500) || res.statusText || "no response body";
-            throw new Error(`Render upload failed (${res.status}): ${summary}`);
+            throw new Error(`PDF upload failed (${res.status}): ${summary}`);
           }
           const data = await res.json();
-          setPngUrl(data.png_url);
+          setPdfUrl(data.png_url);
           setStage("render");
         }}
       />
@@ -64,11 +68,11 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
   }
 
   return (
-    <UploadDropzone
-      onParsed={(parsed, parsedHtml, name) => {
-        setHtml(parsedHtml);
-        setFilename(name);
-        setEntities(parsed);
+    <CarouselUploadDropzone
+      onParsed={(parsedSlides, parsedEntities, name) => {
+        setSlides(parsedSlides);
+        setZipName(name);
+        setEntities(parsedEntities);
         setStage("edit");
       }}
     />

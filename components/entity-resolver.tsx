@@ -5,12 +5,14 @@ import type { ResolvedEntity } from "@/types/entity";
 import { LibraryPicker } from "@/components/library-picker";
 
 interface Props {
-  html: string;
   initialEntities: ResolvedEntity[];
   onEntitiesChange: (next: ResolvedEntity[]) => void;
   onBack: () => void;
   onRender: (mapping: Record<string, string>) => Promise<void>;
   storageReady: boolean;
+  backLabel?: string;
+  renderLabel?: string;
+  renderingLabel?: string;
 }
 
 export function EntityResolver({
@@ -19,6 +21,9 @@ export function EntityResolver({
   onBack,
   onRender,
   storageReady,
+  backLabel = "← Use a different file",
+  renderLabel = "Render PNG",
+  renderingLabel = "Queueing...",
 }: Props) {
   const [entities, setEntities] = useState<ResolvedEntity[]>(initialEntities);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +68,7 @@ export function EntityResolver({
           onClick={onBack}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Use a different file
+          {backLabel}
         </button>
         <span className="text-sm text-muted-foreground">
           {resolved.length} of {total} resolved
@@ -120,7 +125,7 @@ export function EntityResolver({
           disabled={!allResolved || rendering || !storageReady}
           className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
         >
-          {rendering ? "Queueing..." : "Render PNG"}
+          {rendering ? renderingLabel : renderLabel}
         </button>
       </div>
     </div>
