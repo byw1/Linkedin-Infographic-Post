@@ -4,8 +4,14 @@ import { useState, useTransition } from "react";
 import * as htmlToImage from "html-to-image";
 import jsPDF from "jspdf";
 import type { ResolvedEntity } from "@/types/entity";
-import { EntityResolver } from "@/components/entity-resolver";
+import { EditorPanel } from "@/components/editor-panel";
+import { SlidePreview } from "@/components/slide-preview";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
+
+const SLIDE_SIZE = 1080;
+// Width the in-page preview is scaled to. The iframe still lays out at
+// SLIDE_SIZE internally; this only controls the visible footprint.
+const PREVIEW_DISPLAY_WIDTH = 720;
 
 interface Props {
   slides: CarouselSlide[];
@@ -16,8 +22,6 @@ interface Props {
   storageReady: boolean;
 }
 
-const SLIDE_SIZE = 1080;
-
 export function CarouselEditor({
   slides,
   entities,
@@ -26,55 +30,150 @@ export function CarouselEditor({
   onRendered,
   storageReady,
 }: Props) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [, startTask] = useTransition();
+  const [rendering, startRender] = useTransition();
 
-  async function handleRender(mapping: Record<string, string>) {
+  const total = entities.length;
+  const resolvedCount = entities.filter((e) => e.resolved).length;
+  const allResolved = total > 0 && resolvedCount === total;
+  const activeEntity = activeSlug ? entities.find((e) => e.slug === activeSlug) : null;
+  const currentSlide = slides[activeIndex];
+  const unresolved = entities.filter((e) => !e.resolved);
+
+  function update(slug: string, patch: Partial<ResolvedEntity>) {
+    const next = entities.map((e) => (e.slug === slug ? { ...e, ...patch } : e));
+    onEntitiesChange(next);
+  }
+
+  function startRenderClick() {
     setError(null);
-    setProgress({ current: 0, total: slides.length });
-    try {
-      const pdf = await renderSlidesToPdf(slides, mapping, (current, total) =>
-        setProgress({ current, total }),
-      );
-      await onRendered(pdf, entities.length);
-    } catch (err) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setProgress(null);
+    if (!allResolved) return;
+    if (!storageReady) {
+      setError("Storage isn't configured. PDF export is disabled.");
+      return;
     }
+    const mapping: Record<string, string> = {};
+    for (const e of entities) {
+      if (e.logo_url) mapping[e.slug] = e.logo_url;
+    }
+    startRender(async () => {
+      try {
+        setProgress({ current: 0, total: slides.length });
+        const pdf = await renderSlidesToPdf(slides, mapping, (current, totalCount) =>
+          setProgress({ current, total: totalCount }),
+        );
+        await onRendered(pdf, entities.length);
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setProgress(null);
+      }
+    });
+  }
+
+  function jumpToSlugSlide(slug: string) {
+    // Find the first slide whose HTML mentions this data-entity slug and
+    // jump there before opening the editor panel — saves a manual hunt.
+    const idx = slides.findIndex((s) =>
+      s.html.includes(`data-entity="${slug}"`),
+    );
+    if (idx >= 0) setActiveIndex(idx);
+    setActiveSlug(slug);
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-md border bg-card p-4 text-sm">
-        <div className="font-medium text-card-foreground">
-          {slides.length} slide{slides.length === 1 ? "" : "s"} loaded
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            ← Use a different zip
+          </button>
+          <span className="text-sm text-muted-foreground">
+            {resolvedCount} of {total} resolved
+            {!allResolved && (
+              <>
+                {" "}
+                · <span className="text-amber-600">click any dashed box</span>
+              </>
+            )}
+          </span>
         </div>
-        <ol className="mt-2 list-decimal pl-5 text-xs text-muted-foreground">
-          {slides.map((s) => (
-            <li key={s.filename}>{s.filename}</li>
-          ))}
-        </ol>
+        <button
+          type="button"
+          onClick={startRenderClick}
+          disabled={!allResolved || rendering || !storageReady}
+          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        >
+          {rendering ? "Rendering..." : "Render PDF"}
+        </button>
       </div>
 
-      <EntityResolver
-        initialEntities={entities}
-        onEntitiesChange={onEntitiesChange}
-        onBack={onBack}
-        onRender={(mapping) =>
-          new Promise((resolve, reject) => {
-            startTask(() => {
-              handleRender(mapping).then(resolve, reject);
-            });
-          })
-        }
-        storageReady={storageReady}
-        backLabel="← Use a different zip"
-        renderLabel="Render PDF"
-        renderingLabel="Rendering..."
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <SlidePreview
+        // Re-mount when the slide changes so DOM-swap state from the
+        // previous slide can't leak across iframe documents.
+        key={activeIndex}
+        html={currentSlide.html}
+        entities={entities}
+        onSlugClick={setActiveSlug}
+        renderWidth={SLIDE_SIZE}
+        renderHeight={SLIDE_SIZE}
+        displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
       />
+
+      <div className="flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+          disabled={activeIndex === 0}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
+          aria-label="Previous slide"
+        >
+          ←
+        </button>
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {activeIndex + 1} / {slides.length}
+          <span className="ml-2 hidden text-xs sm:inline">{currentSlide.filename}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setActiveIndex((i) => Math.min(slides.length - 1, i + 1))}
+          disabled={activeIndex === slides.length - 1}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
+          aria-label="Next slide"
+        >
+          →
+        </button>
+      </div>
+
+      {!allResolved && unresolved.length > 0 && (
+        <div className="rounded-md border bg-amber-500/5 p-3 text-sm">
+          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-300">
+            Unresolved across the carousel
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {unresolved.map((e) => (
+              <button
+                key={e.slug}
+                type="button"
+                onClick={() => jumpToSlugSlide(e.slug)}
+                className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-200 hover:bg-amber-500/20"
+              >
+                <span className="font-mono">{e.slug}</span>
+                <span className="text-amber-400/70">×{e.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {progress && (
         <div className="rounded-md border p-4 text-sm">
@@ -90,7 +189,28 @@ export function CarouselEditor({
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {activeEntity && (
+        <EditorPanel
+          entity={activeEntity}
+          onClose={() => setActiveSlug(null)}
+          onResolved={(logoUrl, displayName) => {
+            update(activeEntity.slug, {
+              resolved: true,
+              logo_url: logoUrl,
+              display_name: displayName,
+            });
+            setActiveSlug(null);
+          }}
+          onUnresolve={() => {
+            update(activeEntity.slug, {
+              resolved: false,
+              logo_url: undefined,
+              display_name: undefined,
+            });
+            setActiveSlug(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -130,7 +250,7 @@ async function renderSlideToPng(
 ): Promise<string> {
   // Off-screen iframe that doesn't paint into the page but is still a
   // real document (so layout, fonts, and html-to-image's serialization
-  // all behave the same as the editor's preview).
+  // all behave the same as the visible preview).
   const iframe = document.createElement("iframe");
   iframe.style.cssText =
     "position:fixed;left:-10000px;top:0;width:" +
@@ -155,7 +275,6 @@ async function renderSlideToPng(
 
     applyMapping(doc, mapping);
     await waitForImages(doc);
-    // One frame for layout to settle after the swap.
     await new Promise((r) => requestAnimationFrame(() => r(null)));
 
     const root = doc.documentElement;
