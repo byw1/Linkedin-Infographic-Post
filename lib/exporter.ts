@@ -26,6 +26,14 @@ export async function htmlToPng(
     stage = "newPage";
     const page = await browser.newPage();
     await page.setViewport({ width, height: 100, deviceScaleFactor: 2 });
+    // Match the editor's iframe, which inherits the user's OS / browser
+    // dark-mode preference. Headless Chromium defaults to light, so any
+    // CSS the user gates on `@media (prefers-color-scheme: dark)` (very
+    // common for "auto" infographic templates) silently doesn't apply
+    // and the PNG comes out white.
+    await page.emulateMediaFeatures([
+      { name: "prefers-color-scheme", value: "dark" },
+    ]);
 
     // Hand the HTML to Chromium as-is and do the placeholder→<img> swap
     // in-page, the same way the editor's iframe does. The earlier path
