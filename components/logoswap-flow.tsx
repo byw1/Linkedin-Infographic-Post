@@ -42,8 +42,17 @@ export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
             body: JSON.stringify({ html, mapping, filename }),
           });
           if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(typeof data.error === "string" ? data.error : "Render failed.");
+            const raw = await res.text().catch(() => "");
+            let detail = raw;
+            try {
+              const data = JSON.parse(raw);
+              if (typeof data?.error === "string") detail = data.error;
+              else if (data?.error) detail = JSON.stringify(data.error);
+            } catch {
+              // raw wasn't JSON — keep the body text as-is
+            }
+            const summary = detail.trim().slice(0, 500) || res.statusText || "no response body";
+            throw new Error(`Render request failed (${res.status}): ${summary}`);
           }
           const data = await res.json();
           setRenderId(data.render_id);

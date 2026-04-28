@@ -40,10 +40,12 @@ export function VisualEditor({
   const [error, setError] = useState<string | null>(null);
   const [rendering, startRender] = useTransition();
   const [iframeReady, setIframeReady] = useState(false);
-  const [contentSize, setContentSize] = useState<{ width: number; height: number }>({
-    width: 720,
-    height: 600,
-  });
+  // Lock width to the worker's puppeteer viewport (lib/exporter.ts), so the
+  // preview lays out at the same size as the rendered PNG. Letting the iframe
+  // shrink-wrap to body.scrollWidth collapses to ~content width whenever the
+  // user's HTML uses flex/inline-block, which doesn't reflect the export.
+  const RENDER_WIDTH = 720;
+  const [contentHeight, setContentHeight] = useState<number>(600);
 
   // srcDoc is computed exactly once per uploaded HTML. Entity changes are
   // applied imperatively to the iframe DOM below — keeps scroll position
@@ -94,19 +96,14 @@ export function VisualEditor({
         }
       }
 
-      // Track the document's actual rendered size so the iframe shrinks to
-      // its content. Body width is usually constrained by the user's CSS
-      // (e.g. max-width: 640px); we follow it instead of stretching to the
-      // page. Height tracks scrollHeight so nothing gets clipped.
+      // Width is fixed (matches the worker's viewport); only track height so
+      // the iframe grows to fit the laid-out content without clipping.
       const measure = () => {
         if (!doc.body || !doc.documentElement) return;
-        const root = doc.documentElement;
         const body = doc.body;
-        const width = Math.max(body.scrollWidth, body.offsetWidth, root.clientWidth);
+        const root = doc.documentElement;
         const height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight);
-        setContentSize((prev) =>
-          prev.width === width && prev.height === height ? prev : { width, height },
-        );
+        setContentHeight((prev) => (prev === height ? prev : height));
       };
       measure();
       // Re-measure when content (charts, images, replaced logos) changes.
@@ -296,8 +293,8 @@ export function VisualEditor({
           sandbox="allow-same-origin allow-scripts"
           scrolling="no"
           style={{
-            width: `${contentSize.width}px`,
-            height: `${contentSize.height}px`,
+            width: `${RENDER_WIDTH}px`,
+            height: `${contentHeight}px`,
             maxWidth: "100%",
           }}
           className="block rounded-md border bg-white"
