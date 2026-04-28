@@ -189,7 +189,9 @@ export function VisualEditor({
   async function captureIframe(): Promise<Blob> {
     const iframe = iframeRef.current;
     const doc = iframe?.contentDocument;
-    if (!iframe || !doc?.body) throw new Error("Preview isn't ready yet.");
+    if (!iframe || !doc?.body || !doc.documentElement) {
+      throw new Error("Preview isn't ready yet.");
+    }
 
     // Wait one frame for any pending DOM swaps to settle.
     await new Promise((r) => requestAnimationFrame(() => r(null)));
@@ -211,14 +213,24 @@ export function VisualEditor({
       ),
     );
 
-    // backgroundColor is a fallback for transparent regions of the capture.
-    // The body's own background (if set in the user's CSS) renders on top of
-    // it via html-to-image's per-element walk. White matches the iframe
-    // element's bg-white, so an HTML without a body bg looks the same in
-    // PNG and preview.
-    const blob = await htmlToImage.toBlob(doc.body, {
+    // Capture from <html>, not <body>: any background or padding the user
+    // applies at the html / :root level (common in LinkedIn templates that
+    // tint the page outside the card) lives outside the body box.
+    // Use scroll* dims so content that overflows the viewport even by a
+    // few pixels (rounding, hairline borders) doesn't get cropped on the
+    // right edge — html-to-image otherwise defaults to offsetWidth/Height.
+    const root = doc.documentElement;
+    const width = Math.max(root.scrollWidth, doc.body.scrollWidth, RENDER_WIDTH);
+    const height = Math.max(root.scrollHeight, doc.body.scrollHeight);
+
+    const blob = await htmlToImage.toBlob(root, {
       pixelRatio: 2,
       cacheBust: true,
+      width,
+      height,
+      // Fallback for transparent regions of the capture; matches the iframe
+      // element's bg-white so a user HTML without its own background stays
+      // visually identical between preview and PNG.
       backgroundColor: "#ffffff",
     });
     if (!blob) throw new Error("Failed to render PNG from preview.");
