@@ -7,9 +7,18 @@ import { prisma } from "@/lib/db";
 import { getRenderQueue } from "@/lib/queue";
 import { isStorageConfigured, refreshServerUrl, StorageNotConfiguredError } from "@/lib/storage";
 
+// Mapping values can be either an absolute URL (CDN / public bucket via
+// S3_PUBLIC_URL) or the /api/files/<key> proxy path that getBrowserUrl
+// returns for private buckets. The render route converts whichever form
+// it gets into a presigned S3 URL via refreshServerUrl below.
+const LogoRef = z.string().refine(
+  (v) => v.startsWith("/api/files/") || /^https?:\/\//i.test(v),
+  { message: "Expected an absolute http(s) URL or an /api/files/<key> path" },
+);
+
 const Body = z.object({
   html: z.string().min(1).max(2_000_000),
-  mapping: z.record(z.string().url()),
+  mapping: z.record(LogoRef),
   filename: z.string().max(120).optional(),
   width: z.number().int().min(320).max(2000).optional(),
 });
