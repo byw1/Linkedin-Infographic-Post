@@ -24,12 +24,6 @@ export async function TopNav() {
                 New
               </Link>
               <Link
-                href="/carousel"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Carousel
-              </Link>
-              <Link
                 href="/library"
                 className="text-muted-foreground hover:text-foreground"
               >
