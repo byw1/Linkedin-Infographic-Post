@@ -19,7 +19,16 @@ export async function htmlToPng(html: string, width = 720): Promise<Buffer> {
     const page = await browser.newPage();
     await page.setViewport({ width, height: 100, deviceScaleFactor: 2 });
 
-    const wrapped = `<!DOCTYPE html>
+    // If the user uploaded a complete document, hand it to Chromium as-is
+    // — wrapping it in a fresh <body> nests the user's <html>/<body> and
+    // strips their body-level styles (notably `background`), which made
+    // the rendered PNG light-mode even when the iframe preview was dark.
+    // For bare fragments, add minimal scaffolding so charset and a sensible
+    // default font are available.
+    const isFullDoc = /<\s*(?:!doctype\s+html|html\b|body\b)/i.test(html);
+    const content = isFullDoc
+      ? html
+      : `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -33,7 +42,7 @@ export async function htmlToPng(html: string, width = 720): Promise<Buffer> {
     // networkidle2 (≤ 2 lingering connections for 500ms) instead of 0,
     // since some chart CDNs leave keep-alive sockets open.
     stage = "setContent";
-    await page.setContent(wrapped, { waitUntil: "networkidle2", timeout: 30_000 });
+    await page.setContent(content, { waitUntil: "networkidle2", timeout: 30_000 });
 
     stage = "waitForImages";
     await page.evaluate(() => {

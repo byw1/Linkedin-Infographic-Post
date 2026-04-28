@@ -67,7 +67,7 @@ export function PasswordForm() {
         required
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
-      {success && <p className="text-sm text-green-700">{success}</p>}
+      {success && <p className="text-sm text-green-400">{success}</p>}
       <button
         type="submit"
         disabled={pending}

@@ -17,7 +17,7 @@ export default async function HomePage() {
       </header>
 
       {!storageReady && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
           Storage isn&apos;t configured, so PNG export won&apos;t work yet. Set
           the <code>S3_*</code> env vars on the web and worker services. You can
           still parse HTML and upload logos to test the rest of the flow once
