@@ -51,7 +51,8 @@ tests/
 types/                     Shared TS types
 Dockerfile                 Web service
 Dockerfile.worker          Worker (with Chromium runtime deps)
-railway.json               Railway build/deploy config
+railway.json               Railway config for the web service
+railway.worker.json        Railway config for the worker service
 ```
 
 ## Local development
@@ -77,8 +78,10 @@ running app — not in env vars.
 ### One-time Railway setup
 
 1. **Create a project** → add **PostgreSQL** and **Redis** managed services.
-2. **Add a `web` service** from this GitHub repo. Build = `Dockerfile`.
-3. **Add a `worker` service** from the same repo. Build = `Dockerfile.worker`.
+2. **Add a `web` service** from this GitHub repo. Config-as-code path =
+   `railway.json` (builds `Dockerfile`).
+3. **Add a `worker` service** from the same repo. Config-as-code path =
+   `railway.worker.json` (builds `Dockerfile.worker`).
 4. On **both** services, set these **3 secrets**:
    ```
    DATABASE_URL=${{Postgres.DATABASE_URL}}
