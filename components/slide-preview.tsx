@@ -9,6 +9,10 @@ import {
   useState,
 } from "react";
 import * as htmlToImage from "html-to-image";
+import {
+  applyAccentRewriteToDocument,
+  parseCssTokens,
+} from "@/lib/accent-rewrite";
 import type { ResolvedEntity } from "@/types/entity";
 
 const OUTLINE_UNRESOLVED = "2px dashed #f59e0b";
@@ -112,6 +116,14 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
         // theme switches can find + replace it without affecting any
         // styles the source HTML brought along.
         applyTheme(doc, themeCss ?? null);
+
+        // Rewrite hard-coded hex colors (#534AB7, #EEEDFE, …) in
+        // every inline `style="…"` attribute to `var(--color-…)`
+        // references mapped against the active theme + Claude's
+        // well-known default palette. After this, theme switches
+        // flow through the var() resolution automatically — no
+        // need to walk the DOM again on every theme change.
+        applyAccentRewriteToDocument(doc, parseCssTokens(themeCss));
 
         originalsRef.current = new WeakMap();
 

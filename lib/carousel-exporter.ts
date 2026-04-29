@@ -1,6 +1,7 @@
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
 import { PDFDocument } from "pdf-lib";
 import JSZip from "jszip";
+import { parseCssTokens, rewriteAccents } from "@/lib/accent-rewrite";
 
 export type OutputFormat = "pdf" | "png-zip";
 
@@ -148,10 +149,20 @@ async function captureSlide(
     // for an infographic.
     await page.emulateMediaType("screen");
 
-    // Hand the slide HTML to Chromium as-is; the editor uses srcDoc
+    // Rewrite hard-coded hex values inside inline `style="…"`
+    // attributes to `var(--color-…)` references mapped against the
+    // active theme + the well-known Claude default palette. This is
+    // what makes a theme switch actually transform the rendered
+    // output — without this pass, KPI cards and timeline pills keep
+    // whatever hex Claude generated them with regardless of theme.
+    const sourceHtml = themeCss
+      ? rewriteAccents(slide.html, parseCssTokens(themeCss))
+      : rewriteAccents(slide.html, {});
+
+    // Hand the slide HTML to Chromium; the editor uses srcDoc
     // the same way and cheerio re-serialization or wrapper bodies were
     // dropping body-level styling.
-    await page.setContent(slide.html, {
+    await page.setContent(sourceHtml, {
       waitUntil: "networkidle2",
       timeout: 30_000,
     });

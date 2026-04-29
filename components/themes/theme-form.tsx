@@ -13,6 +13,7 @@ import {
   SANS_FONTS,
   type FontOption,
 } from "@/components/themes/font-options";
+import { PRESETS } from "@/components/themes/presets";
 import { SampleSlide } from "@/components/themes/sample-slide";
 
 interface ExistingTheme {
@@ -190,6 +191,15 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
         />
       </label>
 
+      {!isEdit && (
+        <PresetRow
+          onPick={(values) => {
+            setValues(values);
+            setRawCss(composeCss(values, fontUrlsFor(values)));
+          }}
+        />
+      )}
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-4">
           {tab === "visual" ? (
@@ -215,6 +225,65 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
 
       {error && <p className="text-xs text-destructive">{error}</p>}
     </form>
+  );
+}
+
+// Horizontal scroll of starter palettes for the new-theme flow.
+// Each card is a thumbnail of canvas + accent + soft-fill swatches
+// — enough to recognize at a glance — plus the label and a one-line
+// blurb. Clicking one pours the preset's full ThemeFormValues into
+// the form (including font choices), discarding any in-progress
+// edits without confirmation since this is only shown for new
+// themes (edits don't show this row).
+function PresetRow({ onPick }: { onPick: (values: ThemeFormValues) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Start from a preset
+      </span>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            onClick={() => onPick(preset.values)}
+            className="group flex w-44 shrink-0 flex-col gap-1.5 rounded-md border bg-background p-2 text-left hover:border-primary"
+          >
+            <div className="flex h-10 overflow-hidden rounded">
+              <div
+                className="flex-1"
+                style={{ background: preset.values.bgPrimary }}
+              />
+              <div
+                className="flex-1"
+                style={{ background: preset.values.bgSecondary }}
+              />
+              <div
+                className="flex-1"
+                style={{ background: preset.values.accentSoft }}
+              />
+              <div
+                className="flex-1"
+                style={{ background: preset.values.accentPrimary }}
+              />
+              <div
+                className="flex-1"
+                style={{ background: preset.values.textPrimary }}
+              />
+            </div>
+            <div
+              className="text-xs font-medium leading-tight"
+              style={{ fontFamily: preset.values.fontDisplay }}
+            >
+              {preset.label}
+            </div>
+            <div className="text-[10px] leading-snug text-muted-foreground">
+              {preset.blurb}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
