@@ -4,28 +4,35 @@ import { prisma } from "@/lib/db";
 // pasted CSS file is preserved verbatim in `css` but ignored when we
 // build the skill-prompt block. Order is meaningful — it's how tokens
 // appear in the skill markdown.
+//
+// Naming follows the convention the team's existing generated HTML
+// already uses (--color-text-primary, --color-background-primary,
+// etc.) so HTML that already references `var(--color-text-primary)`
+// just works on theme swap, no regeneration needed.
 export const EDITABLE_TOKENS = [
-  "--bg-canvas",
-  "--bg-panel",
-  "--bg-panel-raised",
-  "--bg-inset",
-  "--fg-primary",
-  "--fg-secondary",
-  "--fg-tertiary",
-  "--fg-muted",
-  "--fg-on-accent",
-  "--edge-hairline",
-  "--edge-strong",
-  "--accent",
-  "--accent-hover",
-  "--accent-soft",
-  "--signal",
-  "--signal-success",
-  "--signal-warn",
-  "--signal-error",
-  "--font-sans",
-  "--font-display",
-  "--font-mono",
+  "--color-background-primary",
+  "--color-background-secondary",
+  "--color-background-tertiary",
+  "--color-text-primary",
+  "--color-text-secondary",
+  "--color-text-tertiary",
+  "--color-text-on-accent",
+  "--color-border-primary",
+  "--color-border-secondary",
+  "--color-border-tertiary",
+  "--color-accent-primary",
+  "--color-accent-secondary",
+  "--color-accent-soft",
+  "--color-accent-text",
+  "--color-signal-success",
+  "--color-signal-warn",
+  "--color-signal-error",
+  "--font-family-base",
+  "--font-family-display",
+  "--font-family-mono",
+  "--border-radius-sm",
+  "--border-radius-md",
+  "--border-radius-lg",
 ] as const;
 
 export type TokenKey = (typeof EDITABLE_TOKENS)[number];
@@ -61,14 +68,14 @@ export function parseTokens(css: string): Tokens {
 }
 
 // Cheap font-family extraction for the picker preview. Pulls the
-// first quoted family name out of `--font-sans`, falling back to the
-// raw value if nothing's quoted.
+// first quoted family name out of `--font-family-base`, falling back
+// to the raw value if nothing's quoted.
 export function extractFontFamily(tokens: Tokens): string | null {
-  const sans = tokens["--font-sans"];
-  if (!sans) return null;
-  const quoted = sans.match(/['"]([^'"]+)['"]/);
+  const base = tokens["--font-family-base"];
+  if (!base) return null;
+  const quoted = base.match(/['"]([^'"]+)['"]/);
   if (quoted) return quoted[1];
-  return sans.split(",")[0]?.trim() ?? null;
+  return base.split(",")[0]?.trim() ?? null;
 }
 
 // Build a `<style>` block to inject into the iframe / puppeteer page.
@@ -103,15 +110,15 @@ export function buildStyleCss(theme: { css: string; tokens: Tokens }): string {
 // theming those needs HTML that references var(--token) directly.
 const THEME_OVERRIDES = `
 /* viral theme overrides — flip canvas/text/font even on HTML that
-   doesn't reference var(--bg-canvas). Remove these once the source
-   HTML uses tokens throughout. */
+   doesn't reference var(--color-background-primary). Remove these
+   once the source HTML uses tokens throughout. */
 html {
-  background-color: var(--bg-canvas) !important;
+  background-color: var(--color-background-primary) !important;
 }
 body {
-  background-color: var(--bg-canvas) !important;
-  color: var(--fg-primary) !important;
-  font-family: var(--font-sans) !important;
+  background-color: var(--color-background-primary) !important;
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-family-base) !important;
 }
 `;
 
@@ -119,8 +126,8 @@ body {
 // Works for hex (#0a0a0a) and rgb(...) tokens; defaults to dark if
 // either is missing or unparseable.
 function isDarkTheme(tokens: Tokens): boolean {
-  const bg = relativeLuma(tokens["--bg-canvas"]);
-  const fg = relativeLuma(tokens["--fg-primary"]);
+  const bg = relativeLuma(tokens["--color-background-primary"]);
+  const fg = relativeLuma(tokens["--color-text-primary"]);
   if (bg === null || fg === null) return true;
   return bg < fg;
 }
@@ -174,7 +181,7 @@ export function tokensAsSkillBlock(theme: ThemeRow): string {
   lines.push("```");
   lines.push("");
   lines.push(
-    "**Usage rules.** Surfaces use `--bg-*`, text uses `--fg-*`, dividers/borders use `--edge-*`, the brand color is `--accent` (with `--accent-hover` for hover, `--accent-soft` for low-contrast fills), `--signal` is the single attention color (use sparingly — one element per slide). Headings use `--font-display`, body uses `--font-sans`, numeric readouts use `--font-mono`.",
+    "**Usage rules.** Surfaces use `--color-background-*` (primary = canvas, secondary = panels, tertiary = raised cards within panels). Text uses `--color-text-*` (primary = body, secondary = sub-copy, tertiary = captions/credits). Dividers/borders use `--color-border-*`. The brand color is `--color-accent-primary` with `--color-accent-secondary` for lighter highlights and `--color-accent-soft` as a low-contrast fill behind `--color-accent-text`. Use `--color-signal-*` sparingly — at most one signal element per slide. Body type uses `--font-family-base`, numerics use `--font-family-mono`. Card and pill radii use `--border-radius-md`.",
   );
   lines.push("");
   return lines.join("\n");

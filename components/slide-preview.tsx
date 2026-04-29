@@ -421,14 +421,14 @@ function applyTheme(doc: Document, css: string | null) {
 // component doesn't pull in the server-only prisma import chain.
 const THEME_OVERRIDES = `
 /* viral theme overrides — flip canvas/text/font even on HTML that
-   doesn't reference var(--bg-canvas). */
+   doesn't reference var(--color-background-primary). */
 html {
-  background-color: var(--bg-canvas) !important;
+  background-color: var(--color-background-primary) !important;
 }
 body {
-  background-color: var(--bg-canvas) !important;
-  color: var(--fg-primary) !important;
-  font-family: var(--font-sans) !important;
+  background-color: var(--color-background-primary) !important;
+  color: var(--color-text-primary) !important;
+  font-family: var(--font-family-base) !important;
 }
 `;
 

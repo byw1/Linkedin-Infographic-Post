@@ -21,38 +21,48 @@ interface Props {
   mode: "member" | "admin";
 }
 
-const SWATCH_KEYS = ["--bg-canvas", "--bg-panel", "--accent", "--signal", "--fg-primary"];
+const SWATCH_KEYS = [
+  "--color-background-primary",
+  "--color-background-secondary",
+  "--color-accent-primary",
+  "--color-accent-secondary",
+  "--color-text-primary",
+];
 
-const STARTER_TEMPLATE = `/* Paste your brand tokens. Keep the structure below — viral
-   reads the --bg-*, --fg-*, --edge-*, --accent*, --signal*, and
-   --font-* keys. Anything else is preserved but ignored. */
+const STARTER_TEMPLATE = `/* Paste your brand tokens. viral reads the --color-* tokens
+   (background, text, border, accent, signal) plus --font-family-*
+   and --border-radius-*. Anything else is preserved verbatim but
+   ignored when injecting into the renderer / skill. */
 :root {
-  --bg-canvas: #0a0a0a;
-  --bg-panel: #161616;
-  --bg-panel-raised: #1f1f1f;
-  --bg-inset: #050505;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f4;
+  --color-background-tertiary: #ebebe9;
 
-  --fg-primary: #fafafa;
-  --fg-secondary: #d4d4d4;
-  --fg-tertiary: #a3a3a3;
-  --fg-muted: #737373;
-  --fg-on-accent: #ffffff;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #555555;
+  --color-text-tertiary: #888888;
+  --color-text-on-accent: #ffffff;
 
-  --edge-hairline: rgba(255,255,255,0.08);
-  --edge-strong: rgba(255,255,255,0.16);
+  --color-border-primary: rgba(0,0,0,0.18);
+  --color-border-secondary: rgba(0,0,0,0.12);
+  --color-border-tertiary: rgba(0,0,0,0.06);
 
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --accent-soft: rgba(99,102,241,0.12);
+  --color-accent-primary: #534AB7;
+  --color-accent-secondary: #AFA9EC;
+  --color-accent-soft: #EEEDFE;
+  --color-accent-text: #26215C;
 
-  --signal: #f59e0b;
-  --signal-success: #10b981;
-  --signal-warn: #f59e0b;
-  --signal-error: #ef4444;
+  --color-signal-success: #00C853;
+  --color-signal-warn: #f59e0b;
+  --color-signal-error: #dc2626;
 
-  --font-sans: 'Inter', -apple-system, sans-serif;
-  --font-display: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family-mono: ui-monospace, 'JetBrains Mono', Menlo, monospace;
+
+  --border-radius-sm: 6px;
+  --border-radius-md: 10px;
+  --border-radius-lg: 16px;
 }
 `;
 

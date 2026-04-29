@@ -106,9 +106,9 @@ export function ThemePicker({ onChange }: Props) {
       >
         <span
           className="h-3 w-3 rounded-full border"
-          style={{ background: active?.tokens["--accent"] ?? "transparent" }}
+          style={{ background: active?.tokens["--color-accent-primary"] ?? "transparent" }}
         />
-        <span className="max-w-[10rem] truncate">{active?.name ?? "No theme"}</span>
+        <span className="max-w-[10rem] truncate">{active?.name ?? "Pick a theme"}</span>
         <span aria-hidden className="text-muted-foreground">
           ▾
         </span>
@@ -116,16 +116,6 @@ export function ThemePicker({ onChange }: Props) {
 
       {open && list && (
         <div className="absolute right-0 z-30 mt-1 w-72 rounded-md border bg-popover p-1 shadow-md">
-          <button
-            type="button"
-            onClick={() => void pick(null)}
-            className={`flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-secondary ${
-              activeId === null ? "bg-secondary" : ""
-            }`}
-          >
-            <span className="text-muted-foreground">No theme (raw HTML colors)</span>
-          </button>
-          <div className="my-1 border-t" />
           {list.map((t) => (
             <button
               key={t.id}
@@ -138,7 +128,7 @@ export function ThemePicker({ onChange }: Props) {
               <span className="flex items-center gap-2 min-w-0">
                 <span
                   className="h-3 w-3 shrink-0 rounded-full border"
-                  style={{ background: t.tokens["--accent"] ?? "transparent" }}
+                  style={{ background: t.tokens["--color-accent-primary"] ?? "transparent" }}
                 />
                 <span className="truncate">{t.name}</span>
               </span>
