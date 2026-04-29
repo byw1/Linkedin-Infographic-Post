@@ -1,4 +1,4 @@
-import { LibraryGrid } from "@/components/library-grid";
+import { LibraryView } from "@/components/library-view";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export default function LibraryPage() {
           with the same <code>data-entity</code> slug.
         </p>
       </header>
-      <LibraryGrid />
+      <LibraryView />
     </main>
   );
 }
