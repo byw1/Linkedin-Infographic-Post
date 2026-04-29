@@ -72,6 +72,72 @@ export function ensureFontImports(css: string): string {
   return `${lines}\n${css}`;
 }
 
+// Canonical ↔ legacy token pairs. Each entry is one canonical name
+// and one legacy alias for the same role; emitted both ways at
+// injection time so source HTML using either convention picks up
+// the user's theme value.
+const ALIAS_PAIRS: Array<[canonical: string, legacy: string]> = [
+  ["--color-background-primary", "--bg-canvas"],
+  ["--color-background-secondary", "--bg-panel"],
+  ["--color-background-tertiary", "--bg-panel-raised"],
+  ["--color-text-primary", "--fg-primary"],
+  ["--color-text-secondary", "--fg-secondary"],
+  ["--color-text-tertiary", "--fg-tertiary"],
+  ["--color-text-tertiary", "--fg-muted"],
+  ["--color-text-on-accent", "--fg-on-accent"],
+  ["--color-border-primary", "--edge-strong"],
+  ["--color-border-tertiary", "--edge-hairline"],
+  ["--color-accent-primary", "--accent"],
+  ["--color-accent-secondary", "--accent-hover"],
+  ["--color-signal-success", "--signal-success"],
+  ["--color-signal-warn", "--signal-warn"],
+  ["--color-signal-warn", "--signal"],
+  ["--color-signal-error", "--signal-error"],
+  ["--font-family-base", "--font-sans"],
+  ["--font-family-display", "--font-display"],
+  ["--font-family-mono", "--font-mono"],
+];
+
+// Build a `:root { … }` block that mirrors every defined token
+// across canonical/legacy names. Without this, source HTML that
+// references `var(--color-background-primary)` doesn't pick up a
+// theme that defines `--bg-canvas` (and vice versa) — the source's
+// own `:root` definition shadows the fallback chain in our
+// `!important` overrides.
+//
+// Strategy: for each (canonical, legacy) pair, if the theme has one
+// side defined, emit the other side with the same value. If the
+// theme has both, leave them alone (the user's intent is explicit).
+// Multiple legacy aliases for the same canonical (e.g. `--fg-muted`
+// + `--fg-tertiary` both map to `--color-text-tertiary`) all get
+// the canonical's value.
+export function buildAliasBridge(tokens: Record<string, string>): string {
+  const additions: Array<[string, string]> = [];
+
+  for (const [canonical, legacy] of ALIAS_PAIRS) {
+    const canon = tokens[canonical];
+    const leg = tokens[legacy];
+    if (canon && !leg) {
+      additions.push([legacy, canon]);
+    } else if (leg && !canon) {
+      additions.push([canonical, leg]);
+    }
+  }
+
+  if (additions.length === 0) return "";
+
+  // Deduplicate — multiple legacy aliases mapping to the same
+  // canonical only need to emit the canonical once.
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const [name, value] of additions) {
+    if (seen.has(name)) continue;
+    seen.add(name);
+    lines.push(`  ${name}: ${value};`);
+  }
+  return `:root {\n${lines.join("\n")}\n}`;
+}
+
 // Pull the first quoted family name out of every `--font-*: …`
 // declaration. We only act on the first family because the others
 // are fallbacks; we don't want to fetch system fonts pretending to

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ensureFontImports } from "@/lib/theme-fonts";
+import { parseCssTokens } from "@/lib/accent-rewrite";
+import { buildAliasBridge, ensureFontImports } from "@/lib/theme-fonts";
 
 interface Props {
   // Full theme CSS (the same string the API stores). Injected into a
@@ -59,9 +60,17 @@ export function SampleSlide({ css }: Props) {
       style.setAttribute(TAG, "");
       head.appendChild(style);
     }
-    // Auto-prepend Google Fonts @import for any referenced family
-    // the user forgot to import — same logic the editor + worker use.
-    style.textContent = `${ensureFontImports(css)}\n${OVERRIDES}`;
+    // Same three-pass injection the editor + worker use:
+    //   1. ensureFontImports — load Google Fonts the theme forgot.
+    //   2. user CSS.
+    //   3. buildAliasBridge — mirror canonical/legacy token names.
+    //   4. OVERRIDES — !important body/html pin.
+    const tokens = parseCssTokens(css);
+    style.textContent = [
+      ensureFontImports(css),
+      buildAliasBridge(tokens),
+      OVERRIDES,
+    ].join("\n");
   }, [css, loaded]);
 
   return (

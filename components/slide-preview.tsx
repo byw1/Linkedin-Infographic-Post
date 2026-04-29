@@ -13,7 +13,7 @@ import {
   applyAccentRewriteToDocument,
   parseCssTokens,
 } from "@/lib/accent-rewrite";
-import { ensureFontImports } from "@/lib/theme-fonts";
+import { buildAliasBridge, ensureFontImports } from "@/lib/theme-fonts";
 import type { ResolvedEntity } from "@/types/entity";
 
 const OUTLINE_UNRESOLVED = "2px dashed #f59e0b";
@@ -427,11 +427,20 @@ function applyTheme(doc: Document, css: string | null) {
     // source HTML mutates after first paint.
     head.appendChild(existing);
   }
-  // Auto-prepend Google Fonts @import lines for any family the theme
-  // references but didn't load itself. Without this, a pasted theme
-  // using 'Figtree' silently falls back to -apple-system because the
-  // browser has no font file to render with.
-  existing.textContent = `${ensureFontImports(css)}\n${THEME_OVERRIDES}`;
+  // Three passes wrap the user's CSS:
+  //   1. ensureFontImports — load Google Fonts the theme forgot to
+  //      @import (so 'Figtree' actually renders).
+  //   2. user CSS verbatim.
+  //   3. buildAliasBridge — mirror canonical/legacy token names so
+  //      source HTML's own `:root { --color-* }` definitions don't
+  //      shadow a theme that uses `--bg-*` (and vice versa).
+  //   4. THEME_OVERRIDES — !important body/html color + font pin.
+  const tokens = parseCssTokens(css);
+  existing.textContent = [
+    ensureFontImports(css),
+    buildAliasBridge(tokens),
+    THEME_OVERRIDES,
+  ].join("\n");
 }
 
 // Mirrors lib/themes.ts THEME_OVERRIDES — duplicated so this client

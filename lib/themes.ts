@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { ensureFontImports } from "@/lib/theme-fonts";
+import { buildAliasBridge, ensureFontImports } from "@/lib/theme-fonts";
 
 // The token keys the editable picker exposes. Anything else in a
 // pasted CSS file is preserved verbatim in `css` but ignored when we
@@ -134,14 +134,26 @@ export function buildStyleTag(theme: { css: string; tokens: Tokens }): string {
 
 // Same content, no `<style>` wrapper — for places that want raw CSS
 // (puppeteer's addStyleTag, the editor's createElement('style')).
-// Auto-prepends `@import` for any Google Fonts the theme references
-// but didn't load itself, so a CSS-tab-pasted theme using 'Figtree'
-// renders in Figtree even if the user forgot the import line.
+//
+// Three post-processing passes around the user's CSS:
+//   1. ensureFontImports — auto-prepend Google Fonts @import for
+//      families referenced but not loaded (a pasted theme using
+//      'Figtree' without a manual @import still renders in Figtree).
+//   2. user CSS verbatim — the theme's own `:root` declarations.
+//   3. buildAliasBridge — mirror tokens across canonical/legacy
+//      names so source HTML that references the *other* convention
+//      (`--color-background-primary` vs `--bg-canvas`, …) still
+//      picks up the theme. Without this, HTML that defined its own
+//      `:root { --color-background-primary: #fff }` shadows the
+//      fallback chain and the theme appears to do nothing.
+//   4. THEME_OVERRIDES — the !important rules pinning body/html
+//      colors + font to the canonical tokens.
 export function buildStyleCss(theme: { css: string; tokens: Tokens }): string {
   const isDark = isDarkTheme(theme.tokens);
   return [
     `:root { color-scheme: ${isDark ? "dark" : "light"}; }`,
     ensureFontImports(theme.css),
+    buildAliasBridge(theme.tokens as Record<string, string>),
     THEME_OVERRIDES,
   ].join("\n");
 }
