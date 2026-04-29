@@ -33,11 +33,23 @@ interface Props {
   // visually scaled to fit this width while still rendering at
   // renderWidth internally — capture honors the full render dims.
   displayMaxWidth?: number;
+  // Active theme CSS — injected into the iframe head as a <style>
+  // block so HTML authored against `var(--accent)` etc. picks up the
+  // tokens. Updates re-inject without rebuilding the iframe.
+  themeCss?: string | null;
 }
 
 export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
   function SlidePreview(
-    { html, entities, onSlugClick, renderWidth, renderHeight, displayMaxWidth },
+    {
+      html,
+      entities,
+      onSlugClick,
+      renderWidth,
+      renderHeight,
+      displayMaxWidth,
+      themeCss,
+    },
     ref,
   ) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -96,6 +108,11 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
           (doc.head ?? doc.documentElement).appendChild(styleEl);
         }
 
+        // Theme injection. We tag the style element so subsequent
+        // theme switches can find + replace it without affecting any
+        // styles the source HTML brought along.
+        applyTheme(doc, themeCss ?? null);
+
         originalsRef.current = new WeakMap();
 
         const all = Array.from(
@@ -150,6 +167,15 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
         setIframeReady(false);
       };
     }, [srcDoc, renderHeight]);
+
+    // Re-apply the theme when it changes mid-session (picker swap).
+    // No iframe rebuild — we just update the tagged <style> tag.
+    useEffect(() => {
+      if (!iframeReady) return;
+      const doc = iframeRef.current?.contentDocument;
+      if (!doc) return;
+      applyTheme(doc, themeCss ?? null);
+    }, [themeCss, iframeReady]);
 
     // Subsequent edits — diff entities state against iframe DOM and
     // apply changes without rebuilding srcDoc.
@@ -362,6 +388,31 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
     );
   },
 );
+
+// Inject (or update / remove) the active theme's CSS as a tagged
+// <style> element in the iframe head. We append it last so its
+// `:root { --token: … }` declarations win over anything the source
+// HTML defined earlier in its own `:root`.
+function applyTheme(doc: Document, css: string | null) {
+  const head = doc.head ?? doc.documentElement;
+  if (!head) return;
+  const TAG_ATTR = "data-viral-theme";
+  let existing = doc.querySelector(`style[${TAG_ATTR}]`);
+  if (!css) {
+    existing?.remove();
+    return;
+  }
+  if (!existing) {
+    existing = doc.createElement("style");
+    existing.setAttribute(TAG_ATTR, "");
+    head.appendChild(existing);
+  } else if (existing.parentElement !== head || existing.nextSibling) {
+    // Move to the end so cascade order stays predictable when the
+    // source HTML mutates after first paint.
+    head.appendChild(existing);
+  }
+  existing.textContent = css;
+}
 
 function buildImgStyle(inline: string): string {
   const w = parseStyleValue(inline, "width");

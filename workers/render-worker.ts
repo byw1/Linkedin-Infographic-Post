@@ -13,7 +13,8 @@ import { RENDER_QUEUE_NAME, type RenderJob } from "@/lib/queue";
 const worker = new Worker<RenderJob>(
   RENDER_QUEUE_NAME,
   async (job) => {
-    const { renderId, userId, slides, mapping, format, width, height } = job.data;
+    const { renderId, userId, slides, mapping, format, width, height, themeCss } =
+      job.data;
     const outputFormat = format ?? "pdf";
 
     await prisma.render.update({
@@ -25,6 +26,7 @@ const worker = new Worker<RenderJob>(
       const result = await htmlSlidesToOutput(slides, mapping, outputFormat, {
         width,
         height,
+        themeCss,
         // Stream progress into the BullMQ job so future polling can
         // surface "rendering 3 of 8" if we want to.
         onSlide: async (current, total) => {

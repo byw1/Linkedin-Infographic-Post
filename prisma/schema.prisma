@@ -35,6 +35,7 @@ model User {
   invitesCreated  Invite[]  @relation("InviteCreatedBy")
   invitesRedeemed Invite[]  @relation("InviteRedeemedBy")
   skillsUploaded  Skill[]   @relation("SkillUploadedBy")
+  themesOwned     Theme[]   @relation("ThemeOwner")
 
   @@index([tags], type: Gin, name: "idx_users_tags")
   @@map("users")
@@ -147,10 +148,52 @@ model Render {
   reposts     Int?
   trackedAt   DateTime? @map("tracked_at") @db.Timestamptz(6)
 
+  // Theme used for this render. Null = no theme injection (raw HTML
+  // colors only). Set to null on theme deletion so render history
+  // survives even if the source theme is gone.
+  themeId String? @map("theme_id") @db.Uuid
+  theme   Theme?  @relation(fields: [themeId], references: [id], onDelete: SetNull)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)], name: "idx_renders_user")
   @@map("renders")
+}
+
+// Brand themes — CSS token blocks (`--bg-canvas`, `--accent`, etc.)
+// injected into the editor preview, the puppeteer renderer, and the
+// served skill markdown so Claude generates HTML that uses them.
+//
+// Owner rules:
+//  - user_id = null → system theme (the default-dark / default-light
+//    seeded on first migration). Always official, never deletable.
+//  - user_id = <uuid>, is_official = false → private to the owner
+//    (only owner + admins see it).
+//  - user_id = <uuid>, is_official = true → admin-promoted, visible
+//    to everyone but only the owner / admins can edit.
+//
+// css = the raw text the user pasted (preserved verbatim so they can
+// keep their comments, font-face rules, dark/light variants, etc.).
+// tokens = parsed `--key: value` map (light variant) used for skill
+// prompt injection — feeding 200 lines of raw CSS into the prompt is
+// noisier than feeding the 20 tokens that actually matter.
+model Theme {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  name        String
+  css         String   @db.Text
+  tokens      Json     @default("{}") @db.JsonB
+  fontFamily  String?  @map("font_family")
+  isOfficial  Boolean  @default(false) @map("is_official")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user    User?    @relation("ThemeOwner", fields: [userId], references: [id], onDelete: Cascade)
+  renders Render[]
+
+  @@index([userId, createdAt(sort: Desc)], name: "idx_themes_user")
+  @@index([isOfficial], name: "idx_themes_official")
+  @@map("themes")
 }
 
 model Setting {

@@ -46,6 +46,12 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
   const [primary, setPrimary] = useState<RenderRecord | null>(null);
   const [alternate, setAlternate] = useState<RenderRecord | null>(null);
 
+  // Active theme id at the moment the user fires the first render. We
+  // remember it so the "Also render as …" button uses the same theme
+  // as the primary render rather than picking up whatever the user
+  // last selected on /themes between the two renders.
+  const [activeThemeId, setActiveThemeId] = useState<string | null>(null);
+
   // The format we're actively polling for — null when we're not
   // rendering anything. Holds the format so the poller copy and the
   // landing slot (primary vs alternate) match what's coming back.
@@ -64,6 +70,7 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
     setPollingId(null);
     setPollingFormat(null);
     setRenderError(null);
+    setActiveThemeId(null);
   }
 
   function computeMapping(): Record<string, string> {
@@ -74,7 +81,7 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
     return mapping;
   }
 
-  async function postRender(format: Format): Promise<string> {
+  async function postRender(format: Format, themeId: string | null): Promise<string> {
     const baseName = zipName?.replace(/\.zip$/i, "") ?? "carousel";
     const res = await fetch("/api/render-carousel", {
       method: "POST",
@@ -84,6 +91,7 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
         mapping: computeMapping(),
         filename: baseName,
         format,
+        themeId,
       }),
     });
     if (!res.ok) {
@@ -104,9 +112,14 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
   }
 
   // Initial render kicked off from the editor.
-  async function submitRender(mapping: Record<string, string>, format: Format) {
+  async function submitRender(
+    mapping: Record<string, string>,
+    format: Format,
+    themeId: string | null,
+  ) {
     setRenderError(null);
-    const renderId = await postRender(format);
+    setActiveThemeId(themeId);
+    const renderId = await postRender(format, themeId);
     setPollingId(renderId);
     setPollingFormat(format);
     setStage("rendering");
@@ -122,7 +135,7 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
   async function alsoRender(format: Format) {
     setRenderError(null);
     try {
-      const renderId = await postRender(format);
+      const renderId = await postRender(format, activeThemeId);
       setPollingId(renderId);
       setPollingFormat(format);
     } catch (err) {

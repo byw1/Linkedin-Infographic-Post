@@ -12,6 +12,10 @@ export interface SlideInput {
 export interface ExportOptions {
   width?: number;
   height?: number;
+  // Optional brand theme CSS — same string the editor iframe injects,
+  // appended to the page after layout-clamp styles so its `:root`
+  // tokens win the cascade.
+  themeCss?: string;
   // Per-slide log hook so the worker can stream progress into BullMQ.
   onSlide?: (current: number, total: number) => void | Promise<void>;
 }
@@ -67,7 +71,15 @@ export async function htmlSlidesToOutput(
       const slide = slides[i];
       stage = `slide ${i + 1} (${slide.filename})`;
       await options.onSlide?.(i, slides.length);
-      const buf = await captureSlide(browser, slide, mapping, format, width, height);
+      const buf = await captureSlide(
+        browser,
+        slide,
+        mapping,
+        format,
+        width,
+        height,
+        options.themeCss,
+      );
       slideBuffers.push(buf);
     }
     await options.onSlide?.(slides.length, slides.length);
@@ -114,6 +126,7 @@ async function captureSlide(
   format: OutputFormat,
   width: number,
   height: number,
+  themeCss?: string,
 ): Promise<Buffer> {
   // PNGs go to Instagram / posted as raster; 2× DPR keeps text sharp
   // on retina. PDFs are vector text so the scale doesn't matter for
@@ -163,6 +176,13 @@ async function captureSlide(
         }
       `,
     });
+
+    // Theme injection. Added after the layout-clamp styles so its
+    // `:root` tokens win the cascade against any `:root` declarations
+    // the source HTML defined earlier in its own head.
+    if (themeCss) {
+      await page.addStyleTag({ content: themeCss });
+    }
 
     // Same data-entity → <img> swap the editor does in-page, so we
     // share the exact same DOM mutation logic on both sides.

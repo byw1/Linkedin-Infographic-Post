@@ -39,11 +39,12 @@ export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
         onEntitiesChange={setEntities}
         onBack={() => setStage("upload")}
         storageReady={storageReady}
-        onRender={async (png, entityCount) => {
+        onRender={async (png, entityCount, themeId) => {
           const form = new FormData();
           form.append("file", png, filename ? `${filename}.png` : "render.png");
           if (filename) form.append("filename", filename);
           form.append("entity_count", String(entityCount));
+          if (themeId) form.append("theme_id", themeId);
 
           const res = await fetch("/api/render", { method: "POST", body: form });
           if (!res.ok) {

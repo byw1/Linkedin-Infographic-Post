@@ -27,6 +27,10 @@ export default async function AdminPage() {
           <a href="/settings" className="underline">
             Settings
           </a>
+          . Themes have a dedicated admin view at{" "}
+          <a href="/admin/themes" className="underline">
+            /admin/themes
+          </a>
           .
         </p>
       </header>

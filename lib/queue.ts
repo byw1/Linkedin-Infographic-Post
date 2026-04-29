@@ -21,6 +21,11 @@ export interface RenderJob {
   // one crop.
   width?: number;
   height?: number;
+  // Theme CSS to inject into each slide before snapshotting. The
+  // raw CSS travels with the job (rather than the theme id) so the
+  // worker doesn't need DB access to render — keeps the worker's
+  // failure modes independent of Postgres availability.
+  themeCss?: string;
 }
 
 export const RENDER_QUEUE_NAME = "renders";

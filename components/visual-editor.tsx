@@ -4,13 +4,20 @@ import { useRef, useState, useTransition } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { EditorPanel } from "@/components/editor-panel";
 import { SlidePreview, type SlidePreviewHandle } from "@/components/slide-preview";
+import { ThemePicker, type ActiveTheme } from "@/components/theme-picker";
 
 interface Props {
   html: string;
   entities: ResolvedEntity[];
   onEntitiesChange: (next: ResolvedEntity[]) => void;
   onBack: () => void;
-  onRender: (png: Blob, entityCount: number) => Promise<void>;
+  // Receives both the rendered PNG blob and the active theme id so the
+  // server-side render row can record which theme produced it.
+  onRender: (
+    png: Blob,
+    entityCount: number,
+    themeId: string | null,
+  ) => Promise<void>;
   storageReady: boolean;
 }
 
@@ -28,6 +35,7 @@ export function VisualEditor({
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rendering, startRender] = useTransition();
+  const [theme, setTheme] = useState<ActiveTheme | null>(null);
 
   const total = entities.length;
   const resolvedCount = entities.filter((e) => e.resolved).length;
@@ -49,7 +57,7 @@ export function VisualEditor({
     startRender(async () => {
       try {
         const blob = await previewRef.current!.capture();
-        await onRender(blob, entities.length);
+        await onRender(blob, entities.length, theme?.id ?? null);
       } catch (err) {
         setError((err as Error).message);
       }
@@ -77,14 +85,17 @@ export function VisualEditor({
             )}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={startRenderClick}
-          disabled={!allResolved || rendering || !storageReady}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          {rendering ? "Queueing..." : "Render PNG"}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemePicker onChange={setTheme} />
+          <button
+            type="button"
+            onClick={startRenderClick}
+            disabled={!allResolved || rendering || !storageReady}
+            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {rendering ? "Queueing..." : "Render PNG"}
+          </button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -96,6 +107,7 @@ export function VisualEditor({
         onSlugClick={setActiveSlug}
         renderWidth={RENDER_WIDTH}
         renderHeight="auto"
+        themeCss={theme?.css ?? null}
       />
 
       {activeEntity && (

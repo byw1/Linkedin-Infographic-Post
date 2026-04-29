@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isStorageConfigured, refreshServerUrl, StorageNotConfiguredError } from "@/lib/storage";
 import { getRenderQueue } from "@/lib/queue";
+import { buildStyleCss } from "@/lib/themes";
 
 // Mapping value can be either an absolute URL (CDN / public bucket via
 // S3_PUBLIC_URL) or the /api/files/<key> proxy path that getBrowserUrl
@@ -35,6 +36,7 @@ const Body = z.object({
   format: z.enum(["pdf", "png-zip"]).default("pdf"),
   width: z.number().int().min(320).max(4000).optional(),
   height: z.number().int().min(320).max(4000).optional(),
+  themeId: z.string().uuid().nullish(),
 });
 
 export async function POST(req: Request) {
@@ -83,6 +85,31 @@ export async function POST(req: Request) {
     freshMapping[slug] = (await refreshServerUrl(url)) ?? url;
   }
 
+  // Resolve the theme on the server so the worker can stay DB-free.
+  // Bad / unauthorized ids drop silently (render proceeds without a
+  // theme), matching how /api/render handles the same input.
+  let themeIdToStore: string | null = null;
+  let themeCss: string | undefined;
+  if (parsed.data.themeId) {
+    const theme = await prisma.theme.findUnique({
+      where: { id: parsed.data.themeId },
+      select: {
+        id: true,
+        userId: true,
+        isOfficial: true,
+        css: true,
+        tokens: true,
+      },
+    });
+    if (theme && (theme.isOfficial || theme.userId === user.id)) {
+      themeIdToStore = theme.id;
+      themeCss = buildStyleCss({
+        css: theme.css,
+        tokens: (theme.tokens ?? {}) as Record<string, string>,
+      });
+    }
+  }
+
   const slugCount = Object.keys(freshMapping).length;
   const render = await prisma.render.create({
     data: {
@@ -91,6 +118,7 @@ export async function POST(req: Request) {
       entityCount: slugCount,
       unknownCount: 0,
       status: "pending",
+      themeId: themeIdToStore,
     },
   });
 
@@ -104,6 +132,7 @@ export async function POST(req: Request) {
       format: parsed.data.format,
       width: parsed.data.width,
       height: parsed.data.height,
+      themeCss,
     },
     { jobId: render.id },
   );

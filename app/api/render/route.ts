@@ -27,6 +27,7 @@ const EXT_BY_TYPE: Record<string, string> = {
 const Meta = z.object({
   filename: z.string().max(120).optional(),
   entity_count: z.coerce.number().int().min(0).optional(),
+  theme_id: z.string().uuid().optional(),
 });
 
 export async function POST(req: Request) {
@@ -77,9 +78,24 @@ export async function POST(req: Request) {
   const meta = Meta.safeParse({
     filename: form.get("filename") ?? undefined,
     entity_count: form.get("entity_count") ?? undefined,
+    theme_id: form.get("theme_id") ?? undefined,
   });
   if (!meta.success) {
     return NextResponse.json({ error: meta.error.flatten() }, { status: 400 });
+  }
+
+  // Validate that the caller can actually use the theme they referenced
+  // (their own or an official one). Bad ids drop silently to null —
+  // the render still succeeds without a theme attribution.
+  let themeIdToStore: string | null = null;
+  if (meta.data.theme_id) {
+    const theme = await prisma.theme.findUnique({
+      where: { id: meta.data.theme_id },
+      select: { id: true, userId: true, isOfficial: true },
+    });
+    if (theme && (theme.isOfficial || theme.userId === user.id)) {
+      themeIdToStore = theme.id;
+    }
   }
 
   const renderId = randomUUID();
@@ -103,6 +119,7 @@ export async function POST(req: Request) {
       status: "complete",
       pngUrl: publicUrl,
       completedAt: new Date(),
+      themeId: themeIdToStore,
     },
   });
 

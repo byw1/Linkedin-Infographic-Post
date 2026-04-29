@@ -5,6 +5,7 @@ import type { ResolvedEntity } from "@/types/entity";
 import { EditorPanel } from "@/components/editor-panel";
 import { SlidePreview } from "@/components/slide-preview";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
+import { ThemePicker, type ActiveTheme } from "@/components/theme-picker";
 
 const SLIDE_WIDTH = 1080;
 const SLIDE_HEIGHT = 1350;
@@ -20,10 +21,14 @@ interface Props {
   entities: ResolvedEntity[];
   onEntitiesChange: (next: ResolvedEntity[]) => void;
   onBack: () => void;
-  // Mapping + format handed off to the server-side renderer. The flow
-  // above POSTs slides + mapping + format to /api/render-carousel and
-  // polls status.
-  onSubmit: (mapping: Record<string, string>, format: Format) => Promise<void>;
+  // Mapping + format + active theme handed off to the server-side
+  // renderer. The flow above POSTs slides + mapping + format + theme
+  // to /api/render-carousel and polls status.
+  onSubmit: (
+    mapping: Record<string, string>,
+    format: Format,
+    themeId: string | null,
+  ) => Promise<void>;
   storageReady: boolean;
 }
 
@@ -40,6 +45,7 @@ export function CarouselEditor({
   const [error, setError] = useState<string | null>(null);
   const [submitting, startSubmit] = useTransition();
   const [format, setFormat] = useState<Format>("pdf");
+  const [theme, setTheme] = useState<ActiveTheme | null>(null);
 
   const total = entities.length;
   const resolvedCount = entities.filter((e) => e.resolved).length;
@@ -66,7 +72,7 @@ export function CarouselEditor({
     }
     startSubmit(async () => {
       try {
-        await onSubmit(mapping, format);
+        await onSubmit(mapping, format, theme?.id ?? null);
       } catch (err) {
         setError((err as Error).message);
       }
@@ -106,6 +112,7 @@ export function CarouselEditor({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <ThemePicker onChange={setTheme} />
           <div className="inline-flex rounded-md border p-0.5 text-xs">
             <FormatTab active={format === "pdf"} onClick={() => setFormat("pdf")}>
               PDF
@@ -146,6 +153,7 @@ export function CarouselEditor({
         renderWidth={SLIDE_WIDTH}
         renderHeight={SLIDE_HEIGHT}
         displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
+        themeCss={theme?.css ?? null}
       />
 
       <div className="flex items-center justify-center gap-3">
