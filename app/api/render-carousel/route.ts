@@ -30,8 +30,11 @@ const Body = z.object({
     .max(40),
   mapping: z.record(LogoRef),
   filename: z.string().max(120).optional(),
-  width: z.number().int().min(320).max(2000).optional(),
-  height: z.number().int().min(320).max(2000).optional(),
+  // pdf = LinkedIn document carousel (real text PDF). png-zip = one
+  // PNG per slide for Instagram or anywhere that doesn't accept PDFs.
+  format: z.enum(["pdf", "png-zip"]).default("pdf"),
+  width: z.number().int().min(320).max(4000).optional(),
+  height: z.number().int().min(320).max(4000).optional(),
 });
 
 export async function POST(req: Request) {
@@ -98,6 +101,7 @@ export async function POST(req: Request) {
       userId: user.id,
       slides: parsed.data.slides,
       mapping: freshMapping,
+      format: parsed.data.format,
       width: parsed.data.width,
       height: parsed.data.height,
     },

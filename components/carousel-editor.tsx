@@ -6,19 +6,24 @@ import { EditorPanel } from "@/components/editor-panel";
 import { SlidePreview } from "@/components/slide-preview";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
 
-const SLIDE_SIZE = 1080;
+const SLIDE_WIDTH = 1350;
+const SLIDE_HEIGHT = 1080;
 // Width the in-page preview is scaled to. The iframe still lays out at
-// SLIDE_SIZE internally; this only controls the visible footprint.
+// the full slide size internally; this only controls the visible
+// footprint.
 const PREVIEW_DISPLAY_WIDTH = 720;
+
+type Format = "pdf" | "png-zip";
 
 interface Props {
   slides: CarouselSlide[];
   entities: ResolvedEntity[];
   onEntitiesChange: (next: ResolvedEntity[]) => void;
   onBack: () => void;
-  // Mapping handed off to the server-side renderer. The flow above
-  // POSTs slides + mapping to /api/render-carousel and polls status.
-  onSubmit: (mapping: Record<string, string>) => Promise<void>;
+  // Mapping + format handed off to the server-side renderer. The flow
+  // above POSTs slides + mapping + format to /api/render-carousel and
+  // polls status.
+  onSubmit: (mapping: Record<string, string>, format: Format) => Promise<void>;
   storageReady: boolean;
 }
 
@@ -34,6 +39,7 @@ export function CarouselEditor({
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, startSubmit] = useTransition();
+  const [format, setFormat] = useState<Format>("pdf");
 
   const total = entities.length;
   const resolvedCount = entities.filter((e) => e.resolved).length;
@@ -51,7 +57,7 @@ export function CarouselEditor({
     setError(null);
     if (!allResolved) return;
     if (!storageReady) {
-      setError("Storage isn't configured. PDF export is disabled.");
+      setError("Storage isn't configured. Export is disabled.");
       return;
     }
     const mapping: Record<string, string> = {};
@@ -60,7 +66,7 @@ export function CarouselEditor({
     }
     startSubmit(async () => {
       try {
-        await onSubmit(mapping);
+        await onSubmit(mapping, format);
       } catch (err) {
         setError((err as Error).message);
       }
@@ -99,14 +105,33 @@ export function CarouselEditor({
             )}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={startRenderClick}
-          disabled={!allResolved || submitting || !storageReady}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          {submitting ? "Queueing..." : "Render PDF"}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border p-0.5 text-xs">
+            <FormatTab active={format === "pdf"} onClick={() => setFormat("pdf")}>
+              PDF
+            </FormatTab>
+            <FormatTab active={format === "png-zip"} onClick={() => setFormat("png-zip")}>
+              PNG zip
+            </FormatTab>
+          </div>
+          <button
+            type="button"
+            onClick={startRenderClick}
+            disabled={!allResolved || submitting || !storageReady}
+            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            title={
+              format === "png-zip"
+                ? "One PNG per slide, zipped — for Instagram or anywhere that doesn't take PDFs."
+                : "Real-text PDF, one page per slide — for LinkedIn document carousels."
+            }
+          >
+            {submitting
+              ? "Queueing..."
+              : format === "png-zip"
+                ? "Render PNG zip"
+                : "Render PDF"}
+          </button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -118,8 +143,8 @@ export function CarouselEditor({
         html={currentSlide.html}
         entities={entities}
         onSlugClick={setActiveSlug}
-        renderWidth={SLIDE_SIZE}
-        renderHeight={SLIDE_SIZE}
+        renderWidth={SLIDE_WIDTH}
+        renderHeight={SLIDE_HEIGHT}
         displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
       />
 
@@ -192,5 +217,29 @@ export function CarouselEditor({
         />
       )}
     </div>
+  );
+}
+
+function FormatTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-sm px-2 py-1 font-medium transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

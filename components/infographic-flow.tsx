@@ -14,6 +14,7 @@ export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
   const [filename, setFilename] = useState<string | null>(null);
   const [entities, setEntities] = useState<ResolvedEntity[]>([]);
   const [pngUrl, setPngUrl] = useState<string | null>(null);
+  const [renderId, setRenderId] = useState<string | null>(null);
 
   function reset() {
     setStage("upload");
@@ -21,10 +22,13 @@ export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
     setFilename(null);
     setEntities([]);
     setPngUrl(null);
+    setRenderId(null);
   }
 
-  if (stage === "render" && pngUrl) {
-    return <RenderResult url={pngUrl} onReset={reset} />;
+  if (stage === "render" && pngUrl && renderId) {
+    return (
+      <RenderResult renderId={renderId} url={pngUrl} kind="png" onReset={reset} />
+    );
   }
 
   if (stage === "edit") {
@@ -57,6 +61,7 @@ export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
           }
           const data = await res.json();
           setPngUrl(data.png_url);
+          setRenderId(data.render_id);
           setStage("render");
         }}
       />

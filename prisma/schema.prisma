@@ -136,6 +136,17 @@ model Render {
   createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   completedAt   DateTime?    @map("completed_at") @db.Timestamptz(6)
 
+  // Manual post-tracking fields. Filled in by the user after they
+  // actually publish the render somewhere (LinkedIn, X, Instagram).
+  // Kept as discrete columns rather than a JSON blob so we can sort
+  // and aggregate ("top posts by impressions") without parsing.
+  postUrl     String?   @map("post_url")
+  impressions Int?
+  reactions   Int?
+  comments    Int?
+  reposts     Int?
+  trackedAt   DateTime? @map("tracked_at") @db.Timestamptz(6)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)], name: "idx_renders_user")

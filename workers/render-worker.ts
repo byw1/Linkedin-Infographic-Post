@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { htmlSlidesToPdf } from "@/lib/carousel-exporter";
+import { htmlSlidesToOutput } from "@/lib/carousel-exporter";
 import { getBrowserUrl, uploadFile } from "@/lib/storage";
 import { prisma } from "@/lib/db";
 import { getRedis } from "@/lib/redis";
@@ -13,7 +13,8 @@ import { RENDER_QUEUE_NAME, type RenderJob } from "@/lib/queue";
 const worker = new Worker<RenderJob>(
   RENDER_QUEUE_NAME,
   async (job) => {
-    const { renderId, userId, slides, mapping, width, height } = job.data;
+    const { renderId, userId, slides, mapping, format, width, height } = job.data;
+    const outputFormat = format ?? "pdf";
 
     await prisma.render.update({
       where: { id: renderId },
@@ -21,7 +22,7 @@ const worker = new Worker<RenderJob>(
     });
 
     try {
-      const pdf = await htmlSlidesToPdf(slides, mapping, {
+      const result = await htmlSlidesToOutput(slides, mapping, outputFormat, {
         width,
         height,
         // Stream progress into the BullMQ job so future polling can
@@ -31,8 +32,8 @@ const worker = new Worker<RenderJob>(
         },
       });
 
-      const key = `renders/${userId}/${renderId}.pdf`;
-      await uploadFile(key, pdf, "application/pdf");
+      const key = `renders/${userId}/${renderId}.${result.extension}`;
+      await uploadFile(key, result.buffer, result.contentType);
       const publicUrl = getBrowserUrl(key);
 
       await prisma.render.update({

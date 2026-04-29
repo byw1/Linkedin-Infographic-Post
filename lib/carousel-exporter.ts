@@ -1,5 +1,8 @@
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
 import { PDFDocument } from "pdf-lib";
+import JSZip from "jszip";
+
+export type OutputFormat = "pdf" | "png-zip";
 
 export interface SlideInput {
   filename: string;
@@ -13,21 +16,31 @@ export interface ExportOptions {
   onSlide?: (current: number, total: number) => void | Promise<void>;
 }
 
-const DEFAULT_SIZE = 1080;
+export interface ExportResult {
+  buffer: Buffer;
+  contentType: string;
+  extension: "pdf" | "zip";
+}
 
-// Renders a list of slide HTMLs into a single multi-page PDF. Each
-// page comes from puppeteer's `page.pdf()` (real text PDFs — text is
-// selectable, fonts are embedded, file size is small) rather than a
-// rasterized screenshot. The slide HTMLs are passed to setContent
-// untouched; the data-entity → <img> swap is done in-page so the
-// rendered output matches what the editor's iframe shows.
-export async function htmlSlidesToPdf(
+// LinkedIn document carousels render fine at the 5:4 landscape ratio,
+// and Instagram carousels accept the same crop. 1350×1080 fits both.
+const DEFAULT_WIDTH = 1350;
+const DEFAULT_HEIGHT = 1080;
+
+// Renders a list of slide HTMLs into either a single multi-page PDF
+// (real text PDFs — text is selectable, fonts embed, file is small)
+// or a zip of one PNG per slide (for Instagram or anywhere that
+// doesn't accept document carousels). The slide HTMLs are passed to
+// setContent untouched; the data-entity → <img> swap is done in-page
+// so the rendered output matches the editor's iframe exactly.
+export async function htmlSlidesToOutput(
   slides: SlideInput[],
   mapping: Record<string, string>,
+  format: OutputFormat,
   options: ExportOptions = {},
-): Promise<Buffer> {
-  const width = options.width ?? DEFAULT_SIZE;
-  const height = options.height ?? DEFAULT_SIZE;
+): Promise<ExportResult> {
+  const width = options.width ?? DEFAULT_WIDTH;
+  const height = options.height ?? DEFAULT_HEIGHT;
 
   if (slides.length === 0) {
     throw new Error("No slides provided.");
@@ -48,21 +61,36 @@ export async function htmlSlidesToPdf(
       ],
     });
 
-    const slidePdfs: Buffer[] = [];
+    const slideBuffers: Buffer[] = [];
     for (let i = 0; i < slides.length; i++) {
       const slide = slides[i];
       stage = `slide ${i + 1} (${slide.filename})`;
       await options.onSlide?.(i, slides.length);
-      const pdf = await renderSlide(browser, slide, mapping, width, height);
-      slidePdfs.push(pdf);
+      const buf = await captureSlide(browser, slide, mapping, format, width, height);
+      slideBuffers.push(buf);
     }
     await options.onSlide?.(slides.length, slides.length);
 
-    stage = "merge";
-    return mergePdfs(slidePdfs);
+    if (format === "pdf") {
+      stage = "merge-pdf";
+      return {
+        buffer: await mergePdfs(slideBuffers),
+        contentType: "application/pdf",
+        extension: "pdf",
+      };
+    } else {
+      stage = "zip-pngs";
+      return {
+        buffer: await zipPngs(slideBuffers, slides),
+        contentType: "application/zip",
+        extension: "zip",
+      };
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const wrapped = new Error(`htmlSlidesToPdf failed at stage="${stage}": ${message}`);
+    const wrapped = new Error(
+      `htmlSlidesToOutput[${format}] failed at stage="${stage}": ${message}`,
+    );
     if (err instanceof Error && err.stack) {
       (wrapped as Error & { cause?: unknown }).cause = err;
     }
@@ -78,16 +106,22 @@ export async function htmlSlidesToPdf(
   }
 }
 
-async function renderSlide(
+async function captureSlide(
   browser: Browser,
   slide: SlideInput,
   mapping: Record<string, string>,
+  format: OutputFormat,
   width: number,
   height: number,
 ): Promise<Buffer> {
+  // PNGs go to Instagram / posted as raster; 2× DPR keeps text sharp
+  // on retina. PDFs are vector text so the scale doesn't matter for
+  // text quality; keeping it at 1 saves memory and time.
+  const deviceScaleFactor = format === "png-zip" ? 2 : 1;
+
   const page = await browser.newPage();
   try {
-    await page.setViewport({ width, height, deviceScaleFactor: 1 });
+    await page.setViewport({ width, height, deviceScaleFactor });
     // Match the editor's preview, which inherits the user's OS dark
     // preference — most templates have @media
     // (prefers-color-scheme: dark) rules and rendered light otherwise.
@@ -109,10 +143,11 @@ async function renderSlide(
     });
 
     // Pin the document to exactly width × height so each slide is one
-    // PDF page. Without this, the default 8px body margin alone is
-    // enough to push content onto a second page (a 7-slide carousel
-    // ends up at 14). overflow:hidden clips any rogue overflow rather
-    // than letting Chromium paginate it as bonus pages.
+    // page / one screenshot. Without this, the default 8px body margin
+    // alone is enough to push content past the edge — for PDF that
+    // means a phantom second page, for PNG that means content getting
+    // cropped or the screenshot dimensions being off. overflow:hidden
+    // clips any rogue overflow rather than letting it spill.
     await page.addStyleTag({
       content: `
         @page { size: ${width}px ${height}px; margin: 0 }
@@ -179,26 +214,37 @@ async function renderSlide(
     }, mapping);
 
     // Wait for replaced <img> tags to load AND for chart canvases to
-    // settle. Without these, page.pdf() snapshots a partial frame.
+    // settle. Without these, the capture lands on a partial frame.
     await waitForImagesAndCanvas(page);
 
     // Wait for any web fonts to load — Chromium will otherwise embed
-    // the fallback into the PDF and your nice Inter stack disappears.
+    // the fallback (PDF) or rasterize the fallback (PNG) and your
+    // nice Inter stack disappears.
     await page.evaluate(() => document.fonts?.ready);
 
-    const pdf = await page.pdf({
-      width: `${width}px`,
-      height: `${height}px`,
-      printBackground: true,
-      // Honor the injected @page size + body clamp above. Without
-      // this, Chromium falls back to width/height and ignores our
-      // overflow rules, paginating any content >1080px tall.
-      preferCSSPageSize: true,
-      // Zero margins so the slide bleeds to the page edges — the
-      // template controls its own padding.
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
-    });
-    return Buffer.from(pdf);
+    if (format === "pdf") {
+      const pdf = await page.pdf({
+        width: `${width}px`,
+        height: `${height}px`,
+        printBackground: true,
+        // Honor the injected @page size + body clamp above. Without
+        // this, Chromium falls back to width/height and ignores our
+        // overflow rules.
+        preferCSSPageSize: true,
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      });
+      return Buffer.from(pdf);
+    } else {
+      // Explicit clip to the slide box, so the screenshot dims match
+      // exactly what the iframe shows even if the user's HTML
+      // overflows.
+      const png = await page.screenshot({
+        type: "png",
+        clip: { x: 0, y: 0, width, height },
+        omitBackground: false,
+      });
+      return Buffer.from(png);
+    }
   } finally {
     try {
       await page.close();
@@ -239,4 +285,18 @@ async function mergePdfs(slidePdfs: Buffer[]): Promise<Buffer> {
   }
   const bytes = await out.save();
   return Buffer.from(bytes);
+}
+
+async function zipPngs(pngBuffers: Buffer[], slides: SlideInput[]): Promise<Buffer> {
+  const zip = new JSZip();
+  // Numeric prefix preserves slide order even when the original slide
+  // filenames sort weirdly. Width is dynamic so 10+ slides still pad
+  // correctly (01.png, 02.png, ..., 10.png).
+  const pad = String(pngBuffers.length).length;
+  for (let i = 0; i < pngBuffers.length; i++) {
+    const num = String(i + 1).padStart(pad, "0");
+    const stem = slides[i].filename.replace(/\.html?$/i, "") || `slide-${num}`;
+    zip.file(`${num}_${stem}.png`, pngBuffers[i]);
+  }
+  return zip.generateAsync({ type: "nodebuffer" });
 }

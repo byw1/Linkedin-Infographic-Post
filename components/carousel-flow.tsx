@@ -11,6 +11,7 @@ import { RenderPoller } from "@/components/render-poller";
 import { RenderResult } from "@/components/render-result";
 
 type Stage = "upload" | "edit" | "rendering" | "render";
+type Format = "pdf" | "png-zip";
 
 export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
   const [stage, setStage] = useState<Stage>("upload");
@@ -18,7 +19,8 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
   const [zipName, setZipName] = useState<string | null>(null);
   const [entities, setEntities] = useState<ResolvedEntity[]>([]);
   const [renderId, setRenderId] = useState<string | null>(null);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [resultFormat, setResultFormat] = useState<Format>("pdf");
   const [renderError, setRenderError] = useState<string | null>(null);
 
   function reset() {
@@ -27,12 +29,14 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
     setZipName(null);
     setEntities([]);
     setRenderId(null);
-    setPdfUrl(null);
+    setResultUrl(null);
+    setResultFormat("pdf");
     setRenderError(null);
   }
 
-  async function submitRender(mapping: Record<string, string>) {
+  async function submitRender(mapping: Record<string, string>, format: Format) {
     setRenderError(null);
+    setResultFormat(format);
     const baseName = zipName?.replace(/\.zip$/i, "") ?? "carousel";
     const res = await fetch("/api/render-carousel", {
       method: "POST",
@@ -41,6 +45,7 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
         slides,
         mapping,
         filename: baseName,
+        format,
       }),
     });
     if (!res.ok) {
@@ -61,8 +66,15 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
     setStage("rendering");
   }
 
-  if (stage === "render" && pdfUrl) {
-    return <RenderResult url={pdfUrl} kind="pdf" onReset={reset} />;
+  if (stage === "render" && resultUrl && renderId) {
+    return (
+      <RenderResult
+        renderId={renderId}
+        url={resultUrl}
+        kind={resultFormat === "png-zip" ? "zip" : "pdf"}
+        onReset={reset}
+      />
+    );
   }
 
   if (stage === "rendering" && renderId) {
@@ -70,9 +82,9 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
       <div className="space-y-3">
         <RenderPoller
           renderId={renderId}
-          message={`Rendering ${slides.length} slide${slides.length === 1 ? "" : "s"} as a real-text PDF — about 2-3 seconds per slide.`}
+          message={`Rendering ${slides.length} slide${slides.length === 1 ? "" : "s"} as ${resultFormat === "png-zip" ? "PNGs in a zip" : "a real-text PDF"} — about 2-3 seconds per slide.`}
           onComplete={(url) => {
-            setPdfUrl(url);
+            setResultUrl(url);
             setStage("render");
           }}
           onFailed={(message) => {

@@ -11,8 +11,13 @@ export interface RenderJob {
   userId: string;
   slides: CarouselSlideJob[];
   mapping: Record<string, string>;
-  // Final PDF page size in pixel units. Defaults to 1080×1080 (LinkedIn
-  // square carousel) when omitted.
+  // "pdf" produces a real-text multi-page PDF (LinkedIn document
+  // carousels). "png-zip" produces a zip of one PNG per slide
+  // (Instagram, anywhere that doesn't take PDFs). Defaults to "pdf"
+  // on consumers that don't pass the field.
+  format?: "pdf" | "png-zip";
+  // Slide page size in pixel units. Defaults to 1350×1080 — fits
+  // both LinkedIn document carousels and Instagram landscape posts.
   width?: number;
   height?: number;
 }
