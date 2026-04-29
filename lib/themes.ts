@@ -36,7 +36,36 @@ export const EDITABLE_TOKENS = [
 ] as const;
 
 export type TokenKey = (typeof EDITABLE_TOKENS)[number];
-export type Tokens = Partial<Record<TokenKey, string>>;
+// Tokens map captures *every* `--*` declaration in the CSS, not just
+// the canonical list — older themes (or pasted ones) may use legacy
+// names like `--bg-canvas`, `--fg-primary`, `--accent`, and we still
+// want them parsed so the picker swatches render and the !important
+// override below can fall back through them.
+export type Tokens = Record<string, string>;
+
+// Legacy name → new canonical name. Used to widen swatch lookups and
+// to feed both names into the !important fallback chain so a pasted
+// theme works regardless of which convention it uses.
+export const LEGACY_ALIASES: Record<string, string> = {
+  "--bg-canvas": "--color-background-primary",
+  "--bg-panel": "--color-background-secondary",
+  "--bg-panel-raised": "--color-background-tertiary",
+  "--fg-primary": "--color-text-primary",
+  "--fg-secondary": "--color-text-secondary",
+  "--fg-tertiary": "--color-text-tertiary",
+  "--fg-on-accent": "--color-text-on-accent",
+  "--edge-strong": "--color-border-primary",
+  "--edge-hairline": "--color-border-tertiary",
+  "--accent": "--color-accent-primary",
+  "--accent-hover": "--color-accent-secondary",
+  "--accent-soft": "--color-accent-soft",
+  "--signal-success": "--color-signal-success",
+  "--signal-warn": "--color-signal-warn",
+  "--signal-error": "--color-signal-error",
+  "--font-sans": "--font-family-base",
+  "--font-display": "--font-family-display",
+  "--font-mono": "--font-family-mono",
+};
 
 export interface ThemeRow {
   id: string;
@@ -60,18 +89,29 @@ export function parseTokens(css: string): Tokens {
   const re = /(--[a-zA-Z][\w-]*)\s*:\s*([^;}\n]+)\s*[;}\n]/g;
   let match: RegExpExecArray | null;
   while ((match = re.exec(css)) !== null) {
-    const key = match[1] as TokenKey;
-    if (!(EDITABLE_TOKENS as readonly string[]).includes(key)) continue;
-    out[key] = match[2].trim();
+    out[match[1]] = match[2].trim();
   }
   return out;
+}
+
+// Look up a token, then its legacy alias (or vice versa) so callers
+// can ask for the canonical name and still find a value if the
+// pasted CSS only defined the older name.
+export function getToken(tokens: Tokens, key: string): string | undefined {
+  const direct = tokens[key];
+  if (direct) return direct;
+  const reverseAlias = Object.entries(LEGACY_ALIASES).find(([, v]) => v === key);
+  if (reverseAlias && tokens[reverseAlias[0]]) return tokens[reverseAlias[0]];
+  const forwardAlias = LEGACY_ALIASES[key];
+  if (forwardAlias && tokens[forwardAlias]) return tokens[forwardAlias];
+  return undefined;
 }
 
 // Cheap font-family extraction for the picker preview. Pulls the
 // first quoted family name out of `--font-family-base`, falling back
 // to the raw value if nothing's quoted.
 export function extractFontFamily(tokens: Tokens): string | null {
-  const base = tokens["--font-family-base"];
+  const base = getToken(tokens, "--font-family-base");
   if (!base) return null;
   const quoted = base.match(/['"]([^'"]+)['"]/);
   if (quoted) return quoted[1];
@@ -108,17 +148,20 @@ export function buildStyleCss(theme: { css: string; tokens: Tokens }): string {
 // canvas + text + font when the user picks a different theme. Charts,
 // gradient buttons, etc. still hold their hard-coded colors — fully
 // theming those needs HTML that references var(--token) directly.
+// var() fallback chains accept either the canonical --color-* /
+// --font-family-* names or the legacy --bg-* / --fg-* / --accent /
+// --font-sans names a pasted theme might still use, so the override
+// flips body colors regardless of which convention the theme uses.
 const THEME_OVERRIDES = `
 /* viral theme overrides — flip canvas/text/font even on HTML that
-   doesn't reference var(--color-background-primary). Remove these
-   once the source HTML uses tokens throughout. */
+   doesn't reference these tokens directly. */
 html {
-  background-color: var(--color-background-primary) !important;
+  background-color: var(--color-background-primary, var(--bg-canvas)) !important;
 }
 body {
-  background-color: var(--color-background-primary) !important;
-  color: var(--color-text-primary) !important;
-  font-family: var(--font-family-base) !important;
+  background-color: var(--color-background-primary, var(--bg-canvas)) !important;
+  color: var(--color-text-primary, var(--fg-primary)) !important;
+  font-family: var(--font-family-base, var(--font-sans)) !important;
 }
 `;
 
@@ -126,13 +169,13 @@ body {
 // Works for hex (#0a0a0a) and rgb(...) tokens; defaults to dark if
 // either is missing or unparseable.
 function isDarkTheme(tokens: Tokens): boolean {
-  const bg = relativeLuma(tokens["--color-background-primary"]);
-  const fg = relativeLuma(tokens["--color-text-primary"]);
+  const bg = relativeLuma(getToken(tokens, "--color-background-primary"));
+  const fg = relativeLuma(getToken(tokens, "--color-text-primary"));
   if (bg === null || fg === null) return true;
   return bg < fg;
 }
 
-function relativeLuma(value: string | undefined): number | null {
+function relativeLuma(value: string | null | undefined): number | null {
   if (!value) return null;
   const hex = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
   if (hex) {

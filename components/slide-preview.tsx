@@ -419,16 +419,19 @@ function applyTheme(doc: Document, css: string | null) {
 
 // Mirrors lib/themes.ts THEME_OVERRIDES — duplicated so this client
 // component doesn't pull in the server-only prisma import chain.
+// Fallback chains accept either --color-* (canonical) or the older
+// --bg-canvas / --fg-primary / --font-sans names so a pasted theme
+// flips colors regardless of naming convention.
 const THEME_OVERRIDES = `
 /* viral theme overrides — flip canvas/text/font even on HTML that
-   doesn't reference var(--color-background-primary). */
+   doesn't reference these tokens directly. */
 html {
-  background-color: var(--color-background-primary) !important;
+  background-color: var(--color-background-primary, var(--bg-canvas)) !important;
 }
 body {
-  background-color: var(--color-background-primary) !important;
-  color: var(--color-text-primary) !important;
-  font-family: var(--font-family-base) !important;
+  background-color: var(--color-background-primary, var(--bg-canvas)) !important;
+  color: var(--color-text-primary, var(--fg-primary)) !important;
+  font-family: var(--font-family-base, var(--font-sans)) !important;
 }
 `;
 

@@ -21,13 +21,21 @@ interface Props {
   mode: "member" | "admin";
 }
 
-const SWATCH_KEYS = [
-  "--color-background-primary",
-  "--color-background-secondary",
-  "--color-accent-primary",
-  "--color-accent-secondary",
-  "--color-text-primary",
+// Each swatch reads the canonical token first, then falls back through
+// the legacy `--bg-*` / `--fg-*` / `--accent` names so a theme pasted
+// in either convention still renders chips correctly.
+const SWATCH_KEYS: { label: string; keys: string[] }[] = [
+  { label: "background-primary", keys: ["--color-background-primary", "--bg-canvas"] },
+  { label: "background-secondary", keys: ["--color-background-secondary", "--bg-panel"] },
+  { label: "accent-primary", keys: ["--color-accent-primary", "--accent"] },
+  { label: "accent-secondary", keys: ["--color-accent-secondary", "--accent-hover"] },
+  { label: "text-primary", keys: ["--color-text-primary", "--fg-primary"] },
 ];
+
+function readToken(tokens: Record<string, string>, keys: string[]): string | undefined {
+  for (const k of keys) if (tokens[k]) return tokens[k];
+  return undefined;
+}
 
 const STARTER_TEMPLATE = `/* Paste your brand tokens. viral reads the --color-* tokens
    (background, text, border, accent, signal) plus --font-family-*
@@ -272,18 +280,18 @@ function ThemeCard({ theme, mode, isEditing, onEdit, onCancelEdit, onChanged }: 
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {SWATCH_KEYS.map((k) => {
-          const v = theme.tokens?.[k];
+        {SWATCH_KEYS.map((sw) => {
+          const v = readToken(theme.tokens ?? {}, sw.keys);
           if (!v) return null;
           return (
-            <div key={k} className="flex items-center gap-1.5">
+            <div key={sw.label} className="flex items-center gap-1.5">
               <span
                 className="h-5 w-5 rounded border"
                 style={{ background: v }}
-                title={`${k}: ${v}`}
+                title={`${sw.keys[0]}: ${v}`}
               />
               <span className="font-mono text-[10px] text-muted-foreground">
-                {k.replace("--", "")}
+                {sw.label}
               </span>
             </div>
           );
@@ -419,18 +427,18 @@ function ThemeForm({ mode, existing, onCancel, onSaved }: FormProps) {
       </label>
 
       <div className="flex flex-wrap items-center gap-3">
-        {SWATCH_KEYS.map((k) => {
-          const v = tokens[k];
+        {SWATCH_KEYS.map((sw) => {
+          const v = readToken(tokens, sw.keys);
           if (!v) return null;
           return (
-            <div key={k} className="flex items-center gap-1.5">
+            <div key={sw.label} className="flex items-center gap-1.5">
               <span
                 className="h-5 w-5 rounded border"
                 style={{ background: v }}
-                title={`${k}: ${v}`}
+                title={`${sw.keys[0]}: ${v}`}
               />
               <span className="font-mono text-[10px] text-muted-foreground">
-                {k.replace("--", "")}
+                {sw.label}
               </span>
             </div>
           );

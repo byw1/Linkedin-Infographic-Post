@@ -106,7 +106,7 @@ export function ThemePicker({ onChange }: Props) {
       >
         <span
           className="h-3 w-3 rounded-full border"
-          style={{ background: active?.tokens["--color-accent-primary"] ?? "transparent" }}
+          style={{ background: active ? swatchAccent(active.tokens) : "transparent" }}
         />
         <span className="max-w-[10rem] truncate">{active?.name ?? "Pick a theme"}</span>
         <span aria-hidden className="text-muted-foreground">
@@ -128,7 +128,7 @@ export function ThemePicker({ onChange }: Props) {
               <span className="flex items-center gap-2 min-w-0">
                 <span
                   className="h-3 w-3 shrink-0 rounded-full border"
-                  style={{ background: t.tokens["--color-accent-primary"] ?? "transparent" }}
+                  style={{ background: swatchAccent(t.tokens) }}
                 />
                 <span className="truncate">{t.name}</span>
               </span>
@@ -156,6 +156,17 @@ export function ThemePicker({ onChange }: Props) {
         </div>
       )}
     </div>
+  );
+}
+
+// Read a token from the parsed map, falling back through the legacy
+// alias if a pasted theme uses the older naming. Mirrors getToken()
+// in lib/themes.ts but stays client-safe.
+function swatchAccent(tokens: Record<string, string>): string {
+  return (
+    tokens["--color-accent-primary"] ??
+    tokens["--accent"] ??
+    "transparent"
   );
 }
 
