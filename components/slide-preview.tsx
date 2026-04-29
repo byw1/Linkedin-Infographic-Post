@@ -515,32 +515,32 @@ function applyTheme(doc: Document, css: string | null) {
 
   const style = doc.createElement("style");
   style.setAttribute(TAG_ATTR, "");
-  head.appendChild(style);
-
-  // Chart.js dataset colors live in `<script>` and don't get touched
-  // by the inline-style accent rewrite. This script polls for charts
-  // post-load and substitutes well-known accent hex with theme
-  // tokens via getComputedStyle, then calls chart.update('none').
-  const chartScript = doc.createElement("script");
-  chartScript.setAttribute(TAG_ATTR, "");
-  chartScript.textContent = CHART_RETHEME_SCRIPT;
-  head.appendChild(chartScript);
-
-  // Three passes wrap the user's CSS:
-  //   1. ensureFontImports — load Google Fonts the theme forgot to
-  //      @import (so 'Figtree' actually renders even when <link>
-  //      injection is bypassed).
-  //   2. user CSS verbatim.
-  //   3. buildAliasBridge — mirror canonical/legacy token names so
-  //      source HTML's own `:root { --color-* }` definitions don't
-  //      shadow a theme that uses `--bg-*` (and vice versa).
-  //   4. THEME_OVERRIDES — !important body/html color + font pin.
+  // Set the textContent *before* appending so the browser parses
+  // the stylesheet (and registers `:root { --font-family-base }`,
+  // etc.) the moment the element enters the DOM. If we append
+  // empty and set textContent later, the chart-retheme script
+  // below — which we want to fire as soon as it's appended —
+  // would read empty custom properties and the body-font pin
+  // would no-op on its first call.
   const tokens = parseCssTokens(css);
   style.textContent = [
     ensureFontImports(css),
     buildAliasBridge(tokens),
     THEME_OVERRIDES,
   ].join("\n");
+  head.appendChild(style);
+
+  // Chart.js dataset colors live in `<script>` and don't get touched
+  // by the inline-style accent rewrite. This script polls for charts
+  // post-load and substitutes well-known accent hex with theme
+  // tokens via getComputedStyle, then calls chart.update('none').
+  // It also pins body's font-family inline with !important — the
+  // <style> above already does that via CSS, but the JS pin gives
+  // us higher specificity for any source HTML that fights it.
+  const chartScript = doc.createElement("script");
+  chartScript.setAttribute(TAG_ATTR, "");
+  chartScript.textContent = CHART_RETHEME_SCRIPT;
+  head.appendChild(chartScript);
 }
 
 // Snapshot the iframe's current rendering state for the picker's
