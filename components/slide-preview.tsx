@@ -71,6 +71,31 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
         const doc = iframe!.contentDocument;
         if (!doc) return;
 
+        // For fixed-size slides (carousel mode), force the body to
+        // exactly the slide size with no margin / padding and clip
+        // overflow. Mirrors the worker's exporter so the editor
+        // preview matches the rendered PDF / PNG. Templates often
+        // ship body { padding: 20px; min-height: 100vh; display: flex }
+        // assuming they're a full document — without this clamp the
+        // 20px padding pushes the slide past the iframe's bottom edge,
+        // showing a clipped bottom in the preview that doesn't appear
+        // in the export.
+        if (typeof renderHeight === "number") {
+          const styleEl = doc.createElement("style");
+          styleEl.textContent = `
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            body {
+              width: ${renderWidth}px !important;
+              height: ${renderHeight}px !important;
+              overflow: hidden !important;
+            }
+          `;
+          (doc.head ?? doc.documentElement).appendChild(styleEl);
+        }
+
         originalsRef.current = new WeakMap();
 
         const all = Array.from(
