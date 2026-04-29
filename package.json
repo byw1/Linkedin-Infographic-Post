@@ -1,5 +1,5 @@
 {
-  "name": "infos",
+  "name": "viral",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -33,6 +33,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.468.0",
     "next": "14.2.35",
+    "nodemailer": "^7.0.7",
     "next-auth": "5.0.0-beta.31",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -43,6 +44,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.17.9",
+    "@types/nodemailer": "^7.0.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",

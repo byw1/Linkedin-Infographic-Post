@@ -1,4 +1,4 @@
-# Infos
+# viral
 
 Self-hosted webapp that turns AI-generated HTML into LinkedIn-ready
 infographics and carousel PDFs — auto-filling green logo placeholders

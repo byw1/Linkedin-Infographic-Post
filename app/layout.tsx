@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Infos",
+  title: "viral",
   description:
     "Generate LinkedIn-ready infographics and carousel PDFs. Auto-fill logo placeholders from your library.",
 };

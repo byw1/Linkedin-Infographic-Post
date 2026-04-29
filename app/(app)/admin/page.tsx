@@ -4,6 +4,7 @@ import { getSettings } from "@/lib/settings";
 import { AllowlistForm } from "@/components/admin/allowlist-form";
 import { InvitesForm } from "@/components/admin/invites-form";
 import { GoogleAuthForm } from "@/components/admin/google-auth-form";
+import { EmailForm } from "@/components/admin/email-form";
 import { HealthStatus } from "@/components/admin/health-status";
 import { ConfigView } from "@/components/admin/config-view";
 import { StorageTest } from "@/components/admin/storage-test";
@@ -39,10 +40,28 @@ export default async function AdminPage() {
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Invites</h2>
         <p className="text-sm text-muted-foreground">
-          Generate a link, share it. Recipient sets their own password. Default
-          14-day expiry.
+          Generate a link, share it, or — once Email is configured below — send
+          and re-send the invite by email. Recipient sets their own password.
+          Default 14-day expiry.
         </p>
-        <InvitesForm />
+        <InvitesForm emailReady={settings.email !== null} />
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">Email</h2>
+        <p className="text-sm text-muted-foreground">
+          SMTP credentials used to send invite emails. Works with Resend,
+          Postmark, SendGrid, AWS SES, Mailgun, or your own server.
+        </p>
+        <EmailForm
+          initial={{
+            host: settings.email?.host ?? "",
+            port: settings.email?.port ?? 587,
+            user: settings.email?.user ?? "",
+            from: settings.email?.from ?? "",
+          }}
+          enabled={settings.email !== null}
+        />
       </section>
 
       <section className="space-y-3">

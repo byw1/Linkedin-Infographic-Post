@@ -21,7 +21,7 @@ export async function TopNav() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.svg" alt="" aria-hidden="true" className="h-5 w-5" />
-            Infos
+            viral
           </Link>
           {user && (
             <nav className="flex items-center gap-4 text-sm">
