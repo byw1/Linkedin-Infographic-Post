@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { parseCssTokens } from "@/lib/accent-rewrite";
-import { buildAliasBridge, ensureFontImports } from "@/lib/theme-fonts";
+import {
+  buildAliasBridge,
+  ensureFontImports,
+  extractGoogleFontUrls,
+} from "@/lib/theme-fonts";
 
 interface Props {
   // Full theme CSS (the same string the API stores). Injected into a
@@ -43,10 +47,11 @@ export function SampleSlide({ css }: Props) {
     return () => iframe.removeEventListener("load", onLoad);
   }, []);
 
-  // Each css change re-injects the `<style data-viral-theme>` tag in
-  // the iframe head once the srcDoc has loaded. We don't rebuild the
-  // iframe content — that would re-fetch fonts on every keystroke
-  // and flicker.
+  // Each css change re-injects the theme into the iframe head once
+  // the srcDoc has loaded. We replace any prior viral-theme nodes
+  // (style + link) and add fresh ones — keeps cascade order
+  // predictable and lets the browser show <link> elements in
+  // devtools so font-loading state is observable.
   useEffect(() => {
     if (!loaded) return;
     const doc = iframeRef.current?.contentDocument;
@@ -54,14 +59,28 @@ export function SampleSlide({ css }: Props) {
     const head = doc.head ?? doc.documentElement;
     if (!head) return;
     const TAG = "data-viral-theme";
-    let style = doc.querySelector(`style[${TAG}]`) as HTMLStyleElement | null;
-    if (!style) {
-      style = doc.createElement("style");
-      style.setAttribute(TAG, "");
-      head.appendChild(style);
+
+    doc
+      .querySelectorAll(`style[${TAG}], link[${TAG}]`)
+      .forEach((el) => el.remove());
+
+    // <link rel="stylesheet"> per Google Fonts URL. More reliable
+    // than dynamic @import for fonts added post-load.
+    for (const url of extractGoogleFontUrls(css)) {
+      const link = doc.createElement("link");
+      link.setAttribute("rel", "stylesheet");
+      link.setAttribute("href", url);
+      link.setAttribute(TAG, "");
+      head.appendChild(link);
     }
+
+    const style = doc.createElement("style");
+    style.setAttribute(TAG, "");
+    head.appendChild(style);
     // Same three-pass injection the editor + worker use:
-    //   1. ensureFontImports — load Google Fonts the theme forgot.
+    //   1. ensureFontImports — load Google Fonts the theme forgot
+    //      (redundant with the <link> above; covers @import-only
+    //      paths like the puppeteer worker).
     //   2. user CSS.
     //   3. buildAliasBridge — mirror canonical/legacy token names.
     //   4. OVERRIDES — !important body/html pin.

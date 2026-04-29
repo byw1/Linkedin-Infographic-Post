@@ -55,21 +55,30 @@ const FAMILY_TO_URL = new Map(GOOGLE_FONTS.map((f) => [f.family, f.url]));
 // for it. Fallback families in the stack are left to the browser's
 // font-fallback chain; we never auto-import those.
 export function ensureFontImports(css: string): string {
-  const families = collectReferencedFamilies(css);
-  if (families.size === 0) return css;
+  const missing = extractGoogleFontUrls(css);
+  if (missing.length === 0) return css;
+  const lines = missing.map((u) => `@import url('${u}');`).join("\n");
+  return `${lines}\n${css}`;
+}
 
+// Same detection logic as ensureFontImports but returns just the
+// URLs the caller should fetch — used by client-side iframe
+// injection, which inserts real `<link rel="stylesheet">` elements
+// instead of `@import` lines. <link> is more reliable than dynamic
+// @import for browsers parsing styles added post-load, and it lets
+// the browser show "loaded" / "errored" status correctly in devtools.
+export function extractGoogleFontUrls(css: string): string[] {
+  const families = collectReferencedFamilies(css);
+  if (families.size === 0) return [];
   const importsAlreadyPresent = collectImportedFamilies(css);
-  const missing: string[] = [];
+  const out: string[] = [];
   for (const family of families) {
     if (importsAlreadyPresent.has(family)) continue;
     const url = FAMILY_TO_URL.get(family);
     if (!url) continue;
-    missing.push(url);
+    out.push(url);
   }
-  if (missing.length === 0) return css;
-
-  const lines = missing.map((u) => `@import url('${u}');`).join("\n");
-  return `${lines}\n${css}`;
+  return out;
 }
 
 // Canonical ↔ legacy token pairs. Each entry is one canonical name

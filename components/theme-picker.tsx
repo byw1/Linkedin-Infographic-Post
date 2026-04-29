@@ -115,7 +115,7 @@ export function ThemePicker({ onChange }: Props) {
       </button>
 
       {open && list && (
-        <div className="absolute right-0 z-30 mt-1 w-72 rounded-md border bg-popover p-1 shadow-md">
+        <div className="absolute right-0 z-30 mt-1 w-72 rounded-md border bg-card p-1 text-card-foreground shadow-md">
           {list.map((t) => (
             <button
               key={t.id}

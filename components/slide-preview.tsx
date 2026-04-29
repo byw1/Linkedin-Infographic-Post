@@ -13,7 +13,11 @@ import {
   applyAccentRewriteToDocument,
   parseCssTokens,
 } from "@/lib/accent-rewrite";
-import { buildAliasBridge, ensureFontImports } from "@/lib/theme-fonts";
+import {
+  buildAliasBridge,
+  ensureFontImports,
+  extractGoogleFontUrls,
+} from "@/lib/theme-fonts";
 import type { ResolvedEntity } from "@/types/entity";
 
 const OUTLINE_UNRESOLVED = "2px dashed #f59e0b";
@@ -403,40 +407,57 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
 );
 
 // Inject (or update / remove) the active theme's CSS as a tagged
-// <style> element in the iframe head. We append it last so its
-// `:root { --token: … }` declarations win over anything the source
-// HTML defined earlier in its own `:root`, and we tack on a short
-// `!important` override that flips body/html colors + font even when
-// the source HTML hard-coded them — without that, switching themes
-// on legacy generated HTML looks like nothing changed.
+// <style> element + <link rel="stylesheet"> elements (one per
+// referenced Google Font) in the iframe head. <link> is used in
+// addition to @import inside the <style> because dynamic @import
+// (added after document load) can be flaky in some browsers — the
+// <link> path always works.
+//
+// We append the <style> last so its `:root { --token: … }`
+// declarations win over anything the source HTML defined earlier
+// in its own `:root`, and we tack on a short `!important` override
+// that flips body/html colors + font even when the source HTML
+// hard-coded them — without that, switching themes on legacy
+// generated HTML looks like nothing changed.
 function applyTheme(doc: Document, css: string | null) {
   const head = doc.head ?? doc.documentElement;
   if (!head) return;
   const TAG_ATTR = "data-viral-theme";
-  let existing = doc.querySelector(`style[${TAG_ATTR}]`);
-  if (!css) {
-    existing?.remove();
-    return;
+
+  // Always start from a clean slate — both the style and any link
+  // tags from a previous theme. If `css` is null we exit here.
+  doc
+    .querySelectorAll(`style[${TAG_ATTR}], link[${TAG_ATTR}]`)
+    .forEach((el) => el.remove());
+  if (!css) return;
+
+  // Add a <link rel="stylesheet"> per Google Fonts URL the theme
+  // references. These load alongside the iframe's normal stylesheet
+  // chain, so the browser shows them in devtools as proper resources
+  // (great for debugging "why isn't Figtree loading").
+  for (const url of extractGoogleFontUrls(css)) {
+    const link = doc.createElement("link");
+    link.setAttribute("rel", "stylesheet");
+    link.setAttribute("href", url);
+    link.setAttribute(TAG_ATTR, "");
+    head.appendChild(link);
   }
-  if (!existing) {
-    existing = doc.createElement("style");
-    existing.setAttribute(TAG_ATTR, "");
-    head.appendChild(existing);
-  } else if (existing.parentElement !== head || existing.nextSibling) {
-    // Move to the end so cascade order stays predictable when the
-    // source HTML mutates after first paint.
-    head.appendChild(existing);
-  }
+
+  const style = doc.createElement("style");
+  style.setAttribute(TAG_ATTR, "");
+  head.appendChild(style);
+
   // Three passes wrap the user's CSS:
   //   1. ensureFontImports — load Google Fonts the theme forgot to
-  //      @import (so 'Figtree' actually renders).
+  //      @import (so 'Figtree' actually renders even when <link>
+  //      injection is bypassed).
   //   2. user CSS verbatim.
   //   3. buildAliasBridge — mirror canonical/legacy token names so
   //      source HTML's own `:root { --color-* }` definitions don't
   //      shadow a theme that uses `--bg-*` (and vice versa).
   //   4. THEME_OVERRIDES — !important body/html color + font pin.
   const tokens = parseCssTokens(css);
-  existing.textContent = [
+  style.textContent = [
     ensureFontImports(css),
     buildAliasBridge(tokens),
     THEME_OVERRIDES,
