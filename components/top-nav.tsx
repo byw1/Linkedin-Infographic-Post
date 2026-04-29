@@ -15,8 +15,13 @@ export async function TopNav() {
     <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-30">
       <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between gap-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-base font-semibold tracking-tight">
-            LogoSwap
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-base font-semibold tracking-tight"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" aria-hidden="true" className="h-5 w-5" />
+            Infos
           </Link>
           {user && (
             <nav className="flex items-center gap-4 text-sm">

@@ -90,7 +90,7 @@ export async function POST() {
 
   const steps: StepResult[] = [];
   const probeKey = `_health/${admin.id}/${crypto.randomBytes(4).toString("hex")}.txt`;
-  const probeBytes = Buffer.from(`logoswap storage test @ ${new Date().toISOString()}`);
+  const probeBytes = Buffer.from(`infos storage test @ ${new Date().toISOString()}`);
 
   async function run<T>(label: string, fn: () => Promise<T>): Promise<T | null> {
     const started = Date.now();

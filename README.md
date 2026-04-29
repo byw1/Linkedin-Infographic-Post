@@ -1,8 +1,9 @@
-# LogoSwap
+# Infos
 
-Self-hosted webapp that auto-replaces green logo placeholders in HTML
-infographics with real logos from a learned, per-user library. Built for
-a small invite-only group of LinkedIn posters.
+Self-hosted webapp that turns AI-generated HTML into LinkedIn-ready
+infographics and carousel PDFs — auto-filling green logo placeholders
+from a learned, per-user library. Built for a small invite-only group
+of LinkedIn posters.
 
 Drop in HTML → resolved entities are auto-filled from your library →
 upload logos for the unknowns once → the browser renders a sharp

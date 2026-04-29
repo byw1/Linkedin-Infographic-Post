@@ -8,7 +8,7 @@ import { RenderResult } from "@/components/render-result";
 
 type Stage = "upload" | "edit" | "render";
 
-export function LogoSwapFlow({ storageReady }: { storageReady: boolean }) {
+export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
   const [stage, setStage] = useState<Stage>("upload");
   const [html, setHtml] = useState<string>("");
   const [filename, setFilename] = useState<string | null>(null);

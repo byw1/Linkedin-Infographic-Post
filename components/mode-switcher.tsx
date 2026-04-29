@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogoSwapFlow } from "@/components/logoswap-flow";
+import { InfographicFlow } from "@/components/infographic-flow";
 import { CarouselFlow } from "@/components/carousel-flow";
 
 type Mode = "infographic" | "carousel";
@@ -31,7 +31,7 @@ export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
       </div>
 
       {mode === "infographic" ? (
-        <LogoSwapFlow storageReady={storageReady} />
+        <InfographicFlow storageReady={storageReady} />
       ) : (
         <CarouselFlow storageReady={storageReady} />
       )}
