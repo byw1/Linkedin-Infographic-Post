@@ -90,6 +90,10 @@ model Entity {
   id              String       @id @default(uuid()) @db.Uuid
   userId          String       @map("user_id") @db.Uuid
   slug            String
+  // Additional slugs that should resolve to this same entity. Lets users
+  // (and Claude) name the same logo differently without re-uploading —
+  // e.g. {slug: "sam-altman", aliases: ["sama", "samaltman"]}.
+  aliases         String[]     @default([])
   displayName     String       @map("display_name")
   type            EntityType
   shapePreference ShapePref    @default(square) @map("shape_preference")
@@ -104,6 +108,7 @@ model Entity {
   @@unique([userId, slug])
   @@index([userId, slug], name: "idx_entities_user_slug")
   @@index([userId, lastUsedAt(sort: Desc)], name: "idx_entities_user_last_used")
+  @@index([aliases], type: Gin, name: "idx_entities_aliases")
   @@map("entities")
 }
 

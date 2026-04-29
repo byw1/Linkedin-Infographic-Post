@@ -69,14 +69,23 @@ export async function POST(req: Request) {
   }
 
   const slugs = Array.from(aggregate.keys());
+  // Resolve by canonical slug OR alias so `sama` finds the entity stored
+  // under `sam-altman` if that's how the user named it.
   const known =
     slugs.length === 0
       ? []
       : await prisma.entity.findMany({
-          where: { userId: user.id, slug: { in: slugs } },
-          select: { slug: true, logoUrl: true, displayName: true },
+          where: {
+            userId: user.id,
+            OR: [{ slug: { in: slugs } }, { aliases: { hasSome: slugs } }],
+          },
+          select: { slug: true, aliases: true, logoUrl: true, displayName: true },
         });
-  const knownMap = new Map(known.map((k) => [k.slug, k]));
+  const knownMap = new Map<string, (typeof known)[number]>();
+  for (const k of known) {
+    knownMap.set(k.slug, k);
+    for (const a of k.aliases) knownMap.set(a, k);
+  }
 
   const entities: ResolvedEntity[] = await Promise.all(
     Array.from(aggregate.values()).map(async (e) => {

@@ -43,14 +43,24 @@ export async function POST(req: Request) {
 
   const extracted = extractEntities(html);
   const slugs = extracted.map((e) => e.slug);
+  // Look up by canonical slug OR alias — a logo uploaded as `sam-altman`
+  // should still resolve when an HTML uses `sama` if `sama` is in its
+  // alias list.
   const known =
     slugs.length === 0
       ? []
       : await prisma.entity.findMany({
-          where: { userId: user.id, slug: { in: slugs } },
-          select: { slug: true, logoUrl: true, displayName: true },
+          where: {
+            userId: user.id,
+            OR: [{ slug: { in: slugs } }, { aliases: { hasSome: slugs } }],
+          },
+          select: { slug: true, aliases: true, logoUrl: true, displayName: true },
         });
-  const knownMap = new Map(known.map((k) => [k.slug, k]));
+  const knownMap = new Map<string, (typeof known)[number]>();
+  for (const k of known) {
+    knownMap.set(k.slug, k);
+    for (const a of k.aliases) knownMap.set(a, k);
+  }
 
   const resolved: ResolvedEntity[] = await Promise.all(
     extracted.map(async (e) => {

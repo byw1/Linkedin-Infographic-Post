@@ -33,6 +33,10 @@ export async function GET(req: Request) {
             OR: [
               { slug: { contains: search } },
               { displayName: { contains: search, mode: "insensitive" } },
+              // Also match aliases — searching "sama" should find an
+              // entity stored as "sam-altman" if `sama` is in its alias
+              // list.
+              { aliases: { has: search } },
             ],
           }
         : {}),

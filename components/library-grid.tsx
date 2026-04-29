@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 interface Entity {
   id: string;
   slug: string;
+  aliases: string[];
   displayName: string;
   type: string;
   shapePreference: "square" | "circle" | "auto";
@@ -134,6 +135,10 @@ function LibraryCard({
   onDone: () => void;
 }) {
   const [name, setName] = useState(entity.displayName);
+  const [slug, setSlug] = useState(entity.slug);
+  // Aliases live in the form as a comma-separated string for editing —
+  // we normalize back to an array on save.
+  const [aliasesText, setAliasesText] = useState(entity.aliases.join(", "));
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [imgError, setImgError] = useState<string | null>(null);
@@ -166,11 +171,24 @@ function LibraryCard({
 
   function save() {
     setError(null);
+    const trimmedSlug = slug.trim();
+    const aliasesArray = aliasesText
+      .split(/[\s,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     startTransition(async () => {
+      const body: Record<string, unknown> = {
+        display_name: name.trim() || entity.slug,
+      };
+      if (trimmedSlug && trimmedSlug !== entity.slug) body.slug = trimmedSlug;
+      // Always send the aliases (even when empty) so clearing them
+      // works with a single round-trip.
+      body.aliases = aliasesArray;
+
       const res = await fetch(`/api/entities/${encodeURIComponent(entity.slug)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: name.trim() || entity.slug }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -244,23 +262,70 @@ function LibraryCard({
             }
           />
         )}
-        <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="min-w-0 flex-1 space-y-1">
           {editing ? (
-            <input
-              autoFocus
-              value={name}
-              onChange={(ev) => setName(ev.target.value)}
-              onKeyDown={(ev) => {
-                if (ev.key === "Enter") save();
-                if (ev.key === "Escape") onDone();
-              }}
-              className="h-7 w-full rounded-md border bg-background px-2 text-sm"
-            />
+            <>
+              <label className="block">
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Display name
+                </span>
+                <input
+                  autoFocus
+                  value={name}
+                  onChange={(ev) => setName(ev.target.value)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter") save();
+                    if (ev.key === "Escape") onDone();
+                  }}
+                  className="h-7 w-full rounded-md border bg-background px-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Slug
+                </span>
+                <input
+                  value={slug}
+                  onChange={(ev) => setSlug(ev.target.value)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter") save();
+                    if (ev.key === "Escape") onDone();
+                  }}
+                  className="h-7 w-full rounded-md border bg-background px-2 font-mono text-xs"
+                  placeholder="canonical-slug"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Aliases
+                  <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">
+                    (comma-separated, also resolve to this logo)
+                  </span>
+                </span>
+                <input
+                  value={aliasesText}
+                  onChange={(ev) => setAliasesText(ev.target.value)}
+                  onKeyDown={(ev) => {
+                    if (ev.key === "Enter") save();
+                    if (ev.key === "Escape") onDone();
+                  }}
+                  className="h-7 w-full rounded-md border bg-background px-2 font-mono text-xs"
+                  placeholder="sama, samaltman"
+                />
+              </label>
+            </>
           ) : (
-            <div className="truncate text-sm font-medium">{entity.displayName}</div>
+            <>
+              <div className="truncate text-sm font-medium">{entity.displayName}</div>
+              <div className="truncate text-xs text-muted-foreground">{entity.slug}</div>
+              {entity.aliases.length > 0 && (
+                <div className="truncate text-xs text-muted-foreground">
+                  also: {entity.aliases.join(", ")}
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground">used {entity.usageCount}×</div>
+            </>
           )}
-          <div className="truncate text-xs text-muted-foreground">{entity.slug}</div>
-          <div className="text-xs text-muted-foreground">used {entity.usageCount}×</div>
         </div>
       </div>
 
