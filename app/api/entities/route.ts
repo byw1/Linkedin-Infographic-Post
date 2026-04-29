@@ -133,7 +133,17 @@ export async function POST(req: Request) {
             sourceUrl: source.sourceUrl ?? undefined,
           },
         });
-        return NextResponse.json({ entity, logo_url: source.logoUrl });
+        // Refresh to a browser-fetchable URL — same as the upload
+        // paths below. Without this the editor receives the raw
+        // canonical `<endpoint>/<bucket>/<key>` form, which a private
+        // bucket can't serve directly, and the iframe shows a broken
+        // image icon even though the logo is fine in the library
+        // view (which already refreshes).
+        const readableUrl = (await refreshUrl(source.logoUrl)) ?? source.logoUrl;
+        return NextResponse.json({
+          entity: { ...entity, logoUrl: readableUrl },
+          logo_url: readableUrl,
+        });
       }
       if (!parsed.data.url) {
         return NextResponse.json({ error: "Provide a url or existing_slug." }, { status: 400 });
