@@ -18,6 +18,7 @@ import {
   ensureFontImports,
   extractGoogleFontUrls,
 } from "@/lib/theme-fonts";
+import { CHART_RETHEME_SCRIPT } from "@/lib/theme-charts";
 import type { ResolvedEntity } from "@/types/entity";
 
 const OUTLINE_UNRESOLVED = "2px dashed #f59e0b";
@@ -427,7 +428,9 @@ function applyTheme(doc: Document, css: string | null) {
   // Always start from a clean slate — both the style and any link
   // tags from a previous theme. If `css` is null we exit here.
   doc
-    .querySelectorAll(`style[${TAG_ATTR}], link[${TAG_ATTR}]`)
+    .querySelectorAll(
+      `style[${TAG_ATTR}], link[${TAG_ATTR}], script[${TAG_ATTR}]`,
+    )
     .forEach((el) => el.remove());
   if (!css) return;
 
@@ -446,6 +449,15 @@ function applyTheme(doc: Document, css: string | null) {
   const style = doc.createElement("style");
   style.setAttribute(TAG_ATTR, "");
   head.appendChild(style);
+
+  // Chart.js dataset colors live in `<script>` and don't get touched
+  // by the inline-style accent rewrite. This script polls for charts
+  // post-load and substitutes well-known accent hex with theme
+  // tokens via getComputedStyle, then calls chart.update('none').
+  const chartScript = doc.createElement("script");
+  chartScript.setAttribute(TAG_ATTR, "");
+  chartScript.textContent = CHART_RETHEME_SCRIPT;
+  head.appendChild(chartScript);
 
   // Three passes wrap the user's CSS:
   //   1. ensureFontImports — load Google Fonts the theme forgot to

@@ -2,6 +2,7 @@ import puppeteer, { type Browser, type Page } from "puppeteer-core";
 import { PDFDocument } from "pdf-lib";
 import JSZip from "jszip";
 import { parseCssTokens, rewriteAccents } from "@/lib/accent-rewrite";
+import { CHART_RETHEME_SCRIPT } from "@/lib/theme-charts";
 
 export type OutputFormat = "pdf" | "png-zip";
 
@@ -193,6 +194,13 @@ async function captureSlide(
     // the source HTML defined earlier in its own head.
     if (themeCss) {
       await page.addStyleTag({ content: themeCss });
+      // Chart.js dataset colors live in `<script>` blocks the inline-
+      // style accent rewrite can't safely touch. This script polls
+      // Chart.instances and substitutes well-known accent hex on the
+      // datasets in place. waitForImagesAndCanvas below already
+      // sleeps long enough that the substitution lands before
+      // capture.
+      await page.addScriptTag({ content: CHART_RETHEME_SCRIPT });
     }
 
     // Same data-entity → <img> swap the editor does in-page, so we
