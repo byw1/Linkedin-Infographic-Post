@@ -29,18 +29,13 @@ export function SkillsSection({ canManage }: { canManage: boolean }) {
   }, []);
 
   return (
-    <section className="space-y-3 rounded-md border p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <h2 className="text-base font-semibold">Skills</h2>
-          <p className="text-xs text-muted-foreground">
-            Markdown skill files for Claude. Download one, paste into Claude
-            (Project custom instructions, or <code>~/.claude/skills/&lt;name&gt;/SKILL.md</code>{" "}
-            for Claude Code) — then ask Claude to build the infographic or
-            carousel and drop the result here.
-          </p>
-        </div>
-      </div>
+    <section className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Download a skill, paste into Claude (Project custom instructions, or{" "}
+        <code>~/.claude/skills/&lt;name&gt;/SKILL.md</code> for Claude Code) —
+        then ask Claude to build the infographic or carousel and drop the
+        result back into <strong>New post</strong>.
+      </p>
 
       {skills === null && <p className="text-sm text-muted-foreground">Loading…</p>}
       {skills && skills.length === 0 && (
