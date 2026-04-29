@@ -22,10 +22,11 @@ export interface ExportResult {
   extension: "pdf" | "zip";
 }
 
-// LinkedIn document carousels render fine at the 5:4 landscape ratio,
-// and Instagram carousels accept the same crop. 1350×1080 fits both.
-const DEFAULT_WIDTH = 1350;
-const DEFAULT_HEIGHT = 1080;
+// 4:5 portrait — Instagram's recommended carousel size and LinkedIn
+// document carousels render fine at the same crop, so one size covers
+// both surfaces.
+const DEFAULT_WIDTH = 1080;
+const DEFAULT_HEIGHT = 1350;
 
 // Renders a list of slide HTMLs into either a single multi-page PDF
 // (real text PDFs — text is selectable, fonts embed, file is small)

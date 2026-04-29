@@ -6,8 +6,8 @@ import { EditorPanel } from "@/components/editor-panel";
 import { SlidePreview } from "@/components/slide-preview";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
 
-const SLIDE_WIDTH = 1350;
-const SLIDE_HEIGHT = 1080;
+const SLIDE_WIDTH = 1080;
+const SLIDE_HEIGHT = 1350;
 // Width the in-page preview is scaled to. The iframe still lays out at
 // the full slide size internally; this only controls the visible
 // footprint.

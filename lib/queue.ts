@@ -16,8 +16,9 @@ export interface RenderJob {
   // (Instagram, anywhere that doesn't take PDFs). Defaults to "pdf"
   // on consumers that don't pass the field.
   format?: "pdf" | "png-zip";
-  // Slide page size in pixel units. Defaults to 1350×1080 — fits
-  // both LinkedIn document carousels and Instagram landscape posts.
+  // Slide page size in pixel units. Defaults to 1080×1350 (4:5
+  // portrait) — fits Instagram carousels and LinkedIn documents in
+  // one crop.
   width?: number;
   height?: number;
 }
