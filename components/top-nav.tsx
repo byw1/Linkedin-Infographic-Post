@@ -35,12 +35,6 @@ export async function TopNav() {
                 Library
               </Link>
               <Link
-                href="/themes"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Themes
-              </Link>
-              <Link
                 href="/members"
                 className="text-muted-foreground hover:text-foreground"
               >

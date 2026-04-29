@@ -392,7 +392,10 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
 // Inject (or update / remove) the active theme's CSS as a tagged
 // <style> element in the iframe head. We append it last so its
 // `:root { --token: … }` declarations win over anything the source
-// HTML defined earlier in its own `:root`.
+// HTML defined earlier in its own `:root`, and we tack on a short
+// `!important` override that flips body/html colors + font even when
+// the source HTML hard-coded them — without that, switching themes
+// on legacy generated HTML looks like nothing changed.
 function applyTheme(doc: Document, css: string | null) {
   const head = doc.head ?? doc.documentElement;
   if (!head) return;
@@ -411,8 +414,23 @@ function applyTheme(doc: Document, css: string | null) {
     // source HTML mutates after first paint.
     head.appendChild(existing);
   }
-  existing.textContent = css;
+  existing.textContent = `${css}\n${THEME_OVERRIDES}`;
 }
+
+// Mirrors lib/themes.ts THEME_OVERRIDES — duplicated so this client
+// component doesn't pull in the server-only prisma import chain.
+const THEME_OVERRIDES = `
+/* viral theme overrides — flip canvas/text/font even on HTML that
+   doesn't reference var(--bg-canvas). */
+html {
+  background-color: var(--bg-canvas) !important;
+}
+body {
+  background-color: var(--bg-canvas) !important;
+  color: var(--fg-primary) !important;
+  font-family: var(--font-sans) !important;
+}
+`;
 
 function buildImgStyle(inline: string): string {
   const w = parseStyleValue(inline, "width");

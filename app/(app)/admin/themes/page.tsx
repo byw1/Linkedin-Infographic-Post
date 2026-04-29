@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminThemesPage() {
   const session = await auth();
   if (!session?.user) redirect("/auth/signin");
-  if (session.user.role !== "admin") redirect("/themes");
+  if (session.user.role !== "admin") redirect("/settings#themes");
 
   return (
     <main className="container mx-auto max-w-5xl space-y-6 py-10">

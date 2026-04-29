@@ -74,22 +74,46 @@ export function extractFontFamily(tokens: Tokens): string | null {
 // Build a `<style>` block to inject into the iframe / puppeteer page.
 // The injected CSS sets the theme's tokens at `:root` so any HTML
 // authored against `var(--bg-canvas)` etc. just works. We also set
-// `color-scheme` so form controls / scrollbars match.
+// `color-scheme` so form controls / scrollbars match, and append a
+// short !important override that flips body/html colors + font even
+// when the source HTML hard-coded them — without that, switching from
+// a dark to a light theme on legacy generated HTML looks like
+// nothing changed because the body's `background: #0a0a0a` style
+// shadows the new `--bg-canvas` token entirely.
 export function buildStyleTag(theme: { css: string; tokens: Tokens }): string {
-  const isDark = isDarkTheme(theme.tokens);
-  const colorScheme = isDark ? "dark" : "light";
-  return `<style data-viral-theme>
-:root { color-scheme: ${colorScheme}; }
-${theme.css}
-</style>`;
+  return `<style data-viral-theme>\n${buildStyleCss(theme)}\n</style>`;
 }
 
 // Same content, no `<style>` wrapper — for places that want raw CSS
 // (puppeteer's addStyleTag, the editor's createElement('style')).
 export function buildStyleCss(theme: { css: string; tokens: Tokens }): string {
   const isDark = isDarkTheme(theme.tokens);
-  return `:root { color-scheme: ${isDark ? "dark" : "light"}; }\n${theme.css}`;
+  return [
+    `:root { color-scheme: ${isDark ? "dark" : "light"}; }`,
+    theme.css,
+    THEME_OVERRIDES,
+  ].join("\n");
 }
+
+// Always-on overrides appended after the user's theme CSS. These map
+// the canonical tokens onto html/body with !important so HTML that
+// pre-dates the theme system (and hard-codes colors) still flips its
+// canvas + text + font when the user picks a different theme. Charts,
+// gradient buttons, etc. still hold their hard-coded colors — fully
+// theming those needs HTML that references var(--token) directly.
+const THEME_OVERRIDES = `
+/* viral theme overrides — flip canvas/text/font even on HTML that
+   doesn't reference var(--bg-canvas). Remove these once the source
+   HTML uses tokens throughout. */
+html {
+  background-color: var(--bg-canvas) !important;
+}
+body {
+  background-color: var(--bg-canvas) !important;
+  color: var(--fg-primary) !important;
+  font-family: var(--font-sans) !important;
+}
+`;
 
 // Heuristic: "is the canvas darker than the foreground?" → dark theme.
 // Works for hex (#0a0a0a) and rgb(...) tokens; defaults to dark if
