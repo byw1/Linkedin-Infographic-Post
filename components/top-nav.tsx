@@ -40,6 +40,12 @@ export async function TopNav() {
               >
                 Members
               </Link>
+              <Link
+                href="/docs"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Docs
+              </Link>
             </nav>
           )}
         </div>

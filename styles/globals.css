@@ -32,3 +32,66 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Plain-text-style markdown rendering for the /docs page. We don't
+   pull in @tailwindcss/typography to keep the dep set lean — these
+   targeted rules cover everything react-markdown + remark-gfm emit
+   (headings, paragraphs, lists, code, tables, links, blockquotes). */
+.docs-prose {
+  @apply text-sm leading-relaxed text-foreground;
+}
+.docs-prose h1 {
+  @apply mt-8 mb-3 text-2xl font-bold tracking-tight first:mt-0;
+}
+.docs-prose h2 {
+  @apply mt-7 mb-2 text-xl font-semibold tracking-tight;
+}
+.docs-prose h3 {
+  @apply mt-6 mb-2 text-base font-semibold tracking-tight;
+}
+.docs-prose p {
+  @apply my-3;
+}
+.docs-prose ul {
+  @apply my-3 list-disc space-y-1 pl-5;
+}
+.docs-prose ol {
+  @apply my-3 list-decimal space-y-1 pl-5;
+}
+.docs-prose li > p {
+  @apply my-0;
+}
+.docs-prose strong {
+  @apply font-semibold text-foreground;
+}
+.docs-prose a {
+  @apply text-primary underline underline-offset-2 hover:opacity-80;
+}
+.docs-prose code {
+  @apply rounded bg-muted px-1 py-0.5 font-mono text-[0.85em];
+}
+.docs-prose pre {
+  @apply my-4 overflow-x-auto rounded-md border bg-muted p-3 font-mono text-xs;
+}
+.docs-prose pre code {
+  @apply bg-transparent p-0 text-xs;
+}
+.docs-prose blockquote {
+  @apply my-4 border-l-2 border-primary/40 pl-3 text-muted-foreground;
+}
+.docs-prose hr {
+  @apply my-6 border-border;
+}
+.docs-prose table {
+  @apply my-4 w-full text-left text-xs;
+}
+.docs-prose th,
+.docs-prose td {
+  @apply border border-border px-2 py-1.5;
+}
+.docs-prose th {
+  @apply bg-muted font-medium;
+}
+.docs-prose img {
+  @apply my-4 max-w-full rounded-md border;
+}

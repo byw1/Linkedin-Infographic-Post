@@ -23,11 +23,21 @@ export interface GoogleAuthSettings {
   clientSecret: string;
 }
 
+// Docs page content. Admins edit, everyone reads. We track the editor
+// so the page can show "last updated by …" without a separate query.
+export interface DocsSettings {
+  markdown: string;
+  updatedAt: string;
+  updatedById: string | null;
+  updatedByName: string | null;
+}
+
 export type SettingsMap = {
   allowedEmails: string[];
   storage: StorageSettings | null;
   email: EmailSettings | null;
   google: GoogleAuthSettings | null;
+  docs: DocsSettings | null;
 };
 
 const DEFAULTS: SettingsMap = {
@@ -35,6 +45,7 @@ const DEFAULTS: SettingsMap = {
   storage: null,
   email: null,
   google: null,
+  docs: null,
 };
 
 const TTL_MS = 30_000;
@@ -121,6 +132,8 @@ async function loadFromDb(): Promise<Partial<SettingsMap>> {
         map.email = (row.value as unknown as EmailSettings) ?? null;
       } else if (row.key === "google") {
         map.google = (row.value as unknown as GoogleAuthSettings) ?? null;
+      } else if (row.key === "docs") {
+        map.docs = (row.value as unknown as DocsSettings) ?? null;
       }
     }
     return map;
@@ -138,6 +151,7 @@ export async function getSettings(force = false): Promise<SettingsMap> {
     storage: fromDb.storage ?? envStorage(),
     email: fromDb.email ?? envEmail(),
     google: fromDb.google ?? envGoogle(),
+    docs: fromDb.docs ?? null,
   };
 
   cache = { value: merged, expiresAt: Date.now() + TTL_MS };
