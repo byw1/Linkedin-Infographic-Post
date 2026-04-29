@@ -8,9 +8,9 @@ import { EditorPanel } from "@/components/editor-panel";
 import { SlidePreview } from "@/components/slide-preview";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
 
-const SLIDE_SIZE = 1080;
+const SLIDE_WIDTH = 1080;
 // Width the in-page preview is scaled to. The iframe still lays out at
-// SLIDE_SIZE internally; this only controls the visible footprint.
+// SLIDE_WIDTH internally; this only controls the visible footprint.
 const PREVIEW_DISPLAY_WIDTH = 720;
 
 interface Props {
@@ -124,8 +124,12 @@ export function CarouselEditor({
         html={currentSlide.html}
         entities={entities}
         onSlugClick={setActiveSlug}
-        renderWidth={SLIDE_SIZE}
-        renderHeight={SLIDE_SIZE}
+        renderWidth={SLIDE_WIDTH}
+        // Auto-fit each slide's height to its content. Forcing 1080 tall
+        // would render any unused vertical space as the body's bg color,
+        // so a slide whose layout is shorter than 1080 came out with a
+        // dark band above and/or below the content.
+        renderHeight="auto"
         displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
       />
 
@@ -215,48 +219,56 @@ export function CarouselEditor({
   );
 }
 
-// Renders each slide in an off-screen iframe at 1080×1080, swaps
-// data-entity placeholders against the supplied mapping, snapshots
-// with html-to-image, and stitches into a multi-page PDF (one page
-// per slide, page sized 1080×1080 in pixel units).
+// Renders each slide in an off-screen iframe at 1080 wide, snapshots
+// with html-to-image, and stitches into a multi-page PDF. Each PDF
+// page is sized to the slide's actual content height (1080 wide × N
+// tall) — slides shorter than 1080 don't get a dark band of body bg
+// padded onto them, and slides taller than 1080 don't get clipped.
 async function renderSlidesToPdf(
   slides: CarouselSlide[],
   mapping: Record<string, string>,
   onProgress: (current: number, total: number) => void,
 ): Promise<Blob> {
-  const pdf = new jsPDF({
-    unit: "px",
-    format: [SLIDE_SIZE, SLIDE_SIZE],
-    orientation: "portrait",
-    compress: true,
-    hotfixes: ["px_scaling"],
-  });
+  let pdf: jsPDF | null = null;
 
   for (let i = 0; i < slides.length; i++) {
     const slide = slides[i];
     onProgress(i, slides.length);
-    const dataUrl = await renderSlideToPng(slide, mapping);
-    if (i > 0) pdf.addPage([SLIDE_SIZE, SLIDE_SIZE], "portrait");
-    pdf.addImage(dataUrl, "PNG", 0, 0, SLIDE_SIZE, SLIDE_SIZE);
+    const { dataUrl, height } = await renderSlideToPng(slide, mapping);
+    if (!pdf) {
+      pdf = new jsPDF({
+        unit: "px",
+        format: [SLIDE_WIDTH, height],
+        orientation: "portrait",
+        compress: true,
+        hotfixes: ["px_scaling"],
+      });
+    } else {
+      pdf.addPage([SLIDE_WIDTH, height], "portrait");
+    }
+    pdf.addImage(dataUrl, "PNG", 0, 0, SLIDE_WIDTH, height);
     onProgress(i + 1, slides.length);
   }
 
+  if (!pdf) throw new Error("No slides to render.");
   return pdf.output("blob");
 }
 
 async function renderSlideToPng(
   slide: CarouselSlide,
   mapping: Record<string, string>,
-): Promise<string> {
+): Promise<{ dataUrl: string; height: number }> {
   // Off-screen iframe that doesn't paint into the page but is still a
   // real document (so layout, fonts, and html-to-image's serialization
   // all behave the same as the visible preview).
   const iframe = document.createElement("iframe");
+  // Start tall enough to give vh-relative content room to lay out;
+  // we read the actual scrollHeight after layout settles.
   iframe.style.cssText =
     "position:fixed;left:-10000px;top:0;width:" +
-    SLIDE_SIZE +
+    SLIDE_WIDTH +
     "px;height:" +
-    SLIDE_SIZE +
+    SLIDE_WIDTH +
     "px;border:0;background:#fff";
   iframe.setAttribute("sandbox", "allow-same-origin allow-scripts");
   document.body.appendChild(iframe);
@@ -289,14 +301,21 @@ async function renderSlideToPng(
         ? htmlBg
         : "#ffffff";
 
+    // Capture the slide's actual content height. Forcing a 1080 floor
+    // would re-introduce the bg-color band below short slides — exactly
+    // the bug we're fixing. The Math.max guards against the rare case
+    // where one of scrollHeights resolves to 0 (e.g. a body that's
+    // display:none for a frame during chart hydration).
+    const height = Math.max(root.scrollHeight, doc.body.scrollHeight, 1);
+
     const dataUrl = await htmlToImage.toPng(root, {
       pixelRatio: 2,
       cacheBust: true,
-      width: SLIDE_SIZE,
-      height: SLIDE_SIZE,
+      width: SLIDE_WIDTH,
+      height,
       backgroundColor: canvasBg,
     });
-    return dataUrl;
+    return { dataUrl, height };
   } finally {
     iframe.remove();
   }
