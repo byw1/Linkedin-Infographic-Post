@@ -68,7 +68,17 @@ async function buildConfig(): Promise<NextAuthConfig> {
   }
 
   return {
-    session: { strategy: "jwt" },
+    // 60-day JWT sessions, refreshed on every request so an active
+    // user never gets logged out involuntarily. The cookie is
+    // long-lived (Max-Age = 60 days) so logins survive browser
+    // restarts — closing the tab doesn't sign you out. NextAuth's
+    // default would also persist, but spelling this out keeps the
+    // intent obvious and lets us tune it without spelunking.
+    session: {
+      strategy: "jwt",
+      maxAge: 60 * 24 * 60 * 60, // 60 days in seconds
+      updateAge: 24 * 60 * 60,   // sliding refresh once per day
+    },
     trustHost: true,
     providers,
     pages: {
