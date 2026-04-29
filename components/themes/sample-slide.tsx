@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ensureFontImports } from "@/lib/theme-fonts";
 
 interface Props {
   // Full theme CSS (the same string the API stores). Injected into a
@@ -22,33 +23,46 @@ interface Props {
 export function SampleSlide({ css }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const html = useMemo(() => buildSampleHtml(), []);
+  // Track whether the iframe has loaded its srcDoc. We can't trust
+  // `contentDocument.readyState === "complete"` on first render —
+  // a fresh iframe initially holds an about:blank document that's
+  // already "complete", so injecting into it puts the style on the
+  // wrong document (the real srcDoc loads moments later and wipes
+  // it). Waiting on the load event guarantees we're targeting the
+  // sample HTML's document.
+  const [loaded, setLoaded] = useState(false);
 
-  // Each css change re-injects the `<style data-viral-theme>` tag in
-  // the iframe head. We don't rebuild the iframe content — that would
-  // re-fetch fonts on every keystroke and flicker.
+  // Mark loaded on the iframe's first load event (when srcDoc has
+  // actually rendered). Only runs once per iframe.
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
-    function apply() {
-      const doc = iframe?.contentDocument;
-      if (!doc) return;
-      const head = doc.head ?? doc.documentElement;
-      if (!head) return;
-      const TAG = "data-viral-theme";
-      let style = doc.querySelector(`style[${TAG}]`) as HTMLStyleElement | null;
-      if (!style) {
-        style = doc.createElement("style");
-        style.setAttribute(TAG, "");
-        head.appendChild(style);
-      }
-      style.textContent = `${css}\n${OVERRIDES}`;
+    const onLoad = () => setLoaded(true);
+    iframe.addEventListener("load", onLoad);
+    return () => iframe.removeEventListener("load", onLoad);
+  }, []);
+
+  // Each css change re-injects the `<style data-viral-theme>` tag in
+  // the iframe head once the srcDoc has loaded. We don't rebuild the
+  // iframe content — that would re-fetch fonts on every keystroke
+  // and flicker.
+  useEffect(() => {
+    if (!loaded) return;
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return;
+    const head = doc.head ?? doc.documentElement;
+    if (!head) return;
+    const TAG = "data-viral-theme";
+    let style = doc.querySelector(`style[${TAG}]`) as HTMLStyleElement | null;
+    if (!style) {
+      style = doc.createElement("style");
+      style.setAttribute(TAG, "");
+      head.appendChild(style);
     }
-    if (iframe.contentDocument?.readyState === "complete") apply();
-    else iframe.addEventListener("load", apply, { once: true });
-    return () => {
-      iframe.removeEventListener("load", apply);
-    };
-  }, [css]);
+    // Auto-prepend Google Fonts @import for any referenced family
+    // the user forgot to import — same logic the editor + worker use.
+    style.textContent = `${ensureFontImports(css)}\n${OVERRIDES}`;
+  }, [css, loaded]);
 
   return (
     <iframe

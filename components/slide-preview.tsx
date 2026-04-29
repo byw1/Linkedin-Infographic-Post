@@ -13,6 +13,7 @@ import {
   applyAccentRewriteToDocument,
   parseCssTokens,
 } from "@/lib/accent-rewrite";
+import { ensureFontImports } from "@/lib/theme-fonts";
 import type { ResolvedEntity } from "@/types/entity";
 
 const OUTLINE_UNRESOLVED = "2px dashed #f59e0b";
@@ -426,7 +427,11 @@ function applyTheme(doc: Document, css: string | null) {
     // source HTML mutates after first paint.
     head.appendChild(existing);
   }
-  existing.textContent = `${css}\n${THEME_OVERRIDES}`;
+  // Auto-prepend Google Fonts @import lines for any family the theme
+  // references but didn't load itself. Without this, a pasted theme
+  // using 'Figtree' silently falls back to -apple-system because the
+  // browser has no font file to render with.
+  existing.textContent = `${ensureFontImports(css)}\n${THEME_OVERRIDES}`;
 }
 
 // Mirrors lib/themes.ts THEME_OVERRIDES — duplicated so this client

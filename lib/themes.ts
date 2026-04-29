@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { ensureFontImports } from "@/lib/theme-fonts";
 
 // The token keys the editable picker exposes. Anything else in a
 // pasted CSS file is preserved verbatim in `css` but ignored when we
@@ -133,11 +134,14 @@ export function buildStyleTag(theme: { css: string; tokens: Tokens }): string {
 
 // Same content, no `<style>` wrapper — for places that want raw CSS
 // (puppeteer's addStyleTag, the editor's createElement('style')).
+// Auto-prepends `@import` for any Google Fonts the theme references
+// but didn't load itself, so a CSS-tab-pasted theme using 'Figtree'
+// renders in Figtree even if the user forgot the import line.
 export function buildStyleCss(theme: { css: string; tokens: Tokens }): string {
   const isDark = isDarkTheme(theme.tokens);
   return [
     `:root { color-scheme: ${isDark ? "dark" : "light"}; }`,
-    theme.css,
+    ensureFontImports(theme.css),
     THEME_OVERRIDES,
   ].join("\n");
 }
