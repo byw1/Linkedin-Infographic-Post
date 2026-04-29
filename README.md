@@ -17,12 +17,13 @@ library compounds.
 | Framework | Next.js 14 (App Router), TypeScript strict |
 | UI | Tailwind CSS + shadcn/ui primitives |
 | Database | Postgres via Prisma |
-| Cache | Redis (sessions, parse cache, rate limiting) |
+| Cache / Queue | Redis (sessions, parse cache, rate limiting, BullMQ render queue) |
 | Auth | Auth.js (NextAuth v5) — email + password by default, optional Google SSO, invite-link onboarding |
 | Storage | S3-compatible (Cloudflare R2 recommended; MinIO works the same) |
 | HTML parse | `cheerio` (server, parse only) |
-| PNG export | `html-to-image`, in the user's browser |
-| Hosting | Railway (Postgres + Redis + web service) |
+| PNG export | `html-to-image`, in the user's browser (single infographic) |
+| PDF export | `puppeteer-core` (real text PDF) + `pdf-lib` (merge), in a separate worker service (carousel) |
+| Hosting | Railway (Postgres + Redis + web + worker services) |
 
 ## Repo layout
 
