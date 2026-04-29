@@ -287,6 +287,16 @@ async function renderSlideToPng(
 
     applyMapping(doc, mapping);
     await waitForImages(doc);
+    // Charting libraries (Chart.js, etc.) draw to <canvas> after their
+    // scripts run and animate over ~1s. The visible editor preview hides
+    // this because the user takes seconds to scrub between slides; the
+    // off-screen render is fast enough that, without a settle wait,
+    // we'd snapshot a half-drawn (or empty) canvas. Wait long enough
+    // for the default Chart.js animation, but only when a canvas is
+    // actually present so non-chart slides don't pay the cost.
+    if (doc.querySelectorAll("canvas").length > 0) {
+      await new Promise((r) => setTimeout(r, 1500));
+    }
     await new Promise((r) => requestAnimationFrame(() => r(null)));
 
     const root = doc.documentElement;
