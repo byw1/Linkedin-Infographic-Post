@@ -94,6 +94,11 @@ async function renderSlide(
     await page.emulateMediaFeatures([
       { name: "prefers-color-scheme", value: "dark" },
     ]);
+    // Render with screen media so charts and CSS that the user designed
+    // for the iframe behave the same. page.pdf() defaults to print
+    // media, which strips backgrounds and changes layout — both wrong
+    // for an infographic.
+    await page.emulateMediaType("screen");
 
     // Hand the slide HTML to Chromium as-is; the editor uses srcDoc
     // the same way and cheerio re-serialization or wrapper bodies were
@@ -101,6 +106,26 @@ async function renderSlide(
     await page.setContent(slide.html, {
       waitUntil: "networkidle2",
       timeout: 30_000,
+    });
+
+    // Pin the document to exactly width × height so each slide is one
+    // PDF page. Without this, the default 8px body margin alone is
+    // enough to push content onto a second page (a 7-slide carousel
+    // ends up at 14). overflow:hidden clips any rogue overflow rather
+    // than letting Chromium paginate it as bonus pages.
+    await page.addStyleTag({
+      content: `
+        @page { size: ${width}px ${height}px; margin: 0 }
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        body {
+          width: ${width}px !important;
+          height: ${height}px !important;
+          overflow: hidden !important;
+        }
+      `,
     });
 
     // Same data-entity → <img> swap the editor does in-page, so we
@@ -165,7 +190,10 @@ async function renderSlide(
       width: `${width}px`,
       height: `${height}px`,
       printBackground: true,
-      preferCSSPageSize: false,
+      // Honor the injected @page size + body clamp above. Without
+      // this, Chromium falls back to width/height and ignores our
+      // overflow rules, paginating any content >1080px tall.
+      preferCSSPageSize: true,
       // Zero margins so the slide bleeds to the page edges — the
       // template controls its own padding.
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
