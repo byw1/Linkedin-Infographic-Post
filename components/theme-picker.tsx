@@ -153,7 +153,9 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
               </span>
             </button>
           ))}
-          {diagnostics && <DiagnosticsPanel d={diagnostics} />}
+          {diagnostics && active && (
+            <DiagnosticsPanel d={diagnostics} theme={active} />
+          )}
           <div className="my-1 border-t" />
           <a
             href="/settings#themes"
@@ -168,15 +170,39 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
 }
 
 // Compact "Currently rendering" panel inside the picker dropdown.
-// Each row exposes one signal the user can spot-check without
-// opening devtools: body font (+ load status), body background, how
-// many inline styles got rewritten to var(--…), how many charts
-// were detected. A row glows red when its value is suspicious
-// (font not loaded, zero rewrites despite having styled elements,
-// etc.) so the eye lands there first.
-function DiagnosticsPanel({ d }: { d: ThemeDiagnostics }) {
-  const fontIssue = d.fontFamily && d.fontLoaded === false;
+// Pairs what the *theme declares* with what's *actually rendering*
+// so a mismatch (e.g. theme says 'Figtree' but body shows 'system-ui')
+// is obvious without opening devtools. Rows go red when the value
+// is suspicious — font not loaded, declared family doesn't match
+// rendered family, no inline-style rewrites despite styled elements.
+function DiagnosticsPanel({
+  d,
+  theme,
+}: {
+  d: ThemeDiagnostics;
+  theme: PickerTheme;
+}) {
+  // What the theme is asking for. Read both naming conventions so
+  // pasted themes using --font-sans show up too.
+  const declaredFontStack =
+    theme.tokens["--font-family-base"] ?? theme.tokens["--font-sans"] ?? null;
+  const declaredFirstFamily = declaredFontStack
+    ? declaredFontStack.match(/['"]([^'"]+)['"]/)?.[1] ??
+      declaredFontStack.split(",")[0]?.trim() ??
+      null
+    : null;
+
+  const fontNotLoaded = d.fontFamily && d.fontLoaded === false;
+  // "Mismatch" flags when the theme declares a specific quoted family
+  // but body is rendering with something different. We compare on the
+  // first quoted family only — system fallback chains are noisy and
+  // not worth flagging.
+  const fontMismatch =
+    declaredFirstFamily &&
+    d.fontFamily &&
+    declaredFirstFamily.toLowerCase() !== d.fontFamily.toLowerCase();
   const noRewrites = d.inlineStyledElements > 0 && d.tokenizedElements === 0;
+
   return (
     <>
       <div className="my-1 border-t" />
@@ -184,14 +210,20 @@ function DiagnosticsPanel({ d }: { d: ThemeDiagnostics }) {
         Currently rendering
       </div>
       <div className="space-y-0.5 px-2 pb-2 text-[11px]">
+        {declaredFirstFamily && (
+          <DiagnosticRow
+            label="Theme font"
+            value={declaredFirstFamily}
+          />
+        )}
         <DiagnosticRow
-          label="Font"
+          label="Rendering"
           value={
             d.fontFamily
               ? `${d.fontFamily}${d.fontLoaded === false ? " · not loaded" : d.fontLoaded ? " ✓" : ""}`
               : "—"
           }
-          flag={Boolean(fontIssue)}
+          flag={Boolean(fontNotLoaded || fontMismatch)}
         />
         <DiagnosticRow label="Background" value={d.backgroundColor || "—"} />
         <DiagnosticRow label="Text color" value={d.color || "—"} />

@@ -25,7 +25,13 @@ interface Props {
   storageReady: boolean;
 }
 
-const RENDER_WIDTH = 720;
+// Single-post HTML from the linkedin-posts skill renders at native
+// 1080×1350 (same as carousel slides). The iframe lays out at the
+// full 1080 internally — capture honors that — but we display it
+// CSS-scaled to 720 so the editor doesn't blow out the page width.
+// Older HTML that's narrower than 1080 just centers in the frame.
+const RENDER_WIDTH = 1080;
+const PREVIEW_DISPLAY_WIDTH = 720;
 
 export function VisualEditor({
   html,
@@ -112,6 +118,7 @@ export function VisualEditor({
         onSlugClick={setActiveSlug}
         renderWidth={RENDER_WIDTH}
         renderHeight="auto"
+        displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
         themeCss={theme?.css ?? null}
         onThemeApplied={setDiagnostics}
       />
