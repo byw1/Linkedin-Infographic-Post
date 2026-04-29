@@ -30,6 +30,36 @@ export interface SlidePreviewHandle {
   capture(): Promise<Blob>;
 }
 
+// Snapshot of how the active theme is actually rendering in the
+// iframe right now. Used by the picker's diagnostics panel so the
+// user can see at a glance whether fonts loaded, hex got rewritten,
+// charts were detected, etc. — without opening devtools.
+export interface ThemeDiagnostics {
+  // First quoted family in body's computed font-family (the face the
+  // browser will actually render with), or null if there's no quoted
+  // family in the stack.
+  fontFamily: string | null;
+  // Whether `document.fonts.check()` says the family is loaded. null
+  // when there's no family to check.
+  fontLoaded: boolean | null;
+  // body's computed background-color + color, in rgb()/rgba() form
+  // (whatever getComputedStyle returns). Lets the user spot
+  // "background is still the source HTML's white" type bugs.
+  backgroundColor: string;
+  color: string;
+  // Number of elements with a `style="…"` attribute that contains a
+  // `var(--…)` reference. Indicates the accent rewriter ran (high
+  // count = good, 0 = no rewrites = source HTML had no inline hex
+  // or the rewriter didn't fire).
+  tokenizedElements: number;
+  // Total elements with inline styles, for context — gives a feel
+  // for "how much of this HTML is var()-referenced".
+  inlineStyledElements: number;
+  // <canvas> element count — the chart re-theme script targets these
+  // post-load. 0 = no charts.
+  canvases: number;
+}
+
 interface Props {
   html: string;
   entities: ResolvedEntity[];
@@ -47,6 +77,11 @@ interface Props {
   // block so HTML authored against `var(--accent)` etc. picks up the
   // tokens. Updates re-inject without rebuilding the iframe.
   themeCss?: string | null;
+  // Fired once after each theme application settles (inject + accent
+  // rewrite + chart retheme polling). The picker's diagnostics
+  // tooltip reads from this. Debounced internally so multiple rapid
+  // theme changes only fire once at the end.
+  onThemeApplied?: (diagnostics: ThemeDiagnostics) => void;
 }
 
 export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
@@ -59,9 +94,13 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
       renderHeight,
       displayMaxWidth,
       themeCss,
+      onThemeApplied,
     },
     ref,
   ) {
+    const onThemeAppliedRef = useRef(onThemeApplied);
+    onThemeAppliedRef.current = onThemeApplied;
+    const diagnosticsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     // Per-element snapshot of the original placeholder HTML, used to
     // revert on unresolve. WeakMap so we can transfer the snapshot from
@@ -171,6 +210,11 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
           observersRef.current = { ro, mo };
         }
 
+        // Initial diagnostics capture, after theme + accent rewrite +
+        // chart script have all run. Mirrors the post-theme-change
+        // capture below so the tooltip is populated as soon as the
+        // first render lands.
+        scheduleDiagnostics();
         setIframeReady(true);
       }
 
@@ -182,6 +226,10 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
         observersRef.current.ro?.disconnect();
         observersRef.current.mo?.disconnect();
         observersRef.current = {};
+        if (diagnosticsTimerRef.current) {
+          clearTimeout(diagnosticsTimerRef.current);
+          diagnosticsTimerRef.current = null;
+        }
         setIframeReady(false);
       };
     }, [srcDoc, renderHeight]);
@@ -193,7 +241,26 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
       const doc = iframeRef.current?.contentDocument;
       if (!doc) return;
       applyTheme(doc, themeCss ?? null);
+      scheduleDiagnostics();
     }, [themeCss, iframeReady]);
+
+    // Schedule a diagnostics capture ~600ms after the latest theme
+    // change. The chart-retheme script polls for up to 6s after
+    // load, but in practice charts settle within a few hundred ms;
+    // 600ms is enough to capture post-rewrite state without making
+    // the picker tooltip feel stale. Debounced via the timer ref so
+    // a flurry of theme changes only fires once.
+    function scheduleDiagnostics() {
+      if (diagnosticsTimerRef.current) {
+        clearTimeout(diagnosticsTimerRef.current);
+      }
+      diagnosticsTimerRef.current = setTimeout(() => {
+        const doc = iframeRef.current?.contentDocument;
+        if (!doc) return;
+        const d = captureDiagnostics(doc);
+        if (d) onThemeAppliedRef.current?.(d);
+      }, 600);
+    }
 
     // Subsequent edits — diff entities state against iframe DOM and
     // apply changes without rebuilding srcDoc.
@@ -474,6 +541,53 @@ function applyTheme(doc: Document, css: string | null) {
     buildAliasBridge(tokens),
     THEME_OVERRIDES,
   ].join("\n");
+}
+
+// Snapshot the iframe's current rendering state for the picker's
+// diagnostics tooltip. Reads getComputedStyle for body so the user
+// sees the fonts/colors actually rendering — not what the theme
+// CSS *should* apply. Returns null if the iframe isn't ready
+// enough to read body styles.
+function captureDiagnostics(doc: Document): ThemeDiagnostics | null {
+  const win = doc.defaultView;
+  if (!win || !doc.body) return null;
+  const cs = win.getComputedStyle(doc.body);
+
+  // Pull the first quoted family out of the computed font-family
+  // stack — that's the face the browser will actually render with
+  // when it's available. Stack like `"Inter", -apple-system, …`
+  // with the unquoted system fallbacks gets handled by the regex
+  // tolerantly. We also accept unquoted bare keywords as a fallback
+  // so "system-ui, sans-serif" reports something useful.
+  const familyValue = cs.fontFamily ?? "";
+  const quoted = familyValue.match(/['"]([^'"]+)['"]/);
+  const fallback = familyValue.split(",")[0]?.trim().replace(/['"]/g, "");
+  const fontFamily = quoted ? quoted[1] : fallback || null;
+
+  // document.fonts.check() returns true only if *every* face required
+  // for the spec is loaded. Wrap in try/catch — older browsers /
+  // sandboxed iframes sometimes throw on this API.
+  let fontLoaded: boolean | null = null;
+  if (fontFamily) {
+    try {
+      fontLoaded = doc.fonts?.check?.(`1em "${fontFamily}"`) ?? null;
+    } catch {
+      fontLoaded = null;
+    }
+  }
+
+  const inlineStyled = doc.querySelectorAll('[style]');
+  const tokenized = doc.querySelectorAll('[style*="var(--"]');
+
+  return {
+    fontFamily,
+    fontLoaded,
+    backgroundColor: cs.backgroundColor,
+    color: cs.color,
+    tokenizedElements: tokenized.length,
+    inlineStyledElements: inlineStyled.length,
+    canvases: doc.querySelectorAll("canvas").length,
+  };
 }
 
 // Mirrors lib/themes.ts THEME_OVERRIDES — duplicated so this client

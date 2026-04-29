@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ThemeDiagnostics } from "@/components/slide-preview";
 
 export interface PickerTheme {
   id: string;
@@ -35,13 +36,19 @@ interface Props {
   // load). Receives the loaded ActiveTheme (with `css`) or `null` if
   // the user picks "no theme".
   onChange: (theme: ActiveTheme | null) => void;
+  // Latest theme diagnostics from the editor's preview iframe. When
+  // provided, the dropdown shows a "Currently rendering" panel with
+  // body font, background, accent rewrite count, and chart count —
+  // so the user can spot "fonts didn't load" or "no rewrites fired"
+  // at a glance instead of opening devtools.
+  diagnostics?: ThemeDiagnostics | null;
 }
 
 // Compact dropdown: shows the active theme name + a small color chip.
 // Used in both editor toolbars. Selection is persisted client-side
 // only — server doesn't track "active theme per user", just records
 // which theme each render used.
-export function ThemePicker({ onChange }: Props) {
+export function ThemePicker({ onChange, diagnostics }: Props) {
   const [list, setList] = useState<PickerTheme[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
@@ -146,6 +153,7 @@ export function ThemePicker({ onChange }: Props) {
               </span>
             </button>
           ))}
+          {diagnostics && <DiagnosticsPanel d={diagnostics} />}
           <div className="my-1 border-t" />
           <a
             href="/settings#themes"
@@ -155,6 +163,70 @@ export function ThemePicker({ onChange }: Props) {
           </a>
         </div>
       )}
+    </div>
+  );
+}
+
+// Compact "Currently rendering" panel inside the picker dropdown.
+// Each row exposes one signal the user can spot-check without
+// opening devtools: body font (+ load status), body background, how
+// many inline styles got rewritten to var(--…), how many charts
+// were detected. A row glows red when its value is suspicious
+// (font not loaded, zero rewrites despite having styled elements,
+// etc.) so the eye lands there first.
+function DiagnosticsPanel({ d }: { d: ThemeDiagnostics }) {
+  const fontIssue = d.fontFamily && d.fontLoaded === false;
+  const noRewrites = d.inlineStyledElements > 0 && d.tokenizedElements === 0;
+  return (
+    <>
+      <div className="my-1 border-t" />
+      <div className="px-2 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+        Currently rendering
+      </div>
+      <div className="space-y-0.5 px-2 pb-2 text-[11px]">
+        <DiagnosticRow
+          label="Font"
+          value={
+            d.fontFamily
+              ? `${d.fontFamily}${d.fontLoaded === false ? " · not loaded" : d.fontLoaded ? " ✓" : ""}`
+              : "—"
+          }
+          flag={Boolean(fontIssue)}
+        />
+        <DiagnosticRow label="Background" value={d.backgroundColor || "—"} />
+        <DiagnosticRow label="Text color" value={d.color || "—"} />
+        <DiagnosticRow
+          label="Token usages"
+          value={`${d.tokenizedElements} / ${d.inlineStyledElements} styled`}
+          flag={noRewrites}
+        />
+        <DiagnosticRow
+          label="Charts"
+          value={d.canvases === 0 ? "none" : `${d.canvases} found`}
+        />
+      </div>
+    </>
+  );
+}
+
+function DiagnosticRow({
+  label,
+  value,
+  flag,
+}: {
+  label: string;
+  value: string;
+  flag?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={`truncate font-mono ${flag ? "text-destructive" : "text-foreground"}`}
+        title={value}
+      >
+        {value}
+      </span>
     </div>
   );
 }

@@ -3,7 +3,11 @@
 import { useRef, useState, useTransition } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { EditorPanel } from "@/components/editor-panel";
-import { SlidePreview, type SlidePreviewHandle } from "@/components/slide-preview";
+import {
+  SlidePreview,
+  type SlidePreviewHandle,
+  type ThemeDiagnostics,
+} from "@/components/slide-preview";
 import { ThemePicker, type ActiveTheme } from "@/components/theme-picker";
 
 interface Props {
@@ -36,6 +40,7 @@ export function VisualEditor({
   const [error, setError] = useState<string | null>(null);
   const [rendering, startRender] = useTransition();
   const [theme, setTheme] = useState<ActiveTheme | null>(null);
+  const [diagnostics, setDiagnostics] = useState<ThemeDiagnostics | null>(null);
 
   const total = entities.length;
   const resolvedCount = entities.filter((e) => e.resolved).length;
@@ -86,7 +91,7 @@ export function VisualEditor({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <ThemePicker onChange={setTheme} />
+          <ThemePicker onChange={setTheme} diagnostics={diagnostics} />
           <button
             type="button"
             onClick={startRenderClick}
@@ -108,6 +113,7 @@ export function VisualEditor({
         renderWidth={RENDER_WIDTH}
         renderHeight="auto"
         themeCss={theme?.css ?? null}
+        onThemeApplied={setDiagnostics}
       />
 
       {activeEntity && (

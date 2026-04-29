@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { EditorPanel } from "@/components/editor-panel";
-import { SlidePreview } from "@/components/slide-preview";
+import { SlidePreview, type ThemeDiagnostics } from "@/components/slide-preview";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
 import { ThemePicker, type ActiveTheme } from "@/components/theme-picker";
 
@@ -46,6 +46,7 @@ export function CarouselEditor({
   const [submitting, startSubmit] = useTransition();
   const [format, setFormat] = useState<Format>("pdf");
   const [theme, setTheme] = useState<ActiveTheme | null>(null);
+  const [diagnostics, setDiagnostics] = useState<ThemeDiagnostics | null>(null);
 
   const total = entities.length;
   const resolvedCount = entities.filter((e) => e.resolved).length;
@@ -112,7 +113,7 @@ export function CarouselEditor({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <ThemePicker onChange={setTheme} />
+          <ThemePicker onChange={setTheme} diagnostics={diagnostics} />
           <div className="inline-flex rounded-md border p-0.5 text-xs">
             <FormatTab active={format === "pdf"} onClick={() => setFormat("pdf")}>
               PDF
@@ -154,6 +155,7 @@ export function CarouselEditor({
         renderHeight={SLIDE_HEIGHT}
         displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
         themeCss={theme?.css ?? null}
+        onThemeApplied={setDiagnostics}
       />
 
       <div className="flex items-center justify-center gap-3">
