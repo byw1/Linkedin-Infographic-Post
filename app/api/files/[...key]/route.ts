@@ -8,9 +8,10 @@ import { getSettings } from "@/lib/settings";
 // web service, so the browser doesn't need direct access to the bucket
 // endpoint (Railway's Bucket service is private-network only).
 //
-// Authorization: per-user prefix check. Object keys must start with one of
-// "logos/<userId>/" or "renders/<userId>/" to be served. This means the
-// stored URL pattern is itself the access-control surface — keep that in
+// Authorization is prefix-based:
+// - "logos/<userId>/", "renders/<userId>/": only the owning user can fetch.
+// - "skills/": team-shared, any signed-in user can fetch.
+// The stored URL pattern is itself the access-control surface — keep that in
 // mind if you ever change the upload key shape.
 export async function GET(
   _req: Request,
@@ -24,8 +25,12 @@ export async function GET(
   }
 
   const key = params.key.map(decodeURIComponent).join("/");
-  const allowedPrefixes = [`logos/${user.id}/`, `renders/${user.id}/`];
-  if (!allowedPrefixes.some((p) => key.startsWith(p))) {
+  const ownPrefixes = [`logos/${user.id}/`, `renders/${user.id}/`];
+  const sharedPrefixes = ["skills/"];
+  const allowed =
+    ownPrefixes.some((p) => key.startsWith(p)) ||
+    sharedPrefixes.some((p) => key.startsWith(p));
+  if (!allowed) {
     return new Response("Forbidden", { status: 403 });
   }
 

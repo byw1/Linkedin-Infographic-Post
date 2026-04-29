@@ -34,6 +34,7 @@ model User {
   renders         Render[]
   invitesCreated  Invite[]  @relation("InviteCreatedBy")
   invitesRedeemed Invite[]  @relation("InviteRedeemedBy")
+  skillsUploaded  Skill[]   @relation("SkillUploadedBy")
 
   @@index([tags], type: Gin, name: "idx_users_tags")
   @@map("users")
@@ -147,6 +148,27 @@ model Setting {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("settings")
+}
+
+// Markdown skill files an admin uploads for the team. Anyone signed in
+// can list and download them; only admins can upload or delete. The
+// actual bytes live in S3 under `skills/<id>.md`; this row stores the
+// metadata (name + description from the YAML frontmatter, original
+// filename for download, and size for display).
+model Skill {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  description  String?
+  filename     String
+  storageKey   String   @map("storage_key")
+  fileSize     Int      @map("file_size")
+  uploadedById String   @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User     @relation("SkillUploadedBy", fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)], name: "idx_skills_created")
+  @@map("skills")
 }
 
 enum Role {
