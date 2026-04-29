@@ -169,12 +169,54 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
   );
 }
 
+// Family names the browser/OS treat as interchangeable when picking
+// a system UI font. If the theme stack starts with one of these and
+// body renders with another, it's not a real mismatch — both are
+// "the system font" and the row should stay green.
+const SYSTEM_FAMILY_KEYWORDS = new Set(
+  [
+    "system-ui",
+    "-apple-system",
+    "blinkmacsystemfont",
+    "segoe ui",
+    "ui-sans-serif",
+    "sans-serif",
+    "helvetica neue",
+    "helvetica",
+    "arial",
+  ].map((s) => s.toLowerCase()),
+);
+
+function normalizeFamily(name: string): string {
+  return name
+    .trim()
+    .replace(/^['"]|['"]$/g, "")
+    .toLowerCase();
+}
+
+function isSystemFamily(name: string | null): boolean {
+  if (!name) return false;
+  return SYSTEM_FAMILY_KEYWORDS.has(normalizeFamily(name));
+}
+
+// First family in a comma-separated font stack, whether quoted or
+// not. `font-family: -apple-system, …, 'Segoe UI', …` should report
+// `-apple-system`, not the first quoted name three slots in.
+function firstFamilyOf(stack: string | null | undefined): string | null {
+  if (!stack) return null;
+  const first = stack.split(",")[0]?.trim();
+  if (!first) return null;
+  return first.replace(/^['"]|['"]$/g, "") || null;
+}
+
 // Compact "Currently rendering" panel inside the picker dropdown.
 // Pairs what the *theme declares* with what's *actually rendering*
-// so a mismatch (e.g. theme says 'Figtree' but body shows 'system-ui')
-// is obvious without opening devtools. Rows go red when the value
-// is suspicious — font not loaded, declared family doesn't match
-// rendered family, no inline-style rewrites despite styled elements.
+// so a real mismatch (e.g. theme says 'Figtree' but body shows
+// 'system-ui') is obvious without opening devtools. Rows go red
+// only on real mismatches — system-stack fonts (-apple-system /
+// system-ui / Segoe UI / etc.) are treated as equivalent so a
+// theme using the system stack doesn't get a false-positive red
+// flag against the browser's normalized rendering keyword.
 function DiagnosticsPanel({
   d,
   theme,
@@ -186,21 +228,18 @@ function DiagnosticsPanel({
   // pasted themes using --font-sans show up too.
   const declaredFontStack =
     theme.tokens["--font-family-base"] ?? theme.tokens["--font-sans"] ?? null;
-  const declaredFirstFamily = declaredFontStack
-    ? declaredFontStack.match(/['"]([^'"]+)['"]/)?.[1] ??
-      declaredFontStack.split(",")[0]?.trim() ??
-      null
-    : null;
+  const declaredFirstFamily = firstFamilyOf(declaredFontStack);
 
   const fontNotLoaded = d.fontFamily && d.fontLoaded === false;
-  // "Mismatch" flags when the theme declares a specific quoted family
-  // but body is rendering with something different. We compare on the
-  // first quoted family only — system fallback chains are noisy and
-  // not worth flagging.
+  // Mismatch flags only when the theme and body resolve to different
+  // *actual* families. If both are system-stack keywords, they're
+  // equivalent — both render with the OS UI font. Same hex test
+  // ignores case so 'segoe ui' vs 'Segoe UI' doesn't trip.
   const fontMismatch =
     declaredFirstFamily &&
     d.fontFamily &&
-    declaredFirstFamily.toLowerCase() !== d.fontFamily.toLowerCase();
+    normalizeFamily(declaredFirstFamily) !== normalizeFamily(d.fontFamily) &&
+    !(isSystemFamily(declaredFirstFamily) && isSystemFamily(d.fontFamily));
   const noRewrites = d.inlineStyledElements > 0 && d.tokenizedElements === 0;
 
   return (
