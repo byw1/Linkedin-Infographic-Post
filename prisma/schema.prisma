@@ -17,6 +17,16 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz(6)
   emailVerified DateTime? @map("email_verified") @db.Timestamptz(6)
+  // Free-form tags shown on the Members page (industry, focus areas,
+  // anything). Lowercase + hyphenated on write so search/group is
+  // predictable.
+  tags          String[]  @default([])
+  // Public profile fields. Bio is short markdown-free text. Socials is
+  // a small map of provider → URL, normalized to absolute https:// on
+  // write so the Members page can render a working link without
+  // re-validating client-side.
+  bio           String?
+  socials       Json      @default("{}") @db.JsonB
 
   accounts        Account[]
   sessions        Session[]
@@ -25,6 +35,7 @@ model User {
   invitesCreated  Invite[]  @relation("InviteCreatedBy")
   invitesRedeemed Invite[]  @relation("InviteRedeemedBy")
 
+  @@index([tags], type: Gin, name: "idx_users_tags")
   @@map("users")
 }
 

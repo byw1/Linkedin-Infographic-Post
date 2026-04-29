@@ -34,6 +34,12 @@ export async function TopNav() {
               >
                 Library
               </Link>
+              <Link
+                href="/members"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Members
+              </Link>
             </nav>
           )}
         </div>

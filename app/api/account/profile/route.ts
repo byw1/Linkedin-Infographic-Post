@@ -4,9 +4,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { SocialsSchema, TagsSchema, readSocials } from "@/lib/profile";
 
 const Body = z.object({
   name: z.string().trim().min(1).max(80).nullable().optional(),
+  bio: z.string().trim().max(500).nullable().optional(),
+  tags: TagsSchema.optional(),
+  socials: SocialsSchema.optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -20,10 +24,34 @@ export async function PATCH(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
+
+  const data: Record<string, unknown> = {};
+  if (parsed.data.name !== undefined) data.name = parsed.data.name ?? null;
+  if (parsed.data.bio !== undefined) {
+    const trimmed = parsed.data.bio?.trim();
+    data.bio = trimmed ? trimmed : null;
+  }
+  if (parsed.data.tags !== undefined) data.tags = parsed.data.tags;
+  if (parsed.data.socials !== undefined) data.socials = parsed.data.socials;
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+  }
+
   const updated = await prisma.user.update({
     where: { id: user.id },
-    data: { name: parsed.data.name ?? null },
-    select: { id: true, name: true, email: true, role: true },
+    data,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      bio: true,
+      tags: true,
+      socials: true,
+    },
   });
-  return NextResponse.json({ user: updated });
+  return NextResponse.json({
+    user: { ...updated, socials: readSocials(updated.socials) },
+  });
 }
