@@ -101,47 +101,46 @@ export async function POST(req: Request) {
       if (!parsed.success) {
         return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
       }
-      // "Use existing logo from library" — copy logoUrl from another entity.
+      // "Use existing logo from library" — picks an entity that any
+      // member uploaded. We don't create a per-user copy anymore;
+      // the library is community-shared, so we just bump the source
+      // row's usage stats and hand back its logo URL. The render
+      // flow uses the URL (not the entity ID) to swap placeholders,
+      // so no extra row is needed.
       if (parsed.data.existing_slug) {
         const sourceSlug = normalizeSlug(parsed.data.existing_slug);
-        const targetSlug = normalizeSlug(parsed.data.slug);
-        if (!sourceSlug || !targetSlug) {
+        if (!sourceSlug) {
           return NextResponse.json({ error: "Invalid slug." }, { status: 400 });
         }
-        const source = await prisma.entity.findUnique({
-          where: { userId_slug: { userId: user.id, slug: sourceSlug } },
+        // For duplicate slugs across users, prefer highest usage —
+        // matches the dedup logic on /api/library and /api/parse.
+        const source = await prisma.entity.findFirst({
+          where: { OR: [{ slug: sourceSlug }, { aliases: { has: sourceSlug } }] },
+          orderBy: [{ usageCount: "desc" }, { lastUsedAt: "desc" }],
         });
         if (!source) {
           return NextResponse.json({ error: "Source entity not found." }, { status: 404 });
         }
-        const entity = await prisma.entity.upsert({
-          where: { userId_slug: { userId: user.id, slug: targetSlug } },
-          create: {
-            userId: user.id,
-            slug: targetSlug,
-            displayName: parsed.data.display_name ?? source.displayName,
-            type: parsed.data.type ?? source.type,
-            shapePreference: parsed.data.shape ?? source.shapePreference,
-            logoUrl: source.logoUrl,
-            sourceUrl: source.sourceUrl,
-          },
-          update: {
-            displayName: parsed.data.display_name ?? undefined,
-            type: parsed.data.type ?? undefined,
-            shapePreference: parsed.data.shape ?? undefined,
-            logoUrl: source.logoUrl,
-            sourceUrl: source.sourceUrl ?? undefined,
+        // Bump usage on the source row so "Most used" sort on the
+        // library reflects the actual community-wide use.
+        await prisma.entity.update({
+          where: { id: source.id },
+          data: {
+            usageCount: { increment: 1 },
+            lastUsedAt: new Date(),
           },
         });
         // Refresh to a browser-fetchable URL — same as the upload
         // paths below. Without this the editor receives the raw
         // canonical `<endpoint>/<bucket>/<key>` form, which a private
-        // bucket can't serve directly, and the iframe shows a broken
-        // image icon even though the logo is fine in the library
-        // view (which already refreshes).
+        // bucket can't serve directly.
         const readableUrl = (await refreshUrl(source.logoUrl)) ?? source.logoUrl;
         return NextResponse.json({
-          entity: { ...entity, logoUrl: readableUrl },
+          entity: {
+            ...source,
+            logoUrl: readableUrl,
+            usageCount: source.usageCount + 1,
+          },
           logo_url: readableUrl,
         });
       }

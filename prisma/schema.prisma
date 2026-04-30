@@ -43,6 +43,7 @@ model User {
   skillsUploaded  Skill[]   @relation("SkillUploadedBy")
   themesOwned     Theme[]   @relation("ThemeOwner")
   docPagesEdited  DocPage[] @relation("DocPageUpdatedBy")
+  hiddenEntities  EntityHidden[]
 
   @@index([tags], type: Gin, name: "idx_users_tags")
   @@map("users")
@@ -130,6 +131,27 @@ model Entity {
   @@index([userId, lastUsedAt(sort: Desc)], name: "idx_entities_user_last_used")
   @@index([aliases], type: Gin, name: "idx_entities_aliases")
   @@map("entities")
+}
+
+// Per-user hide overrides for the (now community-wide) entity
+// library. A row here means this user doesn't want to see this
+// slug on their /library or in their pickers — but parse-time
+// resolution still finds it if their HTML references it, so a
+// hidden slug isn't broken, just visually suppressed.
+//
+// Slug-keyed (not entity-id) so a hide survives if the original
+// entity row is deleted and another member uploads a new one
+// under the same slug — the user's intent persists.
+model EntityHidden {
+  userId    String   @map("user_id") @db.Uuid
+  slug      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, slug])
+  @@index([slug], name: "idx_entity_hidden_slug")
+  @@map("entity_hidden")
 }
 
 model Render {

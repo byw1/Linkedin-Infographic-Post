@@ -12,6 +12,8 @@ interface Entity {
   logoUrl: string;
   usageCount: number;
   lastUsedAt: string;
+  uploadedBy: { id: string; name: string | null; email: string } | null;
+  isMine: boolean;
 }
 
 interface PageState {
@@ -199,6 +201,27 @@ function LibraryCard({
     });
   }
 
+  // Hide a community-uploaded entity from the current user's view.
+  // Doesn't delete the underlying entity (we don't own it); just
+  // adds a per-user override that suppresses it from /library +
+  // pickers. Parse-time resolution still finds it.
+  function hide() {
+    setError(null);
+    startTransition(async () => {
+      const res = await fetch("/api/library/hide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: entity.slug }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(typeof data.error === "string" ? data.error : "Hide failed.");
+        return;
+      }
+      onDone();
+    });
+  }
+
   function remove() {
     if (!confirm(`Delete "${entity.displayName}"? Future renders won't auto-resolve this slug.`))
       return;
@@ -323,7 +346,26 @@ function LibraryCard({
                   also: {entity.aliases.join(", ")}
                 </div>
               )}
-              <div className="text-xs text-muted-foreground">used {entity.usageCount}×</div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>used {entity.usageCount}×</span>
+                {entity.uploadedBy && !entity.isMine && (
+                  <>
+                    <span>·</span>
+                    <span className="truncate" title={entity.uploadedBy.email}>
+                      uploaded by{" "}
+                      {entity.uploadedBy.name ?? entity.uploadedBy.email}
+                    </span>
+                  </>
+                )}
+                {entity.isMine && (
+                  <>
+                    <span>·</span>
+                    <span className="text-[10px] uppercase tracking-wide text-primary">
+                      mine
+                    </span>
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -376,13 +418,29 @@ function LibraryCard({
               Delete
             </button>
           </>
-        ) : (
+        ) : entity.isMine ? (
+          // Owner controls: full edit. Edit also exposes Replace
+          // logo + Delete via the editing branch above.
           <button
             type="button"
             onClick={onEdit}
             className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-secondary"
           >
             Edit
+          </button>
+        ) : (
+          // Community-uploaded entity. Other members can use it on
+          // their renders (parse-time resolver finds it) but can't
+          // rename or delete it. Hide removes it from this user's
+          // own /library + pickers without affecting anyone else.
+          <button
+            type="button"
+            onClick={hide}
+            disabled={pending}
+            className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-secondary disabled:opacity-50"
+            title="Remove from your library view (others still see it)"
+          >
+            {pending ? "Hiding…" : "Hide from my view"}
           </button>
         )}
       </div>

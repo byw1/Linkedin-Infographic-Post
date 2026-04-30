@@ -8,6 +8,12 @@ import { refreshUrl } from "@/lib/storage";
 const DEFAULT_LIMIT = 60;
 const MAX_LIMIT = 200;
 
+// Community-wide library. Every member sees every uploaded logo,
+// deduped by slug — if Sarah and Alex both uploaded `microsoft`,
+// the highest-usage row wins on display, with attribution to the
+// original uploader. Members can hide individual slugs from their
+// own view via /api/library/hide; hidden slugs still resolve at
+// parse time so HTML referencing them isn't broken.
 export async function GET(req: Request) {
   let user;
   try {
@@ -25,36 +31,93 @@ export async function GET(req: Request) {
   );
   const cursor = url.searchParams.get("cursor") ?? null;
 
-  const rows = await prisma.entity.findMany({
+  // Slugs the current user has hidden — pulled first so we can
+  // exclude them from the entity query in one round trip.
+  const hidden = await prisma.entityHidden.findMany({
+    where: { userId: user.id },
+    select: { slug: true },
+  });
+  const hiddenSlugs = new Set(hidden.map((h) => h.slug));
+
+  // Distinct on `slug` keeps one row per slug, picked by the orderBy:
+  // slug ASC (required as the first key when distinct is set), then
+  // usageCount DESC so the most-used row wins, with lastUsedAt as a
+  // tiebreak. We re-sort the result by the user's chosen sort below.
+  const allDeduped = await prisma.entity.findMany({
+    distinct: ["slug"],
     where: {
-      userId: user.id,
+      ...(hiddenSlugs.size > 0
+        ? { slug: { notIn: Array.from(hiddenSlugs) } }
+        : {}),
       ...(search
         ? {
             OR: [
               { slug: { contains: search } },
               { displayName: { contains: search, mode: "insensitive" } },
-              // Also match aliases — searching "sama" should find an
-              // entity stored as "sam-altman" if `sama` is in its alias
-              // list.
+              // Aliases match too — searching "sama" should find an
+              // entity stored as "sam-altman" if `sama` is in its
+              // alias list.
               { aliases: { has: search } },
             ],
           }
         : {}),
     },
-    orderBy:
-      sort === "name"
-        ? [{ displayName: "asc" }, { id: "asc" }]
-        : [{ lastUsedAt: "desc" }, { id: "asc" }],
-    take: limit + 1,
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    orderBy: [
+      { slug: "asc" },
+      { usageCount: "desc" },
+      { lastUsedAt: "desc" },
+    ],
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+    },
   });
 
-  const hasMore = rows.length > limit;
-  const page = hasMore ? rows.slice(0, limit) : rows;
+  // Re-order for display per the user's sort. Cursor pagination
+  // works on this final ordering — we slice in JS since the
+  // distinct + secondary sort means SQL-level cursoring would be
+  // tricky to keep stable.
+  const sorted = [...allDeduped].sort((a, b) => {
+    if (sort === "name") {
+      const an = a.displayName.toLowerCase();
+      const bn = b.displayName.toLowerCase();
+      const c = an.localeCompare(bn);
+      return c !== 0 ? c : a.id.localeCompare(b.id);
+    }
+    const at = a.lastUsedAt.getTime();
+    const bt = b.lastUsedAt.getTime();
+    if (at !== bt) return bt - at;
+    return a.id.localeCompare(b.id);
+  });
+
+  let startIndex = 0;
+  if (cursor) {
+    const idx = sorted.findIndex((e) => e.id === cursor);
+    startIndex = idx >= 0 ? idx + 1 : 0;
+  }
+  const slice = sorted.slice(startIndex, startIndex + limit + 1);
+  const hasMore = slice.length > limit;
+  const page = hasMore ? slice.slice(0, limit) : slice;
+
   const entities = await Promise.all(
     page.map(async (e) => ({
-      ...e,
+      id: e.id,
+      slug: e.slug,
+      aliases: e.aliases,
+      displayName: e.displayName,
+      type: e.type,
+      shapePreference: e.shapePreference,
       logoUrl: (await refreshUrl(e.logoUrl)) ?? e.logoUrl,
+      sourceUrl: e.sourceUrl,
+      usageCount: e.usageCount,
+      lastUsedAt: e.lastUsedAt,
+      createdAt: e.createdAt,
+      // Who originally uploaded this. The directory shows
+      // attribution next to the name and uses ownership to gate
+      // edit/delete buttons.
+      uploadedBy: e.user
+        ? { id: e.user.id, name: e.user.name, email: e.user.email }
+        : null,
+      isMine: e.userId === user.id,
     })),
   );
 

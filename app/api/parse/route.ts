@@ -43,23 +43,38 @@ export async function POST(req: Request) {
 
   const extracted = extractEntities(html);
   const slugs = extracted.map((e) => e.slug);
-  // Look up by canonical slug OR alias — a logo uploaded as `sam-altman`
-  // should still resolve when an HTML uses `sama` if `sama` is in its
-  // alias list.
+  // Resolve across the community-wide library — a slug in the
+  // user's HTML matches any uploaded entity, regardless of who
+  // uploaded it. Without the user filter, the same query also
+  // catches alias matches (e.g. `sama` → entity stored as
+  // `sam-altman` with `sama` in its alias list).
+  //
+  // For duplicate slugs (rare — multiple members uploading the
+  // same brand), we pick the highest-usage row to keep behavior
+  // consistent with /api/library's display logic.
   const known =
     slugs.length === 0
       ? []
       : await prisma.entity.findMany({
           where: {
-            userId: user.id,
             OR: [{ slug: { in: slugs } }, { aliases: { hasSome: slugs } }],
           },
-          select: { slug: true, aliases: true, logoUrl: true, displayName: true },
+          orderBy: [{ usageCount: "desc" }, { lastUsedAt: "desc" }],
+          select: {
+            slug: true,
+            aliases: true,
+            logoUrl: true,
+            displayName: true,
+          },
         });
+  // First-write wins because the orderBy already put the best row
+  // first — subsequent rows with the same slug are skipped.
   const knownMap = new Map<string, (typeof known)[number]>();
   for (const k of known) {
-    knownMap.set(k.slug, k);
-    for (const a of k.aliases) knownMap.set(a, k);
+    if (!knownMap.has(k.slug)) knownMap.set(k.slug, k);
+    for (const a of k.aliases) {
+      if (!knownMap.has(a)) knownMap.set(a, k);
+    }
   }
 
   const resolved: ResolvedEntity[] = await Promise.all(
