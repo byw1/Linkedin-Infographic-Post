@@ -23,6 +23,11 @@ interface ConfigData {
   };
 }
 
+// Read-only display of the runtime + environment variables. The
+// editable database settings (SMTP, Google OAuth, allowlist) are
+// rendered separately on /admin/config as proper forms — no point
+// duplicating them here. Env vars stay read-only because the app
+// process can't rewrite Railway's injected env at runtime.
 export function ConfigView() {
   const [data, setData] = useState<ConfigData | null>(null);
 
@@ -41,7 +46,7 @@ export function ConfigView() {
   if (!data) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="rounded-md border p-3 text-xs text-muted-foreground">
         Node {data.runtime.node} · {data.runtime.platform}/{data.runtime.arch} · up{" "}
         {Math.floor(data.runtime.uptime_seconds / 60)}m
@@ -56,45 +61,32 @@ export function ConfigView() {
             (read-only — set on Railway)
           </span>
         </div>
-        <ConfigTable items={data.env} />
+        <div className="overflow-hidden rounded-md border text-sm">
+          <table className="w-full">
+            <tbody>
+              {data.env.map((c) => (
+                <tr key={c.key} className="border-b last:border-b-0">
+                  <td className="w-1/3 bg-muted/50 px-3 py-2 align-top font-mono text-xs">
+                    <div>{c.key}</div>
+                    {c.notes && (
+                      <div className="text-[10px] font-sans text-muted-foreground">
+                        {c.notes}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 align-top">
+                    {c.set ? (
+                      <span className="font-mono text-xs">{c.value}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">not set</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Database settings
-        </h3>
-        <ConfigTable items={data.db} />
-      </div>
-    </div>
-  );
-}
-
-function ConfigTable({ items }: { items: ConfigItem[] }) {
-  return (
-    <div className="overflow-hidden rounded-md border text-sm">
-      <table className="w-full">
-        <tbody>
-          {items.map((c) => (
-            <tr key={c.key} className="border-b last:border-b-0">
-              <td className="w-1/3 bg-muted/50 px-3 py-2 align-top font-mono text-xs">
-                <div>{c.key}</div>
-                {c.notes && (
-                  <div className="text-[10px] font-sans text-muted-foreground">
-                    {c.notes}
-                  </div>
-                )}
-              </td>
-              <td className="px-3 py-2 align-top">
-                {c.set ? (
-                  <span className="font-mono text-xs">{c.value}</span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">not set</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

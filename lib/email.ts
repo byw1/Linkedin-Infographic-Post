@@ -4,7 +4,7 @@ import { getSettings, type EmailSettings } from "@/lib/settings";
 export class EmailNotConfiguredError extends Error {
   constructor() {
     super(
-      "Email isn't configured. Set SMTP credentials in /admin/email first.",
+      "Email isn't configured. Set SMTP credentials in /admin/config#email first.",
     );
     this.name = "EmailNotConfiguredError";
   }

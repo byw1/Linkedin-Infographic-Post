@@ -8,10 +8,8 @@ const NAV: { slug: string; label: string; description: string }[] = [
   { slug: "health", label: "Health", description: "Worker + storage status" },
   { slug: "access-requests", label: "Access requests", description: "Review applicants" },
   { slug: "invites", label: "Invites", description: "Add new members" },
-  { slug: "email", label: "Email", description: "SMTP for invites" },
-  { slug: "auth", label: "Sign-in", description: "Google + email allowlist" },
   { slug: "themes", label: "Themes", description: "Brand themes (official)" },
-  { slug: "config", label: "Configuration", description: "Read-only env" },
+  { slug: "config", label: "Configuration", description: "SMTP, sign-in, env" },
 ];
 
 // Vertical-nav shell shared across /admin/*. Each section renders
