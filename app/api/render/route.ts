@@ -30,9 +30,10 @@ const Meta = z.object({
   theme_id: z.string().uuid().optional(),
   // Render format. Optional with a "single" default for backwards
   // compatibility with the original infographic flow that doesn't
-  // pass this. The tweet generator passes "tweet" so /posts +
-  // feed cards can render the right placeholder hero.
-  format: z.enum(["single", "tweet"]).optional(),
+  // pass this. The tweet generator passes "tweet" for single-tweet
+  // PNGs and "carousel" when it bundles a multi-tweet thread into
+  // a PDF the user can post as a LinkedIn document carousel.
+  format: z.enum(["single", "tweet", "carousel"]).optional(),
 });
 
 export async function POST(req: Request) {

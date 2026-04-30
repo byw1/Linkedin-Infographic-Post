@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import * as htmlToImage from "html-to-image";
+import { jsPDF } from "jspdf";
 import { ChevronDown, ChevronRight, Settings2 } from "lucide-react";
 import {
   DEFAULT_TWEET,
@@ -215,6 +216,45 @@ function applyCarryover(base: TweetData, c: CarryoverData): TweetData {
   };
 }
 
+// Pack an ordered list of PNG blobs into a single multi-page PDF.
+// Each page sized to the native tweet canvas (1080×1350 px) so
+// the image lays in 1:1 — LinkedIn's document carousel uploader
+// reads any aspect ratio fine. Returns the assembled PDF as a
+// Blob ready to POST through the existing render endpoint.
+async function blobsToPdf(blobs: Blob[]): Promise<Blob> {
+  const pdf = new jsPDF({
+    unit: "px",
+    format: [TWEET_CANVAS.width, TWEET_CANVAS.height],
+    orientation: "portrait",
+    // hotfixes mode disables the 0.75x scaling jsPDF applies to
+    // px units by default, so page dimensions match the canvas
+    // exactly — no need to convert mm/in.
+    hotfixes: ["px_scaling"],
+  });
+  for (let i = 0; i < blobs.length; i++) {
+    if (i > 0) pdf.addPage([TWEET_CANVAS.width, TWEET_CANVAS.height], "portrait");
+    const dataUrl = await blobToDataUrl(blobs[i]);
+    pdf.addImage(
+      dataUrl,
+      "PNG",
+      0,
+      0,
+      TWEET_CANVAS.width,
+      TWEET_CANVAS.height,
+    );
+  }
+  return pdf.output("blob");
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error ?? new Error("FileReader failed"));
+    r.readAsDataURL(blob);
+  });
+}
+
 // The native <input type="color"> only accepts 7-char "#rrggbb"
 // strings. The user's hex field accepts anything they type, so
 // coerce here — fall back to a safe black if it doesn't parse.
@@ -282,6 +322,10 @@ export function TweetFlow({ storageReady }: Props) {
   const [activeId, setActiveId] = useState(() => slides[0].id);
   const [presets, setPresets] = useState<StyleRow[]>([]);
   const [stage, setStage] = useState<Stage>("edit");
+  // Multi-slide threads can either ship as separate PNGs (one
+  // Render row per slide) or as a single combined PDF — the
+  // canonical LinkedIn document-carousel format.
+  const [combineAsPdf, setCombineAsPdf] = useState(true);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<BatchResult[]>([]);
@@ -480,6 +524,22 @@ export function TweetFlow({ storageReady }: Props) {
     return { slideId: slide.id, renderId: out.render_id, pngUrl: out.png_url };
   }
 
+  // Capture every slide's PNG in sequence — switches the live
+  // preview to each slide, waits for the DOM to commit, then
+  // grabs the bytes. Used by both the per-slide upload path and
+  // the PDF assembly path.
+  async function captureAllSlideBlobs(): Promise<Blob[]> {
+    const blobs: Blob[] = [];
+    for (const slide of slides) {
+      setActiveId(slide.id);
+      await new Promise((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(r)),
+      );
+      blobs.push(await captureCurrent());
+    }
+    return blobs;
+  }
+
   async function generate() {
     setError(null);
     if (!storageReady) {
@@ -489,17 +549,48 @@ export function TweetFlow({ storageReady }: Props) {
 
     startTransition(async () => {
       try {
+        const blobs = await captureAllSlideBlobs();
+
+        // Multi-slide thread + combineAsPdf → ship one PDF as a
+        // single Render row with format="carousel" (the existing
+        // LinkedIn document-carousel format). One result, one
+        // file the user can upload to LinkedIn directly.
+        if (slides.length > 1 && combineAsPdf) {
+          const pdfBlob = await blobsToPdf(blobs);
+          const filename = `Tweet thread (${slides.length}) — ${slides[0].data.name || slides[0].data.username}`.slice(
+            0,
+            80,
+          );
+          const form = new FormData();
+          form.append("file", pdfBlob, "thread.pdf");
+          form.append("filename", filename);
+          form.append("format", "carousel");
+          const res = await fetch("/api/render", { method: "POST", body: form });
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            throw new Error(
+              typeof errBody.error === "string"
+                ? errBody.error
+                : "Save failed.",
+            );
+          }
+          const out = await res.json();
+          setResults([
+            {
+              slideId: slides[0].id,
+              renderId: out.render_id,
+              pngUrl: out.png_url,
+            },
+          ]);
+          setStage("result");
+          return;
+        }
+
+        // Per-slide PNGs path — upload each blob to its own
+        // Render row, return the batch.
         const out: BatchResult[] = [];
         for (let i = 0; i < slides.length; i++) {
-          const slide = slides[i];
-          // Switch the live preview to this slide. React batches
-          // state updates inside transitions, so wait two animation
-          // frames before capturing — long enough for the DOM to
-          // commit the new active slide.
-          setActiveId(slide.id);
-          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-          const blob = await captureCurrent();
-          const result = await uploadOne(blob, slide, i);
+          const result = await uploadOne(blobs[i], slides[i], i);
           out.push(result);
         }
         setResults(out);
@@ -541,6 +632,8 @@ export function TweetFlow({ storageReady }: Props) {
           pending={pending}
           error={error}
           slideCount={slides.length}
+          combineAsPdf={combineAsPdf}
+          setCombineAsPdf={setCombineAsPdf}
         />
 
         <div className="space-y-3">
@@ -574,6 +667,8 @@ function Form({
   pending,
   error,
   slideCount,
+  combineAsPdf,
+  setCombineAsPdf,
 }: {
   data: TweetData;
   patch: (p: Partial<TweetData>) => void;
@@ -589,6 +684,8 @@ function Form({
   pending: boolean;
   error: string | null;
   slideCount: number;
+  combineAsPdf: boolean;
+  setCombineAsPdf: (v: boolean) => void;
 }) {
   const e = data.engagement;
   return (
@@ -597,105 +694,11 @@ function Form({
         Tweet · slide {slideCount > 1 ? "(thread)" : ""}
       </div>
 
-      {/* Persona — collapsible */}
-      <Section title="Persona">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field
-            label="Display name"
-            value={data.name}
-            onChange={(v) => patch({ name: v })}
-            placeholder="autumnkyoko"
-          />
-          <Field
-            label="Username"
-            value={data.username}
-            onChange={(v) => patch({ username: v.replace(/^@/, "") })}
-            placeholder="akcushman"
-          />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FileField
-            label="Avatar"
-            hasFile={Boolean(data.avatarUrl)}
-            onFile={onAvatarFile}
-            onClear={() => patch({ avatarUrl: null })}
-          />
-          <label className="block text-sm">
-            <span className="block text-[11px] text-muted-foreground">Verified badge</span>
-            <select
-              value={data.checkmark}
-              onChange={(ev) => patch({ checkmark: ev.target.value as CheckMark })}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
-            >
-              <option value="none">None</option>
-              <option value="blue">Blue · individual</option>
-              <option value="gold">Gold · organization</option>
-              <option value="gray">Gray · government / affiliated</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FileField
-            label="Affiliation logo (optional)"
-            hint="Small square logo right of the checkmark."
-            hasFile={Boolean(data.affiliationLogo)}
-            onFile={onAffiliationFile}
-            onClear={() => patch({ affiliationLogo: null })}
-          />
-          <Field
-            label="Affiliation label (alt)"
-            value={data.affiliationLabel}
-            onChange={(v) => patch({ affiliationLabel: v })}
-            placeholder="Acme Inc."
-          />
-        </div>
-
-        {/* Style strip — save / load / delete saved styles. Saving
-          * captures every TweetData field except body so you can
-          * jump between named "looks" while typing a draft. */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <button
-            type="button"
-            onClick={saveStyle}
-            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
-            title="Save persona + visuals + engagement layout (everything except the body text)"
-          >
-            + Save current style
-          </button>
-          {styles.length > 0 && (
-            <span className="text-[11px] text-muted-foreground">styles:</span>
-          )}
-          {styles.map((p) => (
-            <span
-              key={p.id}
-              className="inline-flex items-center gap-1 rounded-full border bg-secondary/50 pl-2.5 pr-1 text-[11px]"
-            >
-              <button
-                type="button"
-                onClick={() => loadStyle(p)}
-                className="py-0.5 hover:text-foreground"
-              >
-                {p.label}
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteStyle(p.id)}
-                aria-label={`Delete style ${p.label}`}
-                className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </Section>
-
-      {/* Visuals — collapsible. Gear popover holds every show/hide
-        * toggle (X UI elements + which engagement metrics surface +
-        * time / reposted-by visibility). The main visuals surface
-        * is purely styling: background, font scale, body size. */}
+      {/* Visuals — single section that holds persona + styling +
+        * the show/hide gear popover. Save Style snapshots
+        * everything in here (persona + visual styling + element
+        * toggles), so loading a saved style swaps the whole look
+        * cleanly. */}
       <Section
         title="Visuals"
         actions={
@@ -760,6 +763,104 @@ function Form({
           </GearPopover>
         }
       >
+        {/* Persona — name / username, avatar + verified badge,
+          * optional affiliation. Lives inside Visuals so a saved
+          * style round-trips persona + style as one bundle. */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label="Display name"
+            value={data.name}
+            onChange={(v) => patch({ name: v })}
+            placeholder="autumnkyoko"
+          />
+          <Field
+            label="Username"
+            value={data.username}
+            onChange={(v) => patch({ username: v.replace(/^@/, "") })}
+            placeholder="akcushman"
+          />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FileField
+            label="Avatar"
+            hasFile={Boolean(data.avatarUrl)}
+            onFile={onAvatarFile}
+            onClear={() => patch({ avatarUrl: null })}
+          />
+          <label className="block text-sm">
+            <span className="block text-[11px] text-muted-foreground">Verified badge</span>
+            <select
+              value={data.checkmark}
+              onChange={(ev) => patch({ checkmark: ev.target.value as CheckMark })}
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            >
+              <option value="none">None</option>
+              <option value="blue">Blue · individual</option>
+              <option value="gold">Gold · organization</option>
+              <option value="gray">Gray · government / affiliated</option>
+            </select>
+          </label>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FileField
+            label="Affiliation logo (optional)"
+            hint="Small square logo right of the checkmark."
+            hasFile={Boolean(data.affiliationLogo)}
+            onFile={onAffiliationFile}
+            onClear={() => patch({ affiliationLogo: null })}
+          />
+          <Field
+            label="Affiliation label (alt)"
+            value={data.affiliationLabel}
+            onChange={(v) => patch({ affiliationLabel: v })}
+            placeholder="Acme Inc."
+          />
+        </div>
+
+        {/* Style strip — save / load / delete saved styles. Saving
+          * captures persona + every visual field + every element-
+          * visibility toggle, so jumping between named "looks"
+          * doesn't disturb the body the user is typing. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={saveStyle}
+            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
+            title="Save persona + every visual setting + element-visibility toggles (excludes body text + engagement counts + time + reposted-by)"
+          >
+            + Save current style
+          </button>
+          {styles.length > 0 && (
+            <span className="text-[11px] text-muted-foreground">styles:</span>
+          )}
+          {styles.map((p) => (
+            <span
+              key={p.id}
+              className="inline-flex items-center gap-1 rounded-full border bg-secondary/50 pl-2.5 pr-1 text-[11px]"
+            >
+              <button
+                type="button"
+                onClick={() => loadStyle(p)}
+                className="py-0.5 hover:text-foreground"
+              >
+                {p.label}
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteStyle(p.id)}
+                aria-label={`Delete style ${p.label}`}
+                className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+
+        <div className="border-t pt-3" />
+
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">
             <span className="block text-[11px] text-muted-foreground">Background</span>
@@ -859,13 +960,37 @@ function Form({
           {pending
             ? "Rendering..."
             : slideCount > 1
-              ? `Generate ${slideCount} PNGs`
+              ? combineAsPdf
+                ? "Generate PDF"
+                : `Generate ${slideCount} PNGs`
               : "Generate PNG"}
         </button>
         <span className="text-[11px] text-muted-foreground">
           {TWEET_CANVAS.width}×{TWEET_CANVAS.height} · LinkedIn portrait
         </span>
       </div>
+
+      {/* PDF combine — only meaningful when there's >1 slide. The
+        * default is on because most users threading multiple
+        * tweets actually want a single LinkedIn carousel doc to
+        * upload, not a folder of separate PNGs. */}
+      {slideCount > 1 && (
+        <label className="flex items-start gap-2 rounded-md border bg-background/40 p-2.5 text-xs">
+          <input
+            type="checkbox"
+            checked={combineAsPdf}
+            onChange={(ev) => setCombineAsPdf(ev.target.checked)}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span>
+            <span className="font-medium">Combine into a single PDF</span>
+            <span className="block text-[10px] text-muted-foreground">
+              LinkedIn document carousel format — one upload, one post.
+              Uncheck to ship each slide as its own PNG instead.
+            </span>
+          </span>
+        </label>
+      )}
     </div>
   );
 }
@@ -1353,13 +1478,20 @@ function BatchResultView({
   // slides array order.
   const ordinalById = new Map(slides.map((s, i) => [s.id, i + 1]));
   const isThread = results.length > 1;
+  // Single result with a .pdf URL → the PDF combine path. Render
+  // a download tile rather than an <img> since browsers won't
+  // inline a PDF blob URL like an image.
+  const isPdfBundle =
+    results.length === 1 && results[0].pngUrl.toLowerCase().endsWith(".pdf");
 
   return (
     <div className="space-y-4">
       <div className="rounded-md border p-4 text-sm">
-        Done. {results.length} {results.length === 1 ? "tweet" : "tweets"}{" "}
-        rendered.{" "}
-        {isThread && (
+        Done.{" "}
+        {isPdfBundle
+          ? `Thread of ${slides.length} tweets bundled into one PDF — ready to upload as a LinkedIn document carousel.`
+          : `${results.length} ${results.length === 1 ? "tweet" : "tweets"} rendered.`}{" "}
+        {isThread && !isPdfBundle && (
           <span className="text-muted-foreground">
             Each slide saved as its own post in your archive — open them on
             /posts to track or download.
@@ -1367,45 +1499,70 @@ function BatchResultView({
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {results.map((r) => (
-          <div
-            key={r.slideId}
-            className="overflow-hidden rounded-lg border bg-card text-card-foreground"
-          >
-            <div className="bg-muted">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={r.pngUrl}
-                alt={`Tweet slide ${ordinalById.get(r.slideId)}`}
-                className="block h-auto w-full"
-              />
-            </div>
-            <div className="flex items-center justify-between gap-2 p-3 text-xs">
-              <span className="font-medium">
-                Slide {ordinalById.get(r.slideId)}
-              </span>
-              <div className="flex items-center gap-2">
-                <a
-                  href={r.pngUrl}
-                  download
-                  className="inline-flex h-7 items-center rounded-md bg-primary px-2.5 text-[11px] font-medium text-primary-foreground hover:opacity-90"
-                >
-                  Download
-                </a>
-                <a
-                  href={r.pngUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
-                >
-                  Open
-                </a>
+      {isPdfBundle ? (
+        <div className="rounded-lg border bg-card p-6 text-card-foreground">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-primary">
+              {slides.length}-slide PDF · LinkedIn carousel
+            </span>
+            <a
+              href={results[0].pngUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-semibold hover:underline"
+            >
+              Open PDF
+            </a>
+            <a
+              href={results[0].pngUrl}
+              download
+              className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:opacity-90"
+            >
+              Download
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {results.map((r) => (
+            <div
+              key={r.slideId}
+              className="overflow-hidden rounded-lg border bg-card text-card-foreground"
+            >
+              <div className="bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={r.pngUrl}
+                  alt={`Tweet slide ${ordinalById.get(r.slideId)}`}
+                  className="block h-auto w-full"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2 p-3 text-xs">
+                <span className="font-medium">
+                  Slide {ordinalById.get(r.slideId)}
+                </span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={r.pngUrl}
+                    download
+                    className="inline-flex h-7 items-center rounded-md bg-primary px-2.5 text-[11px] font-medium text-primary-foreground hover:opacity-90"
+                  >
+                    Download
+                  </a>
+                  <a
+                    href={r.pngUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
+                  >
+                    Open
+                  </a>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <button
