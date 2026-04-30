@@ -52,7 +52,6 @@ export function SignInCard2({ googleEnabled = false }: Props) {
   const [focusedInput, setFocusedInput] = useState<"email" | "password" | null>(
     null,
   );
-  const [rememberMe, setRememberMe] = useState(true);
 
   // 3D card tilt — mouseX/Y track relative to the card center, then
   // we map ±300px → ±10deg rotation. Gives the card a subtle parallax
@@ -456,51 +455,11 @@ export function SignInCard2({ googleEnabled = false }: Props) {
                   </motion.div>
                 </motion.div>
 
-                {/* Remember me + access link */}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="flex items-center space-x-2">
-                    <div className="relative">
-                      <input
-                        id="remember-me"
-                        name="remember-me"
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={() => setRememberMe(!rememberMe)}
-                        className="h-4 w-4 appearance-none rounded border border-white/20 bg-white/5 transition-all duration-200 checked:border-white checked:bg-white focus:outline-none focus:ring-1 focus:ring-white/30"
-                      />
-                      {rememberMe && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.5 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="pointer-events-none absolute inset-0 flex items-center justify-center text-black"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </motion.div>
-                      )}
-                    </div>
-                    <label
-                      htmlFor="remember-me"
-                      className="text-xs text-white/60 transition-colors duration-200 hover:text-white/80"
-                    >
-                      Remember me
-                    </label>
-                  </div>
-                  {/* "Need access?" used to live here — single CTA
-                    * for prospective members lives at the bottom
-                    * of the form so it doesn't appear twice. */}
-                </div>
+                {/* Remember-me row was here but the checkbox was
+                  * decorative — JWT sessions already last 60 days
+                  * by default (see lib/auth.ts session.maxAge), so
+                  * everyone is "remembered". Removed to avoid a
+                  * UI that suggests behavior it doesn't have. */}
 
                 {/* Error */}
                 {error && (
