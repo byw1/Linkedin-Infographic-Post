@@ -1,7 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { Download, Wrench } from "lucide-react";
 import { DocsMarkdown } from "@/components/docs/docs-markdown";
 import type { DocPage } from "@/components/docs/page-view";
 
@@ -13,11 +20,38 @@ interface Props {
   onSaved: () => void;
 }
 
+interface ToolItem {
+  id: string;
+  name: string;
+  url: string;
+}
+
+interface SkillItem {
+  id: string;
+  name: string;
+  filename: string;
+}
+
+interface SlashMatch {
+  kind: "tool" | "skill";
+  id: string;
+  name: string;
+  hint: string;
+}
+
+// Cap the suggestion list so the picker stays compact.
+const SLASH_LIMIT = 6;
+
 // Admin editor for a wiki page. Toolbar controls cover rename
 // (title + slug; empty slug auto-derives from title) + section
 // move (free-form, autocompletes from existing sections) + delete +
 // save / cancel. Body is a side-by-side textarea + live preview so
 // formatting + tool/skill cards + callouts render as the admin types.
+//
+// Typing `/tool` or `/skill` in the body opens an inline picker that
+// inserts a `[Name](tool:<uuid>)` markdown link on selection — the
+// DocsMarkdown renderer then turns those links into compact cards in
+// the published page.
 export function PageEditor({ initial, onCancel, onSaved }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initial.title);
@@ -55,6 +89,138 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
   // type in the slug field, we leave it alone.
   const [slugTouched, setSlugTouched] = useState(false);
   const previewMarkdown = useMemo(() => markdown, [markdown]);
+
+  // ---------- slash-command picker -----------------------------------
+
+  const [tools, setTools] = useState<ToolItem[]>([]);
+  const [skills, setSkills] = useState<SkillItem[]>([]);
+  const [cursor, setCursor] = useState(0);
+  const [pickerIndex, setPickerIndex] = useState(0);
+  // Once the user dismisses the picker via Escape, we suppress it
+  // until the trigger position changes (i.e. they start a new one).
+  const [dismissedStart, setDismissedStart] = useState<number | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Fetch the tool + skill catalog once. Same shape as DocsMarkdown's
+  // loader — open to any signed-in user.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const [toolsRes, skillsRes] = await Promise.all([
+        fetch("/api/tools").catch(() => null),
+        fetch("/api/skills").catch(() => null),
+      ]);
+      if (cancelled) return;
+      if (toolsRes?.ok) {
+        const data = await toolsRes.json();
+        setTools(
+          (data.tools as ToolItem[]).map((t) => ({
+            id: t.id,
+            name: t.name,
+            url: t.url,
+          })),
+        );
+      }
+      if (skillsRes?.ok) {
+        const data = await skillsRes.json();
+        setSkills(
+          (data.skills as SkillItem[]).map((s) => ({
+            id: s.id,
+            name: s.name,
+            filename: s.filename,
+          })),
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const trigger = useMemo(
+    () => detectTrigger(markdown, cursor),
+    [markdown, cursor],
+  );
+
+  const matches = useMemo<SlashMatch[]>(() => {
+    if (!trigger) return [];
+    const q = trigger.query.toLowerCase();
+    if (trigger.kind === "tool") {
+      const pool = tools.map<SlashMatch>((t) => ({
+        kind: "tool",
+        id: t.id,
+        name: t.name,
+        hint: prettyHost(t.url),
+      }));
+      return (q ? pool.filter((p) => p.name.toLowerCase().includes(q)) : pool)
+        .slice(0, SLASH_LIMIT);
+    }
+    const pool = skills.map<SlashMatch>((s) => ({
+      kind: "skill",
+      id: s.id,
+      name: s.name,
+      hint: s.filename,
+    }));
+    return (q ? pool.filter((p) => p.name.toLowerCase().includes(q)) : pool)
+      .slice(0, SLASH_LIMIT);
+  }, [trigger, tools, skills]);
+
+  // Reset highlight + un-dismiss whenever a fresh trigger appears.
+  useEffect(() => {
+    setPickerIndex(0);
+  }, [trigger?.kind, trigger?.query, matches.length]);
+  useEffect(() => {
+    if (!trigger) setDismissedStart(null);
+    else if (dismissedStart !== null && dismissedStart !== trigger.start) {
+      setDismissedStart(null);
+    }
+  }, [trigger, dismissedStart]);
+
+  const showPicker =
+    trigger !== null &&
+    matches.length > 0 &&
+    dismissedStart !== trigger.start;
+
+  function applyMatch(item: SlashMatch) {
+    if (!trigger) return;
+    const before = markdown.slice(0, trigger.start);
+    const after = markdown.slice(cursor);
+    const link = `[${item.name}](${item.kind}:${item.id})`;
+    const next = before + link + after;
+    const newCursor = before.length + link.length;
+    setMarkdown(next);
+    // Restore focus + caret after the value commit lands.
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(newCursor, newCursor);
+      setCursor(newCursor);
+    });
+  }
+
+  function onTextareaKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (!showPicker) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setPickerIndex((i) => (i + 1) % matches.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setPickerIndex((i) => (i - 1 + matches.length) % matches.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      applyMatch(matches[pickerIndex]);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      if (trigger) setDismissedStart(trigger.start);
+    }
+  }
+
+  function syncCursor(e: React.SyntheticEvent<HTMLTextAreaElement>) {
+    setCursor(e.currentTarget.selectionStart);
+  }
+
+  // ---------- form helpers -------------------------------------------
 
   function setTitleAndMaybeSlug(next: string) {
     setTitle(next);
@@ -197,15 +363,63 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
         </label>
       </div>
 
+      <p className="text-[11px] text-muted-foreground">
+        Tip: type{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          /tool
+        </code>{" "}
+        or{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          /skill
+        </code>{" "}
+        to insert a linked card. Use{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          &gt; [!note]
+        </code>
+        ,{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          [!tip]
+        </code>
+        ,{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          [!warning]
+        </code>
+        , or{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          [!important]
+        </code>{" "}
+        for callouts.
+      </p>
+
       <div className="grid gap-3 lg:grid-cols-2">
-        <textarea
-          value={markdown}
-          onChange={(e) => setMarkdown(e.target.value)}
-          spellCheck={false}
-          rows={28}
-          className="w-full rounded-md border bg-background p-3 font-mono text-xs leading-relaxed"
-          placeholder="# Page heading"
-        />
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={markdown}
+            onChange={(e) => {
+              setMarkdown(e.target.value);
+              setCursor(e.target.selectionStart);
+            }}
+            onKeyDown={onTextareaKeyDown}
+            onSelect={syncCursor}
+            onClick={syncCursor}
+            onKeyUp={syncCursor}
+            spellCheck={false}
+            rows={28}
+            className="w-full rounded-md border bg-background p-3 font-mono text-xs leading-relaxed"
+            placeholder="# Page heading"
+          />
+          {showPicker && trigger && (
+            <SlashPicker
+              kind={trigger.kind}
+              query={trigger.query}
+              matches={matches}
+              activeIndex={pickerIndex}
+              onHover={setPickerIndex}
+              onPick={applyMatch}
+            />
+          )}
+        </div>
         <div className="rounded-md border bg-card p-4">
           <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
             Live preview
@@ -219,4 +433,101 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
+}
+
+// ---------- slash-command picker UI ----------------------------------
+
+function SlashPicker({
+  kind,
+  query,
+  matches,
+  activeIndex,
+  onHover,
+  onPick,
+}: {
+  kind: "tool" | "skill";
+  query: string;
+  matches: SlashMatch[];
+  activeIndex: number;
+  onHover: (i: number) => void;
+  onPick: (m: SlashMatch) => void;
+}) {
+  return (
+    <div className="absolute left-2 right-2 top-full z-20 mt-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
+      <div className="flex items-center justify-between gap-2 border-b px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span>
+          {kind === "tool" ? "Tools" : "Skills"}
+          {query && (
+            <>
+              {" · "}
+              <span className="lowercase text-foreground/80">{query}</span>
+            </>
+          )}
+        </span>
+        <span>↑↓ enter</span>
+      </div>
+      <ul className="max-h-64 overflow-y-auto py-1">
+        {matches.map((m, i) => (
+          <li key={`${m.kind}:${m.id}`}>
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                // Keep textarea focus + prevent caret jump.
+                e.preventDefault();
+                onPick(m);
+              }}
+              onMouseEnter={() => onHover(i)}
+              className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs ${
+                i === activeIndex
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-secondary/60"
+              }`}
+            >
+              {m.kind === "tool" ? (
+                <Wrench size={12} aria-hidden className="shrink-0" />
+              ) : (
+                <Download size={12} aria-hidden className="shrink-0" />
+              )}
+              <span className="truncate font-medium text-foreground">
+                {m.name}
+              </span>
+              {m.hint && (
+                <span className="ml-auto truncate text-[10px] text-muted-foreground/80">
+                  {m.hint}
+                </span>
+              )}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ---------- helpers --------------------------------------------------
+
+// Walk back from the cursor to find a `/tool` or `/skill` trigger
+// preceded by whitespace (or start of file). The query is whatever
+// the user has typed after the keyword, capped at the next
+// whitespace — so a single space ends the trigger naturally.
+function detectTrigger(
+  text: string,
+  cursorPos: number,
+): { kind: "tool" | "skill"; start: number; query: string } | null {
+  const prefix = text.slice(0, cursorPos);
+  const m = prefix.match(/(?:^|\s)(\/(tool|skill)([^\s]*))$/);
+  if (!m || m.index === undefined) return null;
+  const fullToken = m[1];
+  const kind = m[2] as "tool" | "skill";
+  const query = m[3] ?? "";
+  const start = prefix.length - fullToken.length;
+  return { kind, start, query };
+}
+
+function prettyHost(url: string): string {
+  try {
+    return new URL(url).host.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
 }
