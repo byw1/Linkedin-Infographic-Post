@@ -276,6 +276,11 @@ model Tool {
   name        String
   url         String
   description String?  @db.Text
+  // Single primary category — drives the section a tool sits
+  // under in /docs/tools (Outreach, Scheduling, Analytics, etc).
+  // Free-form so admins can invent categories on the fly; null
+  // tools fall into an "Uncategorized" bucket.
+  category    String?
   tags        String[] @default([])
   // Optional logo URL — paste a hosted image (most tools have a
   // brand page with a usable PNG). Falls back to a first-letter

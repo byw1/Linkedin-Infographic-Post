@@ -9,6 +9,7 @@ const Body = z.object({
   name: z.string().trim().min(1).max(120),
   url: z.string().trim().url().max(500),
   description: z.string().trim().max(2000).optional().nullable(),
+  category: z.string().trim().max(80).optional().nullable(),
   // Tags: lowercase + hyphenated like the rest of the app's tag
   // surfaces. Trim, drop empties, dedupe.
   tags: z
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
       name: rest.name,
       url: rest.url,
       description: rest.description ?? null,
+      category: rest.category?.trim() || null,
       logoUrl: rest.logoUrl ?? null,
       tags: dedupeTags(tags ?? []),
       position,

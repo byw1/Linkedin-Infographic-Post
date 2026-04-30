@@ -1,8 +1,8 @@
 "use client";
 
-import { ExternalLink, Plus, Search } from "lucide-react";
+import { ExternalLink, Plus, Search, Upload, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { TagInput } from "@/components/ui/tag-input";
 
 interface Tool {
@@ -10,6 +10,7 @@ interface Tool {
   name: string;
   url: string;
   description: string | null;
+  category: string | null;
   tags: string[];
   logoUrl: string | null;
 }
@@ -21,9 +22,8 @@ interface Props {
 }
 
 // Member-facing tools catalog with optional admin actions. Cards
-// group by tag (one card per tag, repeated across sections so a
-// multi-tag tool surfaces wherever it fits). Untagged tools fall
-// into "Other". Search above filters everything.
+// group by category (one tool per section — its primary category).
+// Tags stay on the card as chips. Search above filters everything.
 //
 // Admin controls live inline on this page rather than a separate
 // /admin/tools surface — there's no value in two places to look at
@@ -46,13 +46,20 @@ export function ToolsBrowser({ isAdmin }: Props) {
     void load();
   }, []);
 
-  // Aggregate every tag in use across all tools — used for the
-  // suggestions list inside TagInput so admins see / reuse what
-  // already exists instead of inventing parallels.
+  // Aggregate every tag / category in use — feeds suggestion lists
+  // in the form so admins reuse what already exists instead of
+  // inventing parallels (Outreach vs outreach vs Outreach Tools).
   const allKnownTags = useMemo(() => {
     if (!tools) return [];
     const set = new Set<string>();
     for (const t of tools) for (const tag of t.tags) set.add(tag);
+    return Array.from(set).sort();
+  }, [tools]);
+
+  const allKnownCategories = useMemo(() => {
+    if (!tools) return [];
+    const set = new Set<string>();
+    for (const t of tools) if (t.category) set.add(t.category);
     return Array.from(set).sort();
   }, [tools]);
 
@@ -66,6 +73,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
         if (t.name.toLowerCase().includes(q)) return true;
         if (t.description?.toLowerCase().includes(q)) return true;
         if (t.url.toLowerCase().includes(q)) return true;
+        if (t.category?.toLowerCase().includes(q)) return true;
         for (const tag of t.tags) if (tag.toLowerCase().includes(q)) return true;
         return false;
       });
@@ -73,27 +81,25 @@ export function ToolsBrowser({ isAdmin }: Props) {
     return out;
   }, [tools, search, activeTag]);
 
-  // Group visible tools by tag. Each tool appears under every tag
-  // it has so faceted browsing surfaces it naturally; untagged
-  // tools land in "Other". Within a section, alphabetical by name.
+  // Group visible tools by category. Each tool sits in exactly
+  // one section (its primary category, or "Uncategorized" for
+  // tools without one). Within a section, alphabetical by name.
   const sections = useMemo(() => {
     if (!visible) return [];
     const buckets = new Map<string, Tool[]>();
     for (const t of visible) {
-      if (t.tags.length === 0) {
-        push(buckets, "Other", t);
-      } else {
-        for (const tag of t.tags) push(buckets, tag, t);
-      }
+      const key = t.category?.trim() || "Uncategorized";
+      push(buckets, key, t);
     }
     const ordered = Array.from(buckets.entries()).sort(([a], [b]) => {
-      // "Other" sorts to the end — it's the catch-all, not a topic.
-      if (a === "Other") return 1;
-      if (b === "Other") return -1;
+      // Uncategorized sorts to the end — it's the catch-all, not
+      // a real category.
+      if (a === "Uncategorized") return 1;
+      if (b === "Uncategorized") return -1;
       return a.localeCompare(b);
     });
-    return ordered.map(([tag, items]) => ({
-      tag,
+    return ordered.map(([category, items]) => ({
+      category,
       items: items.sort((x, y) => x.name.localeCompare(y.name)),
     }));
   }, [visible]);
@@ -183,6 +189,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
         <ToolForm
           mode="create"
           allKnownTags={allKnownTags}
+          allKnownCategories={allKnownCategories}
           onSaved={() => {
             setAdding(false);
             void load();
@@ -206,9 +213,9 @@ export function ToolsBrowser({ isAdmin }: Props) {
 
       <div className="space-y-8">
         {sections.map((section) => (
-          <section key={section.tag} className="space-y-3">
+          <section key={section.category} className="space-y-3">
             <h3 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              <span>{section.tag}</span>
+              <span>{section.category}</span>
               <span className="text-[10px] font-normal lowercase text-muted-foreground/70">
                 {section.items.length}
               </span>
@@ -232,6 +239,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
                         mode="edit"
                         initial={t}
                         allKnownTags={allKnownTags}
+                        allKnownCategories={allKnownCategories}
                         onSaved={() => {
                           setEditingId(null);
                           void load();
@@ -287,8 +295,6 @@ function ToolCard({
     });
   }
 
-  // Admins get edit/delete chrome layered on top; the card
-  // itself stays a clickable link to the tool.
   return (
     <motion.div
       layout
@@ -309,7 +315,7 @@ function ToolCard({
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 transition-colors duration-500 group-hover:from-primary/5 group-hover:to-primary/10" />
 
       <div className="relative flex items-start gap-3">
-        <ToolLogo tool={tool} />
+        <ToolLogo tool={tool} size={44} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="truncate text-sm font-semibold">{tool.name}</span>
@@ -375,7 +381,7 @@ function ToolCard({
   );
 }
 
-function ToolLogo({ tool }: { tool: Tool }) {
+function ToolLogo({ tool, size = 44 }: { tool: Tool; size?: number }) {
   const src = tool.logoUrl ?? faviconUrl(tool.url);
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -383,40 +389,83 @@ function ToolLogo({ tool }: { tool: Tool }) {
       <img
         src={src}
         alt=""
-        className="h-11 w-11 shrink-0 rounded-lg border bg-secondary object-cover"
+        width={size}
+        height={size}
+        className="shrink-0 rounded-lg border bg-secondary object-cover"
+        style={{ width: size, height: size }}
       />
     );
   }
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border bg-gradient-to-br from-indigo-500 to-violet-600 text-base font-semibold uppercase text-white">
+    <div
+      className="flex shrink-0 items-center justify-center rounded-lg border bg-gradient-to-br from-indigo-500 to-violet-600 font-semibold uppercase text-white"
+      style={{ width: size, height: size, fontSize: size * 0.42 }}
+    >
       {tool.name.charAt(0)}
     </div>
   );
 }
 
 // Tool creation / edit form. Inline within the catalog so admins
-// don't context-switch to /admin/tools — the ToolsManager surface
-// is gone now.
+// don't context-switch — single source of truth for browsing and
+// editing.
 function ToolForm({
   mode,
   initial,
   allKnownTags,
+  allKnownCategories,
   onSaved,
   onCancel,
 }: {
   mode: "create" | "edit";
   initial?: Tool;
   allKnownTags: string[];
+  allKnownCategories: string[];
   onSaved: () => void;
   onCancel: () => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [url, setUrl] = useState(initial?.url ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+  const [category, setCategory] = useState(initial?.category ?? "");
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
-  const [logoUrl, setLogoUrl] = useState(initial?.logoUrl ?? "");
+  // Local logo state so the preview reflects upload-in-progress
+  // before the parent re-fetches. Seeded from the initial row.
+  const [logoUrl, setLogoUrl] = useState<string | null>(initial?.logoUrl ?? null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Stable preview tool used by the logo widget — synthesizes the
+  // bits the live ToolLogo needs so we can show favicon /
+  // uploaded preview without round-tripping the parent.
+  const previewTool: Tool = {
+    id: initial?.id ?? "",
+    name: name || "?",
+    url: url || "https://example.com",
+    description: null,
+    category: null,
+    tags: [],
+    logoUrl,
+  };
+
+  async function uploadLogoTo(toolId: string, file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`/api/admin/tools/${toolId}/logo`, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(
+        typeof data.error === "string" ? data.error : "Logo upload failed.",
+      );
+    }
+    const data = await res.json();
+    return data.logoUrl as string;
+  }
 
   function save() {
     setError(null);
@@ -424,28 +473,65 @@ function ToolForm({
       name: name.trim(),
       url: url.trim(),
       description: description.trim() || null,
-      logoUrl: logoUrl.trim() || null,
+      category: category.trim() || null,
+      logoUrl,
       tags,
     };
 
     startTransition(async () => {
-      const path =
-        mode === "create"
-          ? "/api/admin/tools"
-          : `/api/admin/tools/${initial!.id}`;
-      const method = mode === "create" ? "POST" : "PATCH";
-      const res = await fetch(path, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(typeof data.error === "string" ? data.error : "Save failed.");
-        return;
+      try {
+        // Upsert text fields first; the new id is used as the upload
+        // target so we stash the file under tools/<id>-...
+        const path =
+          mode === "create"
+            ? "/api/admin/tools"
+            : `/api/admin/tools/${initial!.id}`;
+        const method = mode === "create" ? "POST" : "PATCH";
+        const res = await fetch(path, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            typeof data.error === "string" ? data.error : "Save failed.",
+          );
+        }
+        const out = await res.json();
+        const toolId = out.tool?.id as string;
+
+        // Then ship the logo file if the admin attached one. Two-
+        // step keeps the API simple (JSON for text, multipart for
+        // bytes) and avoids fighting Next's route handler with mixed
+        // content types.
+        if (logoFile && toolId) {
+          await uploadLogoTo(toolId, logoFile);
+        }
+        onSaved();
+      } catch (err) {
+        setError((err as Error).message);
       }
-      onSaved();
     });
+  }
+
+  async function clearStoredLogo() {
+    if (!initial) {
+      // Create-mode: just discard the locally-staged file.
+      setLogoFile(null);
+      setLogoUrl(null);
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
+    if (!confirm("Remove the uploaded logo and revert to the favicon?")) return;
+    const res = await fetch(`/api/admin/tools/${initial.id}/logo`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      setLogoUrl(null);
+      setLogoFile(null);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   }
 
   return (
@@ -480,23 +566,53 @@ function ToolForm({
           className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
         />
       </label>
-      <label className="block text-sm">
-        <span className="block text-[11px] text-muted-foreground">
-          Tags
-        </span>
-        <TagInput
-          value={tags}
-          onChange={setTags}
-          suggestions={allKnownTags}
-          placeholder="automation, outreach, scheduling…"
-        />
-      </label>
-      <Field
-        label="Logo URL (optional — favicon used by default)"
-        value={logoUrl}
-        onChange={setLogoUrl}
-        placeholder="Paste a hosted logo if the favicon is too small / wrong"
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="block text-sm">
+          <span className="block text-[11px] text-muted-foreground">
+            Category{" "}
+            <span className="text-muted-foreground/70">
+              (drives sectioning)
+            </span>
+          </span>
+          <input
+            value={category}
+            onChange={(ev) => setCategory(ev.target.value)}
+            list="tool-category-list"
+            placeholder="Outreach, Scheduling, Analytics…"
+            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+          />
+          <datalist id="tool-category-list">
+            {allKnownCategories.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+        </label>
+        <label className="block text-sm">
+          <span className="block text-[11px] text-muted-foreground">Tags</span>
+          <TagInput
+            value={tags}
+            onChange={setTags}
+            suggestions={allKnownTags}
+            placeholder="automation, outreach…"
+          />
+        </label>
+      </div>
+
+      <LogoField
+        tool={previewTool}
+        hasUpload={Boolean(logoUrl)}
+        onPick={(file) => {
+          setLogoFile(file);
+          // Show a local preview right away — once submitted, the
+          // server's stored URL will replace this.
+          const reader = new FileReader();
+          reader.onload = () => setLogoUrl(String(reader.result));
+          reader.readAsDataURL(file);
+        }}
+        onClear={clearStoredLogo}
+        fileRef={fileRef}
       />
+
       {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="flex gap-2">
         <button
@@ -514,6 +630,67 @@ function ToolForm({
         >
           Cancel
         </button>
+      </div>
+    </div>
+  );
+}
+
+function LogoField({
+  tool,
+  hasUpload,
+  onPick,
+  onClear,
+  fileRef,
+}: {
+  tool: Tool;
+  hasUpload: boolean;
+  onPick: (file: File) => void;
+  onClear: () => void;
+  fileRef: React.RefObject<HTMLInputElement>;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <span className="block text-[11px] text-muted-foreground">
+        Logo{" "}
+        <span className="text-muted-foreground/70">
+          (defaults to the site&apos;s favicon — upload to override)
+        </span>
+      </span>
+      <div className="flex items-center gap-3 rounded-md border bg-background px-3 py-2">
+        <ToolLogo tool={tool} size={48} />
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs hover:bg-secondary"
+          >
+            <Upload size={12} aria-hidden />
+            {hasUpload ? "Replace" : "Upload"}
+          </button>
+          {hasUpload && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="inline-flex h-8 items-center gap-1 rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10"
+            >
+              <X size={12} aria-hidden />
+              Use favicon
+            </button>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+            onChange={(ev) => {
+              const f = ev.target.files?.[0];
+              if (f) onPick(f);
+            }}
+            className="hidden"
+          />
+          <span className="text-[10px] text-muted-foreground">
+            PNG / JPG / WebP / SVG / GIF · 2 MB max
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -557,8 +734,6 @@ function prettyHost(url: string): string {
 // Use Google's favicon service as the default logo — it returns a
 // 128px raster that reads cleanly at our 44px display size and
 // falls back to a generic globe glyph if the site has no favicon.
-// Returns null if the URL doesn't parse so the caller falls back
-// to the first-letter placeholder.
 function faviconUrl(url: string): string | null {
   try {
     const u = new URL(url);

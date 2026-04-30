@@ -10,11 +10,12 @@ import { getSettings } from "@/lib/settings";
 //
 // Authorization is prefix-based:
 // - "renders/<userId>/": only the owning user can fetch (private).
-// - "logos/", "skills/", "avatars/": community-shared, any signed-in
-//   user can fetch. Logos sit under logos/<uploaderId>/ but the
-//   library itself is community-wide, so cards rendered for one
-//   member point at another member's upload key — gating by uploader
-//   would 403 every cross-member view.
+// - "logos/", "skills/", "avatars/", "tools/": community-shared,
+//   any signed-in user can fetch. Logos sit under
+//   logos/<uploaderId>/ but the library itself is community-wide,
+//   so cards rendered for one member point at another member's
+//   upload key — gating by uploader would 403 every cross-member
+//   view. Tools live at tools/<toolId>-<random>.<ext>.
 // The stored URL pattern is itself the access-control surface — keep that in
 // mind if you ever change the upload key shape.
 export async function GET(
@@ -30,7 +31,7 @@ export async function GET(
 
   const key = params.key.map(decodeURIComponent).join("/");
   const ownPrefixes = [`renders/${user.id}/`];
-  const sharedPrefixes = ["logos/", "skills/", "avatars/"];
+  const sharedPrefixes = ["logos/", "skills/", "avatars/", "tools/"];
   const allowed =
     ownPrefixes.some((p) => key.startsWith(p)) ||
     sharedPrefixes.some((p) => key.startsWith(p));

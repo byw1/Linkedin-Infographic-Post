@@ -9,6 +9,7 @@ const Patch = z.object({
   name: z.string().trim().min(1).max(120).optional(),
   url: z.string().trim().url().max(500).optional(),
   description: z.string().trim().max(2000).nullable().optional(),
+  category: z.string().trim().max(80).nullable().optional(),
   tags: z
     .array(z.string().trim().toLowerCase().min(1).max(40))
     .max(20)
@@ -37,6 +38,10 @@ export async function PATCH(
   if (parsed.data.description !== undefined) {
     const trimmed = parsed.data.description?.trim();
     data.description = trimmed ? trimmed : null;
+  }
+  if (parsed.data.category !== undefined) {
+    const trimmed = parsed.data.category?.trim();
+    data.category = trimmed ? trimmed : null;
   }
   if (parsed.data.logoUrl !== undefined) {
     data.logoUrl = parsed.data.logoUrl ?? null;
