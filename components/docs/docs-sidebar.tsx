@@ -149,6 +149,18 @@ export function DocsSidebar({ pages, canEdit }: Props) {
               Skills
             </Link>
           </li>
+          <li>
+            <Link
+              href="/docs/tools"
+              className={`block rounded-md px-2 py-1.5 text-sm transition-colors ${
+                pathname === "/docs/tools"
+                  ? "bg-secondary font-medium text-foreground"
+                  : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+              }`}
+            >
+              Tools
+            </Link>
+          </li>
         </ul>
       </div>
     </nav>

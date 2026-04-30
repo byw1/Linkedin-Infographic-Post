@@ -266,6 +266,33 @@ model Setting {
   @@map("settings")
 }
 
+// LinkedIn-adjacent tools the team relies on — automation, scheduling,
+// analytics, etc. (HeyReach, LinkedIn Helper, Taplio, Phantombuster,
+// and so on). Admin-managed: members browse the list at /docs/tools.
+// Tags are free-form lowercase-hyphenated strings same as user tags
+// so the existing chip + filter UX patterns transfer.
+model Tool {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  url         String
+  description String?  @db.Text
+  tags        String[] @default([])
+  // Optional logo URL — paste a hosted image (most tools have a
+  // brand page with a usable PNG). Falls back to a first-letter
+  // glyph when null.
+  logoUrl     String?  @map("logo_url")
+  // Display order — lower sorts first. Admin reorders by editing
+  // position; we don't bother with fractional indexes since the
+  // list will never be huge.
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([position], name: "idx_tools_position")
+  @@index([tags], type: Gin, name: "idx_tools_tags")
+  @@map("tools")
+}
+
 // Markdown skill files an admin uploads for the team. Anyone signed in
 // can list and download them; only admins can upload or delete. The
 // actual bytes live in S3 under `skills/<id>.md`; this row stores the
