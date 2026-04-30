@@ -328,7 +328,7 @@ function MemberCard({
         </div>
         {member.isSelf && (
           <a
-            href="/settings#profile"
+            href="/settings/profile"
             className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-secondary"
           >
             Edit

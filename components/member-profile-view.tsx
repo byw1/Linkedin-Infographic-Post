@@ -193,7 +193,7 @@ export function MemberProfileView({
           {member.isSelf && (
             <div className="pt-2">
               <a
-                href="/settings#profile"
+                href="/settings/profile"
                 className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
               >
                 Edit your profile in settings →

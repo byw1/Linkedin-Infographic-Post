@@ -158,7 +158,7 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
           )}
           <div className="my-1 border-t" />
           <a
-            href="/settings#themes"
+            href="/settings/themes"
             className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             Manage themes →

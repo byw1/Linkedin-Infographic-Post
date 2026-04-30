@@ -465,7 +465,7 @@ function CommunityFeed({
                 The Community feed shows posts members have tracked (filled in
                 real LinkedIn impressions / reactions / comments) and
                 haven&apos;t hidden via{" "}
-                <Link href="/settings#sharing" className="underline">
+                <Link href="/settings/sharing" className="underline">
                   Sharing
                 </Link>
                 . Once you publish a post, hit <strong>Track</strong> on it
