@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AvatarUpload } from "@/components/account/avatar-upload";
+import { TagInput } from "@/components/ui/tag-input";
 
 type SocialKey = "linkedin" | "twitter" | "github" | "instagram" | "website";
 
@@ -40,27 +41,32 @@ interface InitialProfile {
 
 // Unified self-profile / admin-profile editor. Bio + tags + socials
 // + avatar live together so the user can update them from /settings
-// in one place. Submits to `endpoint` which is /api/account/profile
-// for self, /api/admin/members/<id> for admins editing others.
-//
-// `editAvatar` controls whether the avatar upload widget is shown.
-// We don't currently support admin avatar uploads on behalf of
-// other members — admins edit everything except the avatar (which
-// is uploaded by the member themselves).
+// in one place. Submits text fields to `endpoint` (PATCH); avatar
+// uploads go through `avatarEndpoint` separately so admins editing
+// another member can target /api/admin/members/<id>/avatar without
+// the user having to do anything themselves.
 export function ProfileEditor({
   initial,
   endpoint,
+  avatarEndpoint = "/api/account/avatar",
+  removeAvatarConfirm = "Remove your profile picture?",
   editAvatar = true,
   onSaved,
 }: {
   initial: InitialProfile;
   endpoint: string;
+  // Override the avatar API endpoint — defaults to the self-only
+  // /api/account/avatar; admin profile editing on /members/[id]
+  // passes /api/admin/members/<id>/avatar.
+  avatarEndpoint?: string;
+  removeAvatarConfirm?: string;
   editAvatar?: boolean;
   onSaved?: () => void;
 }) {
   const [name, setName] = useState(initial.name ?? "");
   const [bio, setBio] = useState(initial.bio ?? "");
-  const [tagsText, setTagsText] = useState(initial.tags.join(", "));
+  const [tags, setTags] = useState<string[]>(initial.tags);
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [socials, setSocials] = useState<Record<SocialKey, string>>(() => {
     const out = {} as Record<SocialKey, string>;
     for (const k of SOCIAL_KEYS) out[k] = initial.socials[k] ?? "";
@@ -70,6 +76,22 @@ export function ProfileEditor({
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Pull all currently-used member tags so the chip input can offer
+  // them as suggestions — keeps the tag set tight ("fintech" reused
+  // instead of "Fintech" / "fin-tech" parallels).
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch("/api/tags/users");
+      if (!res.ok || cancelled) return;
+      const data = await res.json();
+      if (!cancelled) setTagSuggestions(data.tags ?? []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const initials = (initial.name ?? initial.email)
     .split(/[\s@.]+/)
@@ -81,10 +103,6 @@ export function ProfileEditor({
   function save() {
     setError(null);
     setMessage(null);
-    const tags = tagsText
-      .split(/[\s,]+/)
-      .map((t) => t.trim())
-      .filter(Boolean);
     const cleanSocials: Record<string, string> = {};
     for (const k of SOCIAL_KEYS) {
       const v = socials[k]?.trim();
@@ -120,6 +138,8 @@ export function ProfileEditor({
             initials={initials}
             size={72}
             onChange={setImage}
+            endpoint={avatarEndpoint}
+            removeConfirm={removeAvatarConfirm}
           />
           <p className="text-xs text-muted-foreground">
             Click the avatar to upload a new picture. JPG/PNG/WebP/GIF, up to 5MB.
@@ -150,20 +170,17 @@ export function ProfileEditor({
           className="w-full rounded-md border bg-background px-2 py-1 text-sm"
         />
       </label>
-      <label className="block text-sm">
-        <span className="mb-1 block text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="space-y-1.5">
+        <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
           Tags
-          <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">
-            comma-separated, lowercase, hyphenated
-          </span>
         </span>
-        <input
-          value={tagsText}
-          onChange={(e) => setTagsText(e.target.value)}
-          placeholder="fintech, b2b-saas, solo-founder"
-          className="h-8 w-full rounded-md border bg-background px-2 font-mono text-xs"
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          suggestions={tagSuggestions}
+          placeholder="fintech, b2b-saas, solo-founder…"
         />
-      </label>
+      </div>
       <div className="space-y-2">
         <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
           Social links

@@ -242,7 +242,8 @@ export function MemberProfileView({
           {showAdminEdit && (
             <ProfileEditor
               endpoint={`/api/admin/members/${member.id}`}
-              editAvatar={false}
+              avatarEndpoint={`/api/admin/members/${member.id}/avatar`}
+              removeAvatarConfirm={`Remove ${member.name ?? member.email}'s profile picture?`}
               initial={{
                 name: member.name,
                 email: member.email,

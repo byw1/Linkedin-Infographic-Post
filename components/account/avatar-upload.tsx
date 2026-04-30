@@ -14,17 +14,26 @@ interface Props {
   // after a remove. Parent updates its local state so the avatar
   // refreshes without a route reload.
   onChange: (image: string | null) => void;
+  // Override the API endpoint — admin avatar editing on another
+  // member targets /api/admin/members/<id>/avatar instead of the
+  // self-only /api/account/avatar.
+  endpoint?: string;
+  // Phrasing for the remove confirm — different copy reads better
+  // when an admin is removing someone else's picture vs their own.
+  removeConfirm?: string;
 }
 
 // Click-to-upload avatar with hover overlay + remove option. Used
 // in the MemberCard edit mode and on the profile page when viewing
-// your own profile. Renders nothing fancy — just an image / initials
-// circle that turns into a file picker on click.
+// your own profile, plus the admin profile-edit panel on
+// /members/[id] (with `endpoint` pointed at the admin route).
 export function AvatarUpload({
   currentImage,
   initials,
   size = 64,
   onChange,
+  endpoint = "/api/account/avatar",
+  removeConfirm = "Remove your profile picture?",
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
@@ -40,7 +49,7 @@ export function AvatarUpload({
     const form = new FormData();
     form.append("file", file);
     startTransition(async () => {
-      const res = await fetch("/api/account/avatar", {
+      const res = await fetch(endpoint, {
         method: "POST",
         body: form,
       });
@@ -56,10 +65,10 @@ export function AvatarUpload({
 
   function remove() {
     if (pending) return;
-    if (!confirm("Remove your profile picture?")) return;
+    if (!confirm(removeConfirm)) return;
     setError(null);
     startTransition(async () => {
-      const res = await fetch("/api/account/avatar", { method: "DELETE" });
+      const res = await fetch(endpoint, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(typeof data.error === "string" ? data.error : "Remove failed.");
