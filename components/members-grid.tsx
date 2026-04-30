@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { AvatarUpload } from "@/components/account/avatar-upload";
 import { MemberTopPosts } from "@/components/feed/member-top-posts";
+import { SocialIcons } from "@/components/social-icons";
 
 type SocialKey = "linkedin" | "twitter" | "github" | "instagram" | "website";
 type SocialMap = Partial<Record<SocialKey, string>>;
@@ -289,9 +291,21 @@ function MemberCard({
   return (
     <div className="space-y-3 rounded-md border p-4">
       <div className="flex items-start gap-3">
-        <a href={`/members/${member.id}`} className="shrink-0">
-          <Avatar member={member} />
-        </a>
+        {editing && member.isSelf ? (
+          // Inline avatar editor when the user opens their own
+          // card. Updates are reflected immediately on the card via
+          // an onSaved() refresh after the API call settles — same
+          // pattern the rest of the form uses.
+          <AvatarUpload
+            currentImage={member.image}
+            initials={initialsFor(member)}
+            onChange={() => onSaved()}
+          />
+        ) : (
+          <a href={`/members/${member.id}`} className="shrink-0">
+            <Avatar member={member} />
+          </a>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
             <a
@@ -418,21 +432,7 @@ function MemberCard({
             </div>
           )}
           {Object.keys(member.socials).length > 0 && (
-            <div className="flex flex-wrap gap-2 text-xs">
-              {SOCIAL_KEYS.map((k) =>
-                member.socials[k] ? (
-                  <a
-                    key={k}
-                    href={member.socials[k]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-7 items-center rounded-md border px-2 hover:bg-secondary"
-                  >
-                    {SOCIAL_LABEL[k]}
-                  </a>
-                ) : null,
-              )}
-            </div>
+            <SocialIcons socials={member.socials} />
           )}
         </>
       )}
@@ -442,13 +442,17 @@ function MemberCard({
   );
 }
 
-function Avatar({ member }: { member: Member }) {
-  const initials = (member.name ?? member.email)
+function initialsFor(member: Pick<Member, "name" | "email">): string {
+  return (member.name ?? member.email)
     .split(/[\s@.]+/)
     .filter(Boolean)
     .slice(0, 2)
     .map((s) => s[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+function Avatar({ member }: { member: Member }) {
+  const initials = initialsFor(member);
   if (member.image) {
     // eslint-disable-next-line @next/next/no-img-element
     return (

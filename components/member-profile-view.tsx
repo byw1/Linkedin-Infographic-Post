@@ -1,25 +1,9 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { AvatarUpload } from "@/components/account/avatar-upload";
 import { FeedPostCard, type FeedPost } from "@/components/feed/feed-post-card";
-
-type SocialKey = "linkedin" | "twitter" | "github" | "instagram" | "website";
-
-const SOCIAL_LABEL: Record<SocialKey, string> = {
-  linkedin: "LinkedIn",
-  twitter: "Twitter / X",
-  github: "GitHub",
-  instagram: "Instagram",
-  website: "Website",
-};
-
-const SOCIAL_KEYS: SocialKey[] = [
-  "linkedin",
-  "twitter",
-  "github",
-  "instagram",
-  "website",
-];
+import { SocialIcons, type SocialKey } from "@/components/social-icons";
 
 interface MemberProfile {
   id: string;
@@ -47,6 +31,9 @@ export function MemberProfileView({ member }: { member: MemberProfile }) {
   const [posts, setPosts] = useState<FeedPost[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, startLoadMore] = useTransition();
+  // Local avatar state so the upload widget can reflect changes
+  // without a route reload. Seeded from the server-rendered prop.
+  const [image, setImage] = useState<string | null>(member.image);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +74,16 @@ export function MemberProfileView({ member }: { member: MemberProfile }) {
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-start gap-5 rounded-lg border bg-card p-6 text-card-foreground">
-        <Avatar member={member} size={80} />
+        {member.isSelf ? (
+          <AvatarUpload
+            currentImage={image}
+            initials={initialsFor(member)}
+            size={80}
+            onChange={setImage}
+          />
+        ) : (
+          <Avatar member={{ ...member, image }} size={80} />
+        )}
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-baseline gap-2">
             <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
@@ -122,20 +118,8 @@ export function MemberProfileView({ member }: { member: MemberProfile }) {
             </div>
           )}
           {Object.keys(member.socials).length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-1 text-xs">
-              {SOCIAL_KEYS.map((k) =>
-                member.socials[k] ? (
-                  <a
-                    key={k}
-                    href={member.socials[k]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-7 items-center rounded-md border px-2 hover:bg-secondary"
-                  >
-                    {SOCIAL_LABEL[k]} ↗
-                  </a>
-                ) : null,
-              )}
+            <div className="pt-1">
+              <SocialIcons socials={member.socials} size={16} />
             </div>
           )}
         </div>
@@ -228,6 +212,15 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function initialsFor(member: { name: string | null; email: string }): string {
+  return (member.name ?? member.email)
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function Avatar({
   member,
   size = 56,
@@ -235,12 +228,7 @@ function Avatar({
   member: { name: string | null; email: string; image: string | null };
   size?: number;
 }) {
-  const initials = (member.name ?? member.email)
-    .split(/[\s@.]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s) => s[0]?.toUpperCase() ?? "")
-    .join("");
+  const initials = initialsFor(member);
   if (member.image) {
     return (
       /* eslint-disable-next-line @next/next/no-img-element */

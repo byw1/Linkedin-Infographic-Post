@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { memberStats } from "@/lib/member-stats";
 import { readSocials } from "@/lib/profile";
+import { refreshUrl } from "@/lib/storage";
 import { MemberProfileView } from "@/components/member-profile-view";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,7 @@ export default async function MemberProfilePage({
   });
   if (!m) notFound();
   const stats = await memberStats(m.id);
+  const image = m.image ? ((await refreshUrl(m.image)) ?? m.image) : null;
 
   return (
     <main className="container mx-auto max-w-5xl space-y-6 py-10">
@@ -49,7 +51,7 @@ export default async function MemberProfilePage({
           id: m.id,
           name: m.name,
           email: m.email,
-          image: m.image,
+          image,
           role: m.role,
           tags: m.tags,
           bio: m.bio,

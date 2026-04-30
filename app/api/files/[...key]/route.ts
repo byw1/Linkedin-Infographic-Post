@@ -26,7 +26,10 @@ export async function GET(
 
   const key = params.key.map(decodeURIComponent).join("/");
   const ownPrefixes = [`logos/${user.id}/`, `renders/${user.id}/`];
-  const sharedPrefixes = ["skills/"];
+  // Avatars + skills are visible to every signed-in member —
+  // member directory cards / profile pages render any user's
+  // avatar, and skills are team-shared by design.
+  const sharedPrefixes = ["skills/", "avatars/"];
   const allowed =
     ownPrefixes.some((p) => key.startsWith(p)) ||
     sharedPrefixes.some((p) => key.startsWith(p));

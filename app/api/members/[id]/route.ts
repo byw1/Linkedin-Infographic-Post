@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { memberStats } from "@/lib/member-stats";
 import { readSocials } from "@/lib/profile";
+import { refreshUrl } from "@/lib/storage";
 
 // One member's profile + stats. Used by /members/[id]. Stats are
 // always returned in full so a member viewing their own profile
@@ -41,12 +42,13 @@ export async function GET(
 
   const stats = await memberStats(m.id);
 
+  const image = m.image ? ((await refreshUrl(m.image)) ?? m.image) : null;
   return NextResponse.json({
     member: {
       id: m.id,
       name: m.name,
       email: m.email,
-      image: m.image,
+      image,
       role: m.role,
       tags: m.tags,
       bio: m.bio,
