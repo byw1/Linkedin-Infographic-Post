@@ -38,9 +38,10 @@ interface Props {
   googleEnabled?: boolean;
 }
 
-// Animated glass sign-in card. Visual treatment is the same purple
-// gradient + traveling light beams + 3D tilt as the source design;
-// auth wiring uses our existing next-auth flow.
+// Animated glass sign-in card. Visual treatment is the same indigo
+// aurora + traveling light-beams + 3D mouse-tilt as the brand
+// (matches the OG share image and the welcome page); the auth side
+// uses our existing next-auth flow.
 export function SignInCard2({ googleEnabled = false }: Props) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -92,8 +93,9 @@ export function SignInCard2({ googleEnabled = false }: Props) {
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black">
-      {/* Background gradient — purple aurora that grounds the card. */}
-      <div className="absolute inset-0 bg-gradient-to-b from-purple-500/40 via-purple-700/50 to-black" />
+      {/* Background gradient — indigo aurora to match brand (same
+        * palette as the OG share image and the /welcome hero). */}
+      <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/35 via-indigo-700/45 to-black" />
 
       {/* Subtle SVG noise overlay so the gradient doesn't band. */}
       <div
@@ -105,14 +107,14 @@ export function SignInCard2({ googleEnabled = false }: Props) {
       />
 
       {/* Soft glows top + bottom for depth. */}
-      <div className="absolute left-1/2 top-0 h-[60vh] w-[120vh] -translate-x-1/2 transform rounded-b-[50%] bg-purple-400/20 blur-[80px]" />
+      <div className="absolute left-1/2 top-0 h-[60vh] w-[120vh] -translate-x-1/2 transform rounded-b-[50%] bg-indigo-400/20 blur-[80px]" />
       <motion.div
-        className="absolute left-1/2 top-0 h-[60vh] w-[100vh] -translate-x-1/2 transform rounded-b-full bg-purple-300/20 blur-[60px]"
+        className="absolute left-1/2 top-0 h-[60vh] w-[100vh] -translate-x-1/2 transform rounded-b-full bg-indigo-300/20 blur-[60px]"
         animate={{ opacity: [0.15, 0.3, 0.15], scale: [0.98, 1.02, 0.98] }}
         transition={{ duration: 8, repeat: Infinity, repeatType: "mirror" }}
       />
       <motion.div
-        className="absolute bottom-0 left-1/2 h-[90vh] w-[90vh] -translate-x-1/2 transform rounded-t-full bg-purple-400/20 blur-[60px]"
+        className="absolute bottom-0 left-1/2 h-[90vh] w-[90vh] -translate-x-1/2 transform rounded-t-full bg-violet-500/20 blur-[60px]"
         animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }}
         transition={{
           duration: 6,
@@ -123,6 +125,16 @@ export function SignInCard2({ googleEnabled = false }: Props) {
       />
       <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-pulse rounded-full bg-white/5 opacity-40 blur-[100px]" />
       <div className="absolute right-1/4 bottom-1/4 h-96 w-96 animate-pulse rounded-full bg-white/5 opacity-40 blur-[100px] delay-1000" />
+
+      {/* Back-to-home overlay. Lives outside the centered card so it
+        * stays pinned to the top-left on every viewport size. Higher
+        * z-index than the card glow but below any modal would be. */}
+      <Link
+        href="/welcome"
+        className="absolute left-6 top-6 z-20 inline-flex h-9 items-center rounded-md border border-white/15 bg-black/30 px-3 text-xs text-white/80 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/50 hover:text-white"
+      >
+        ← Back to home
+      </Link>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -485,15 +497,9 @@ export function SignInCard2({ googleEnabled = false }: Props) {
                       Remember me
                     </label>
                   </div>
-
-                  <div className="group/link relative text-xs">
-                    <Link
-                      href="/welcome/request"
-                      className="text-white/60 transition-colors duration-200 hover:text-white"
-                    >
-                      Need access?
-                    </Link>
-                  </div>
+                  {/* "Need access?" used to live here — single CTA
+                    * for prospective members lives at the bottom
+                    * of the form so it doesn't appear twice. */}
                 </div>
 
                 {/* Error */}
