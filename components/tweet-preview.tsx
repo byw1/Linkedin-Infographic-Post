@@ -73,18 +73,20 @@ export interface TweetData {
   affiliationLogo: string | null;
   affiliationLabel: string;
   body: string;
-  // Free-form "10h" / "3m" / "Apr 30" — empty string hides the
-  // separator + time entirely.
+  // Free-form "10h" / "3m" / "Apr 30". Renders only when `showTime`
+  // is on AND the value is non-empty — empty + on still hides
+  // (looks broken otherwise).
   timeAgo: string;
+  showTime: boolean;
+  // Reposted-by attribution that sits above the card. Same gating
+  // rule: rendered when `showReposted` is on AND the name is set.
+  repostedBy: string;
+  showReposted: boolean;
   // Header icons — bell-off (notifications muted), three-dot menu.
   showBell: boolean;
   showMore: boolean;
   // Footer share/upload glyph (sits next to bookmarks).
   showShare: boolean;
-  // Reposted-by attribution that sits above the card. Empty hides
-  // the row. Gray text + repeat glyph, matching X's "Bob reposted"
-  // header on amplified posts.
-  repostedBy: string;
   // Visual style
   background: Background;
   // Hex color used when background === "custom". Ignored otherwise.
@@ -112,10 +114,12 @@ export const DEFAULT_TWEET: TweetData = {
   affiliationLabel: "",
   body: "Type your tweet here.",
   timeAgo: "10h",
+  showTime: true,
+  repostedBy: "",
+  showReposted: false,
   showBell: true,
   showMore: true,
   showShare: true,
-  repostedBy: "",
   background: "gradient",
   backgroundColor: "#0a0a0f",
   border: true,
@@ -184,7 +188,7 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
         * → tweet card. Width matches the card so the header is left-
         * aligned with the avatar column. */}
       <div className="relative flex flex-col items-stretch">
-        {data.repostedBy && (
+        {data.showReposted && data.repostedBy && (
           <div
             className={`mb-3 flex items-center gap-3 pl-[60px] ${mutedText}`}
             style={{ fontSize: 18 * fs }}
@@ -228,7 +232,7 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
               style={{ fontSize: 22 * fs }}
             >
               <span>@{(data.username || "username").replace(/^@/, "")}</span>
-              {data.timeAgo && (
+              {data.showTime && data.timeAgo && (
                 <>
                   <span>·</span>
                   <span>{data.timeAgo}</span>

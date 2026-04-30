@@ -32,11 +32,98 @@ import {
 // Persona presets save to localStorage. Cross-device sync would
 // need a model — fine to defer until people ask.
 
-// "Styles" key — bumped to v2 because the saved shape now covers
-// every field except the body, not just the persona Pick the v1
-// preset key held. Old v1 data is left alone (this just won't
-// load it).
-const STYLES_KEY = "viral.tweet.styles.v2";
+// "Styles" key — bumped to v3. The snapshot now stores ONLY the
+// persona + visual styling + element-visibility toggles. Per-tweet
+// content (body, time, reposted-by, engagement counts) is
+// intentionally excluded so loading a style swaps the look without
+// touching what the user is writing. v2 data won't load.
+const STYLES_KEY = "viral.tweet.styles.v3";
+
+// Explicit shape of a saved style. Mirrors the carryover but is
+// kept as a separate type — the carryover is the auto-saved "last
+// used"; styles are explicit named saves the admin manages.
+interface StyleSnapshot {
+  // Persona
+  name: string;
+  username: string;
+  avatarUrl: string | null;
+  checkmark: TweetData["checkmark"];
+  affiliationLogo: string | null;
+  affiliationLabel: string;
+  // Visual styling
+  background: TweetData["background"];
+  backgroundColor: string;
+  border: boolean;
+  fontScale: TweetData["fontScale"];
+  bodyFontSize: number | null;
+  // Element visibility toggles
+  showBell: boolean;
+  showMore: boolean;
+  showShare: boolean;
+  showTime: boolean;
+  showReposted: boolean;
+  showReplies: boolean;
+  showReposts: boolean;
+  showLikes: boolean;
+  showBookmarks: boolean;
+  showImpressions: boolean;
+}
+
+function snapshotStyle(d: TweetData): StyleSnapshot {
+  return {
+    name: d.name,
+    username: d.username,
+    avatarUrl: d.avatarUrl,
+    checkmark: d.checkmark,
+    affiliationLogo: d.affiliationLogo,
+    affiliationLabel: d.affiliationLabel,
+    background: d.background,
+    backgroundColor: d.backgroundColor,
+    border: d.border,
+    fontScale: d.fontScale,
+    bodyFontSize: d.bodyFontSize,
+    showBell: d.showBell,
+    showMore: d.showMore,
+    showShare: d.showShare,
+    showTime: d.showTime,
+    showReposted: d.showReposted,
+    showReplies: d.engagement.showReplies,
+    showReposts: d.engagement.showReposts,
+    showLikes: d.engagement.showLikes,
+    showBookmarks: d.engagement.showBookmarks,
+    showImpressions: d.engagement.showImpressions,
+  };
+}
+
+function applyStyle(base: TweetData, s: StyleSnapshot): TweetData {
+  return {
+    ...base,
+    name: s.name,
+    username: s.username,
+    avatarUrl: s.avatarUrl,
+    checkmark: s.checkmark,
+    affiliationLogo: s.affiliationLogo,
+    affiliationLabel: s.affiliationLabel,
+    background: s.background,
+    backgroundColor: s.backgroundColor,
+    border: s.border,
+    fontScale: s.fontScale,
+    bodyFontSize: s.bodyFontSize,
+    showBell: s.showBell,
+    showMore: s.showMore,
+    showShare: s.showShare,
+    showTime: s.showTime,
+    showReposted: s.showReposted,
+    engagement: {
+      ...base.engagement,
+      showReplies: s.showReplies,
+      showReposts: s.showReposts,
+      showLikes: s.showLikes,
+      showBookmarks: s.showBookmarks,
+      showImpressions: s.showImpressions,
+    },
+  };
+}
 // Auto-persisted "remember my settings" key. Holds the fields a
 // user repeats across sessions: persona + visuals + which
 // engagement metrics they like to show. Per-post content (body,
@@ -54,6 +141,11 @@ interface CarryoverData {
   showBell: boolean;
   showMore: boolean;
   showShare: boolean;
+  // Time + reposted-by visibility — the input rows that surface
+  // below the body are gated on these. Their content (timeAgo,
+  // repostedBy) stays per-tweet and isn't persisted.
+  showTime: boolean;
+  showReposted: boolean;
   background: TweetData["background"];
   backgroundColor: string;
   border: boolean;
@@ -78,6 +170,8 @@ function extractCarryover(d: TweetData): CarryoverData {
     showBell: d.showBell,
     showMore: d.showMore,
     showShare: d.showShare,
+    showTime: d.showTime,
+    showReposted: d.showReposted,
     background: d.background,
     backgroundColor: d.backgroundColor,
     border: d.border,
@@ -103,6 +197,8 @@ function applyCarryover(base: TweetData, c: CarryoverData): TweetData {
     showBell: c.showBell,
     showMore: c.showMore,
     showShare: c.showShare,
+    showTime: c.showTime,
+    showReposted: c.showReposted,
     background: c.background,
     backgroundColor: c.backgroundColor,
     border: c.border,
@@ -153,12 +249,11 @@ interface SlideRow {
 interface StyleRow {
   id: string;
   label: string;
-  // Snapshot of every TweetData field except `body` — persona +
-  // visuals + engagement values + time-ago + reposted-by all
-  // round-trip. Loading a style overwrites the active slide
-  // wholesale (minus the body) so users can swap "looks" without
-  // losing the draft they're typing.
-  data: Omit<TweetData, "body">;
+  // Persona + visual styling + element-visibility toggles only.
+  // Per-tweet content (body, timeAgo, repostedBy, engagement
+  // counts) deliberately excluded — loading a style swaps the
+  // look without touching the post the user is writing.
+  data: StyleSnapshot;
 }
 
 interface BatchResult {
@@ -295,30 +390,19 @@ export function TweetFlow({ storageReady }: Props) {
     const label = prompt("Style name?", activeSlide.data.name)?.trim();
     if (!label) return;
     const id = crypto.randomUUID();
-    // Strip body — every other field round-trips. The user is
-    // saving "the look", not the message.
-    const { body: _body, ...rest } = activeSlide.data;
-    persistPresets([...presets, { id, label, data: rest }]);
+    // Snapshot is persona + visual styling + element-visibility
+    // toggles. Per-tweet content (body, time, reposted-by,
+    // engagement counts) stays out so loading a style swaps the
+    // look without trampling the post in progress.
+    const data = snapshotStyle(activeSlide.data);
+    persistPresets([...presets, { id, label, data }]);
   }
 
   function loadStyle(p: StyleRow) {
-    // Spread the saved fields over the active slide's current data
-    // but keep body untouched. Engagement is a nested object so it
-    // gets merged explicitly so any new fields (added later) fall
-    // through to the saved snapshot's values without losing the
-    // current body.
     setSlides((prev) =>
       prev.map((s) =>
         s.id === activeId
-          ? {
-              ...s,
-              data: {
-                ...s.data,
-                ...p.data,
-                engagement: { ...p.data.engagement },
-                body: s.data.body,
-              },
-            }
+          ? { ...s, data: applyStyle(s.data, p.data) }
           : s,
       ),
     );
@@ -608,9 +692,10 @@ function Form({
         </div>
       </Section>
 
-      {/* Visuals — collapsible. Gear popover hides the show/hide
-        * toggles so the form's main surface stays focused on what
-        * the user is *editing*, not on/off switches. */}
+      {/* Visuals — collapsible. Gear popover holds every show/hide
+        * toggle (X UI elements + which engagement metrics surface +
+        * time / reposted-by visibility). The main visuals surface
+        * is purely styling: background, font scale, body size. */}
       <Section
         title="Visuals"
         actions={
@@ -634,6 +719,43 @@ function Form({
               label="Card border"
               checked={data.border}
               onChange={(v) => patch({ border: v })}
+            />
+            <div className="my-1 border-t" />
+            <ToggleChip
+              label="Time ago"
+              checked={data.showTime}
+              onChange={(v) => patch({ showTime: v })}
+            />
+            <ToggleChip
+              label="Reposted by"
+              checked={data.showReposted}
+              onChange={(v) => patch({ showReposted: v })}
+            />
+            <div className="my-1 border-t" />
+            <ToggleChip
+              label="Replies"
+              checked={data.engagement.showReplies}
+              onChange={(v) => patchEngagement({ showReplies: v })}
+            />
+            <ToggleChip
+              label="Reposts"
+              checked={data.engagement.showReposts}
+              onChange={(v) => patchEngagement({ showReposts: v })}
+            />
+            <ToggleChip
+              label="Likes"
+              checked={data.engagement.showLikes}
+              onChange={(v) => patchEngagement({ showLikes: v })}
+            />
+            <ToggleChip
+              label="Bookmarks"
+              checked={data.engagement.showBookmarks}
+              onChange={(v) => patchEngagement({ showBookmarks: v })}
+            />
+            <ToggleChip
+              label="Impressions"
+              checked={data.engagement.showImpressions}
+              onChange={(v) => patchEngagement({ showImpressions: v })}
             />
           </GearPopover>
         }
@@ -691,71 +813,6 @@ function Form({
           value={data.bodyFontSize}
           onChange={(v) => patch({ bodyFontSize: v })}
         />
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field
-            label="Time ago (blank to hide)"
-            value={data.timeAgo}
-            onChange={(v) => patch({ timeAgo: v })}
-            placeholder="10h, 3m, Apr 30"
-          />
-          <Field
-            label="Reposted by (blank to hide)"
-            value={data.repostedBy}
-            onChange={(v) => patch({ repostedBy: v })}
-            placeholder="Bob"
-          />
-        </div>
-      </Section>
-
-      {/* Engagement — collapsible, randomize action up top right */}
-      <Section
-        title="Engagement"
-        actions={
-          <button
-            type="button"
-            onClick={randomize}
-            className="text-[11px] text-muted-foreground hover:text-foreground"
-          >
-            Randomize
-          </button>
-        }
-      >
-        <MetricRow
-          label="Replies"
-          value={e.replies}
-          show={e.showReplies}
-          onValue={(v) => patchEngagement({ replies: v })}
-          onShow={(v) => patchEngagement({ showReplies: v })}
-        />
-        <MetricRow
-          label="Reposts"
-          value={e.reposts}
-          show={e.showReposts}
-          onValue={(v) => patchEngagement({ reposts: v })}
-          onShow={(v) => patchEngagement({ showReposts: v })}
-        />
-        <MetricRow
-          label="Likes"
-          value={e.likes}
-          show={e.showLikes}
-          onValue={(v) => patchEngagement({ likes: v })}
-          onShow={(v) => patchEngagement({ showLikes: v })}
-        />
-        <MetricRow
-          label="Bookmarks"
-          value={e.bookmarks}
-          show={e.showBookmarks}
-          onValue={(v) => patchEngagement({ bookmarks: v })}
-          onShow={(v) => patchEngagement({ showBookmarks: v })}
-        />
-        <MetricRow
-          label="Impressions"
-          value={e.impressions}
-          show={e.showImpressions}
-          onValue={(v) => patchEngagement({ impressions: v })}
-          onShow={(v) => patchEngagement({ showImpressions: v })}
-        />
       </Section>
 
       {/* Body lives at the bottom — it's the focus, treat it as
@@ -774,6 +831,17 @@ function Form({
           className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
         />
       </fieldset>
+
+      {/* Per-tweet inputs — only the rows for elements actually
+        * enabled in the gear popover render. Time + reposted-by
+        * sit above the engagement values, mirroring the order they
+        * appear on the rendered tweet. */}
+      <PerTweetInputs
+        data={data}
+        patch={patch}
+        patchEngagement={patchEngagement}
+        randomize={randomize}
+      />
 
       {error && (
         <p className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
@@ -799,6 +867,144 @@ function Form({
         </span>
       </div>
     </div>
+  );
+}
+
+// Per-tweet content inputs that surface below the body when their
+// corresponding element is enabled in the gear popover. Time +
+// reposted-by are simple text inputs; engagement values are number
+// inputs paired with a Randomize button at the top of the metric
+// block. Renders nothing when nothing is enabled.
+function PerTweetInputs({
+  data,
+  patch,
+  patchEngagement,
+  randomize,
+}: {
+  data: TweetData;
+  patch: (p: Partial<TweetData>) => void;
+  patchEngagement: (p: Partial<TweetData["engagement"]>) => void;
+  randomize: () => void;
+}) {
+  const e = data.engagement;
+  const enabledMetrics: Array<{
+    key: keyof TweetData["engagement"];
+    label: string;
+    show: boolean;
+    value: number | null;
+  }> = [
+    { key: "replies", label: "Replies", show: e.showReplies, value: e.replies },
+    { key: "reposts", label: "Reposts", show: e.showReposts, value: e.reposts },
+    { key: "likes", label: "Likes", show: e.showLikes, value: e.likes },
+    {
+      key: "bookmarks",
+      label: "Bookmarks",
+      show: e.showBookmarks,
+      value: e.bookmarks,
+    },
+    {
+      key: "impressions",
+      label: "Impressions",
+      show: e.showImpressions,
+      value: e.impressions,
+    },
+  ];
+  const visibleMetrics = enabledMetrics.filter((m) => m.show);
+  const showMetricsBlock = visibleMetrics.length > 0;
+  const showAnything = data.showTime || data.showReposted || showMetricsBlock;
+
+  if (!showAnything) {
+    return (
+      <p className="text-[11px] italic text-muted-foreground">
+        Nothing else to fill in. Toggle Time / Reposted by / engagement
+        metrics on in the Visuals gear if you want to surface them.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {(data.showTime || data.showReposted) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {data.showTime && (
+            <Field
+              label="Time ago"
+              value={data.timeAgo}
+              onChange={(v) => patch({ timeAgo: v })}
+              placeholder="10h, 3m, Apr 30"
+            />
+          )}
+          {data.showReposted && (
+            <Field
+              label="Reposted by"
+              value={data.repostedBy}
+              onChange={(v) => patch({ repostedBy: v })}
+              placeholder="Bob"
+            />
+          )}
+        </div>
+      )}
+
+      {showMetricsBlock && (
+        <div className="space-y-1.5">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Engagement
+            </span>
+            <button
+              type="button"
+              onClick={randomize}
+              className="text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              Randomize
+            </button>
+          </div>
+          {visibleMetrics.map((m) => (
+            <MetricValueInput
+              key={m.key}
+              label={m.label}
+              value={m.value}
+              onChange={(v) => patchEngagement({ [m.key]: v } as Partial<TweetData["engagement"]>)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Number input for an engagement metric. Toggle-free (visibility
+// lives in the gear popover now); cleaner row than the old
+// MetricRow which paired a checkbox with the value.
+function MetricValueInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm">
+      <span className="w-20 text-xs text-muted-foreground">{label}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={value === null ? "" : String(value)}
+        onChange={(ev) => {
+          const cleaned = ev.target.value.replace(/[, ]/g, "").trim();
+          if (!cleaned) {
+            onChange(null);
+            return;
+          }
+          const n = Number(cleaned);
+          if (Number.isFinite(n) && n >= 0) onChange(Math.floor(n));
+        }}
+        placeholder="0"
+        className="h-8 flex-1 rounded-md border bg-background px-2 text-xs tabular-nums"
+      />
+    </label>
   );
 }
 
@@ -1009,50 +1215,6 @@ function ToggleChip({
         className="h-4 w-4"
       />
       <span className="text-xs text-muted-foreground">{label}</span>
-    </label>
-  );
-}
-
-function MetricRow({
-  label,
-  value,
-  show,
-  onValue,
-  onShow,
-}: {
-  label: string;
-  value: number | null;
-  show: boolean;
-  onValue: (v: number | null) => void;
-  onShow: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 text-sm">
-      <input
-        type="checkbox"
-        checked={show}
-        onChange={(ev) => onShow(ev.target.checked)}
-        className="h-4 w-4"
-        aria-label={`Show ${label}`}
-      />
-      <span className="w-20 text-xs text-muted-foreground">{label}</span>
-      <input
-        type="text"
-        inputMode="numeric"
-        value={value === null ? "" : String(value)}
-        onChange={(ev) => {
-          const cleaned = ev.target.value.replace(/[, ]/g, "").trim();
-          if (!cleaned) {
-            onValue(null);
-            return;
-          }
-          const n = Number(cleaned);
-          if (Number.isFinite(n) && n >= 0) onValue(Math.floor(n));
-        }}
-        placeholder="0"
-        disabled={!show}
-        className="h-8 flex-1 rounded-md border bg-background px-2 text-xs tabular-nums disabled:opacity-50"
-      />
     </label>
   );
 }
