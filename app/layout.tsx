@@ -17,17 +17,29 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: TITLE,
   description: DESCRIPTION,
-  // OG image is auto-discovered from app/opengraph-image.tsx by Next 14.
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
     type: "website",
     siteName: "viral",
+    // Static branded render lives in /public/og.png. Dropping an
+    // explicit `images` entry here takes precedence over Next 14's
+    // file-convention auto-discovery (app/opengraph-image.*) — the
+    // dynamic generator is gone now, so this is the only source.
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "viral — making our friends famous",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
+    images: ["/og.png"],
   },
 };
 
