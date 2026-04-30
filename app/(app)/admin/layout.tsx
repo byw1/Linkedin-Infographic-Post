@@ -11,7 +11,6 @@ const NAV: { slug: string; label: string; description: string }[] = [
   { slug: "email", label: "Email", description: "SMTP for invites" },
   { slug: "auth", label: "Sign-in", description: "Google + email allowlist" },
   { slug: "themes", label: "Themes", description: "Brand themes (official)" },
-  { slug: "tools", label: "Tools", description: "Curated tool catalog" },
   { slug: "config", label: "Configuration", description: "Read-only env" },
 ];
 
