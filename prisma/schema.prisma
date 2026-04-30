@@ -36,6 +36,7 @@ model User {
   invitesRedeemed Invite[]  @relation("InviteRedeemedBy")
   skillsUploaded  Skill[]   @relation("SkillUploadedBy")
   themesOwned     Theme[]   @relation("ThemeOwner")
+  docPagesEdited  DocPage[] @relation("DocPageUpdatedBy")
 
   @@index([tags], type: Gin, name: "idx_users_tags")
   @@map("users")
@@ -223,6 +224,34 @@ model Skill {
 
   @@index([createdAt(sort: Desc)], name: "idx_skills_created")
   @@map("skills")
+}
+
+// Wiki pages for the team handbook. Replaces the older
+// `settings.docs` JSON blob (one giant markdown string) with a
+// page-per-topic structure: sidebar lists every page in `position`
+// order, each page lives at `/docs/<slug>`.
+//
+// Slugs are unique workspace-wide and stable — they appear in URLs.
+// The reserved slug `skills` is used by the file-uploads tab and
+// can't be claimed by a regular page (enforced in the API layer).
+//
+// `position` is a plain integer; admin reorders by setting a new
+// value (we don't bother with fractional indexes). On delete we
+// don't compact other pages' positions — gaps are fine and avoid
+// renumbering churn.
+model DocPage {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  title       String
+  markdown    String   @db.Text
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedBy   User?    @relation("DocPageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([position], name: "idx_doc_pages_position")
+  @@map("doc_pages")
 }
 
 enum Role {
