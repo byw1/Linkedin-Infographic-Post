@@ -5,10 +5,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { isEmailConfigured, sendMail } from "@/lib/email";
 
-// Public access-request endpoint. /welcome/request posts here. We
-// don't store the row anywhere — admins decide if they want to
-// invite via /admin/invites which is the auth-creating side. Email
-// goes to every admin so any of them can act on it.
+// Public access-request endpoint. /welcome/request posts here.
+// Persists the request as an AccessRequest row so admins can
+// review, approve (issues an invite + emails it), or decline from
+// /admin/access-requests. Also fires a heads-up email to every
+// admin with a deep-link to the review surface.
 //
 // Light-weight bot filter: a honeypot field on the form (`hp`) is
 // invisible to real users; any non-empty value short-circuits to a
@@ -45,14 +46,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  // Persist first so the admin review surface picks it up even if
+  // SMTP isn't configured / fails. The notification email below is
+  // a courtesy ping to admins, not the system of record.
+  await prisma.accessRequest.create({
+    data: { name, email, linkedin, industry, skills, referrer },
+  });
+
   if (!(await isEmailConfigured())) {
-    // Soft fail: still tell the user it worked. The admin can
-    // configure SMTP and the next request will go through. Logging
-    // here is the only way they'll see the missed request — a
-    // future enhancement could persist these.
     console.warn(
-      "[access-request] email not configured; request would have gone to admins:",
-      { name, email, linkedin, industry, referrer },
+      "[access-request] saved row but email not configured; admins won't be pinged until SMTP is set",
     );
     return NextResponse.json({ ok: true });
   }
@@ -62,12 +65,12 @@ export async function POST(req: Request) {
     select: { email: true },
   });
   if (admins.length === 0) {
-    console.warn("[access-request] no admins to email; request dropped");
     return NextResponse.json({ ok: true });
   }
 
+  const reviewUrl = `${getOrigin(req)}/admin/access-requests`;
   const subject = `[viral] Access request from ${name}`;
-  const lines = [
+  const text = [
     `${name} (${email}) is asking for access.`,
     ``,
     `LinkedIn:  ${linkedin}`,
@@ -77,9 +80,8 @@ export async function POST(req: Request) {
     `Skills + niche:`,
     skills,
     ``,
-    `If they're a fit, create an invite for them in /admin/invites.`,
-  ];
-  const text = lines.join("\n");
+    `Review at: ${reviewUrl}`,
+  ].join("\n");
   const html = `<!doctype html>
 <html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#fff;padding:24px">
   <div style="max-width:560px;margin:0 auto">
@@ -94,12 +96,15 @@ export async function POST(req: Request) {
     </table>
     <h3 style="margin-top:20px;font-size:14px">Skills + niche</h3>
     <p style="margin:6px 0 18px;padding:12px;background:#f6f6f5;border-radius:6px;white-space:pre-wrap">${escapeHtml(skills)}</p>
-    <p style="font-size:13px;color:#555">If they&apos;re a fit, create an invite at <code>/admin/invites</code>.</p>
+    <p style="margin:24px 0">
+      <a href="${reviewUrl}" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:500">Review &amp; approve</a>
+    </p>
+    <p style="font-size:12px;color:#888;word-break:break-all">${reviewUrl}</p>
   </div>
 </body></html>`;
 
-  // Send to all admins in parallel. Failures on one admin don't
-  // block the others (private community, this volume is tiny).
+  // Fire-and-forget: don't block the response on email delivery,
+  // and tolerate per-admin failures (private community, tiny scale).
   await Promise.all(
     admins.map(async (a) => {
       try {
@@ -120,6 +125,13 @@ export async function POST(req: Request) {
   );
 
   return NextResponse.json({ ok: true });
+}
+
+function getOrigin(req: Request): string {
+  const url = new URL(req.url);
+  const proto = req.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? url.host;
+  return `${proto}://${host}`;
 }
 
 function row(label: string, value: string): string {

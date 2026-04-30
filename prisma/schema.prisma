@@ -53,6 +53,7 @@ model User {
   themesOwned     Theme[]   @relation("ThemeOwner")
   docPagesEdited  DocPage[] @relation("DocPageUpdatedBy")
   hiddenEntities  EntityHidden[]
+  accessRequestsReviewed AccessRequest[] @relation("AccessRequestReviewer")
 
   @@index([tags], type: Gin, name: "idx_users_tags")
   @@map("users")
@@ -300,6 +301,39 @@ model DocPage {
 
   @@index([position], name: "idx_doc_pages_position")
   @@map("doc_pages")
+}
+
+// Access requests are submitted from /welcome/request by prospective
+// members. Admins review them in /admin/access-requests; approval
+// creates an Invite (existing invite flow) and emails the link to
+// the requester. Decline just flips status — we don't notify, since
+// silence is gentler than a rejection email.
+model AccessRequest {
+  id           String              @id @default(uuid()) @db.Uuid
+  name         String
+  email        String
+  linkedin     String
+  industry     String
+  skills       String              @db.Text
+  referrer     String
+  status       AccessRequestStatus @default(pending)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  reviewedById String?             @map("reviewed_by_id") @db.Uuid
+  reviewedBy   User?               @relation("AccessRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?           @map("reviewed_at") @db.Timestamptz(6)
+  // Set when status flips to approved — links back to the Invite
+  // that was issued so we can show the admin who joined and when
+  // (via Invite.usedBy / usedAt).
+  inviteId     String?             @map("invite_id") @db.Uuid
+
+  @@index([status, createdAt(sort: Desc)], name: "idx_access_requests_status")
+  @@map("access_requests")
+}
+
+enum AccessRequestStatus {
+  pending
+  approved
+  declined
 }
 
 enum Role {

@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 const NAV: { slug: string; label: string; description: string }[] = [
   { slug: "health", label: "Health", description: "Worker + storage status" },
+  { slug: "access-requests", label: "Access requests", description: "Review applicants" },
   { slug: "invites", label: "Invites", description: "Add new members" },
   { slug: "email", label: "Email", description: "SMTP for invites" },
   { slug: "auth", label: "Sign-in", description: "Google + email allowlist" },

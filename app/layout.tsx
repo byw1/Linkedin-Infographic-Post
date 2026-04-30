@@ -9,9 +9,9 @@ const SITE_URL =
   process.env.NEXTAUTH_URL ??
   "http://localhost:3000";
 
-const TITLE = "viral · making our friends famous";
+const TITLE = "viral";
 const DESCRIPTION =
-  "We figured out how to hack virality. 1M+ impressions in the last 30 days. Invite-only.";
+  "We figured out how to hack virality. 2,000,000+ impressions in the last 30 days. Invite-only.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
