@@ -62,7 +62,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "No render worker is connected. Deploy the worker service in Railway (Dockerfile.worker) — see /admin → Health.",
+            "No render worker is connected. Deploy the worker service in Railway (Dockerfile.worker) — see /admin/health.",
         },
         { status: 503 },
       );

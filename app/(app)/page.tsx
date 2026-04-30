@@ -15,7 +15,7 @@ export default async function HomePage() {
       {!storageReady && (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
           Storage isn&apos;t configured, so export won&apos;t work yet. Set
-          storage credentials in <code>/admin → Storage</code> first.
+          storage credentials in <code>/admin/health</code> first.
         </div>
       )}
 

@@ -29,6 +29,9 @@ export async function GET() {
     where: { createdById: admin.id },
     orderBy: { createdAt: "desc" },
     take: 100,
+    include: {
+      usedBy: { select: { id: true, name: true, email: true } },
+    },
   });
   return NextResponse.json({ invites });
 }
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
     }
     if (!(await isEmailConfigured())) {
       return NextResponse.json(
-        { error: "Email isn't configured. Set SMTP in /admin → Email first." },
+        { error: "Email isn't configured. Set SMTP in /admin/email first." },
         { status: 503 },
       );
     }
