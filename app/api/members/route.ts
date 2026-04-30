@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { memberStatsByUser } from "@/lib/member-stats";
 import { readSocials } from "@/lib/profile";
 
 export async function GET(req: Request) {
@@ -29,8 +30,16 @@ export async function GET(req: Request) {
       bio: true,
       socials: true,
       createdAt: true,
+      shareTracked: true,
     },
   });
+
+  // Batch-load tracked-post stats for every member in one query
+  // instead of N round-trips. Stats are computed regardless of
+  // shareTracked so a member's own profile view always sees the
+  // full numbers; the directory hides stats on cards belonging to
+  // members who've opted out of sharing.
+  const stats = await memberStatsByUser(rows.map((r) => r.id));
 
   const members = rows.map((m) => ({
     id: m.id,
@@ -45,6 +54,13 @@ export async function GET(req: Request) {
     socials: readSocials(m.socials),
     createdAt: m.createdAt,
     isSelf: m.id === user.id,
+    shareTracked: m.shareTracked,
+    stats: stats[m.id] ?? {
+      postsShared: 0,
+      totalImpressions: 0,
+      avgEngagementRate: null,
+      lastTrackedAt: null,
+    },
   }));
 
   return NextResponse.json({ members });

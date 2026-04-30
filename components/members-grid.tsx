@@ -6,6 +6,13 @@ import { MemberTopPosts } from "@/components/feed/member-top-posts";
 type SocialKey = "linkedin" | "twitter" | "github" | "instagram" | "website";
 type SocialMap = Partial<Record<SocialKey, string>>;
 
+interface MemberStats {
+  postsShared: number;
+  totalImpressions: number;
+  avgEngagementRate: number | null;
+  lastTrackedAt: string | null;
+}
+
 interface Member {
   id: string;
   name: string | null;
@@ -17,6 +24,8 @@ interface Member {
   socials: SocialMap;
   createdAt: string;
   isSelf: boolean;
+  shareTracked: boolean;
+  stats: MemberStats;
 }
 
 const SOCIAL_LABEL: Record<SocialKey, string> = {
@@ -181,12 +190,17 @@ function MemberCard({
   return (
     <div className="space-y-3 rounded-md border p-4">
       <div className="flex items-start gap-3">
-        <Avatar member={member} />
+        <a href={`/members/${member.id}`} className="shrink-0">
+          <Avatar member={member} />
+        </a>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="truncate text-sm font-semibold">
+            <a
+              href={`/members/${member.id}`}
+              className="truncate text-sm font-semibold hover:underline"
+            >
               {member.name ?? member.email.split("@")[0]}
-            </span>
+            </a>
             {member.role === "admin" && (
               <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
                 admin
@@ -285,6 +299,11 @@ function MemberCard({
           {member.bio && (
             <p className="text-sm text-muted-foreground">{member.bio}</p>
           )}
+          <MemberStatsLine
+            stats={member.stats}
+            shareTracked={member.shareTracked}
+            isSelf={member.isSelf}
+          />
           {member.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {member.tags.map((t) => (
@@ -346,4 +365,74 @@ function Avatar({ member }: { member: Member }) {
       {initials || "?"}
     </div>
   );
+}
+
+// Stats line under the bio: posts shared · cumulative impressions ·
+// avg engagement · last post N days ago. Hidden when the member has
+// shareTracked off (unless it's their own card — they always see
+// their own numbers) or has nothing tracked yet. Avg engagement rate
+// is the impression-weighted mean computed server-side.
+function MemberStatsLine({
+  stats,
+  shareTracked,
+  isSelf,
+}: {
+  stats: MemberStats;
+  shareTracked: boolean;
+  isSelf: boolean;
+}) {
+  if (!shareTracked && !isSelf) return null;
+  if (stats.postsShared === 0) return null;
+
+  const days = daysSince(stats.lastTrackedAt);
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+      <span>
+        <strong className="font-semibold text-foreground">
+          {stats.postsShared}
+        </strong>{" "}
+        post{stats.postsShared === 1 ? "" : "s"}
+      </span>
+      <span>
+        <strong className="font-mono font-semibold text-foreground tabular-nums">
+          {fmtCount(stats.totalImpressions)}
+        </strong>{" "}
+        impressions
+      </span>
+      {stats.avgEngagementRate !== null && (
+        <span>
+          <strong className="font-mono font-semibold text-foreground tabular-nums">
+            {(stats.avgEngagementRate * 100).toFixed(1)}%
+          </strong>{" "}
+          avg engagement
+        </span>
+      )}
+      {days !== null && (
+        <span>
+          {days === 0
+            ? "tracked today"
+            : days === 1
+              ? "1 day ago"
+              : `${days} days ago`}
+        </span>
+      )}
+      {!shareTracked && isSelf && (
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+          (only you see this)
+        </span>
+      )}
+    </div>
+  );
+}
+
+function fmtCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+function daysSince(iso: string | null): number | null {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
 }
