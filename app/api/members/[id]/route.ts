@@ -35,10 +35,18 @@ export async function GET(
       bio: true,
       socials: true,
       createdAt: true,
+      lastSeenAt: true,
+      bannedAt: true,
       shareTracked: true,
     },
   });
   if (!m) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const isAdmin = user.role === "admin";
+  // Banned profiles are hidden to non-admins (treat as 404). Admins
+  // can still pull the row to manage it.
+  if (m.bannedAt && !isAdmin && m.id !== user.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const stats = await memberStats(m.id);
 
@@ -54,9 +62,12 @@ export async function GET(
       bio: m.bio,
       socials: readSocials(m.socials),
       createdAt: m.createdAt,
+      lastSeenAt: m.lastSeenAt,
+      banned: m.bannedAt !== null,
       isSelf: m.id === user.id,
       shareTracked: m.shareTracked,
       stats,
     },
+    viewerIsAdmin: isAdmin,
   });
 }

@@ -16,6 +16,7 @@ export default async function MemberProfilePage({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/auth/signin");
+  const isAdmin = session.user.role === "admin";
 
   const m = await prisma.user.findUnique({
     where: { id: params.id },
@@ -29,10 +30,13 @@ export default async function MemberProfilePage({
       bio: true,
       socials: true,
       createdAt: true,
+      lastSeenAt: true,
+      bannedAt: true,
       shareTracked: true,
     },
   });
   if (!m) notFound();
+  if (m.bannedAt && !isAdmin && m.id !== session.user.id) notFound();
   const stats = await memberStats(m.id);
   const image = m.image ? ((await refreshUrl(m.image)) ?? m.image) : null;
 
@@ -47,6 +51,7 @@ export default async function MemberProfilePage({
         </Link>
       </div>
       <MemberProfileView
+        viewerIsAdmin={isAdmin}
         member={{
           id: m.id,
           name: m.name,
@@ -57,6 +62,8 @@ export default async function MemberProfilePage({
           bio: m.bio,
           socials: readSocials(m.socials),
           createdAt: m.createdAt.toISOString(),
+          lastSeenAt: m.lastSeenAt?.toISOString() ?? null,
+          banned: m.bannedAt !== null,
           isSelf: m.id === session.user.id,
           shareTracked: m.shareTracked,
           stats: {

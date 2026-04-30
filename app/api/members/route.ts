@@ -17,9 +17,16 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const tag = url.searchParams.get("tag")?.trim().toLowerCase() ?? "";
+  const isAdmin = user.role === "admin";
+
+  // Non-admins never see banned rows. Admins see them so they can
+  // unban or fully remove. Tag filter still applies on top.
+  const where: Record<string, unknown> = {};
+  if (tag) where.tags = { has: tag };
+  if (!isAdmin) where.bannedAt = null;
 
   const rows = await prisma.user.findMany({
-    where: tag ? { tags: { has: tag } } : undefined,
+    where,
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
@@ -31,6 +38,8 @@ export async function GET(req: Request) {
       bio: true,
       socials: true,
       createdAt: true,
+      lastSeenAt: true,
+      bannedAt: true,
       shareTracked: true,
     },
   });
@@ -60,6 +69,8 @@ export async function GET(req: Request) {
       bio: m.bio,
       socials: readSocials(m.socials),
       createdAt: m.createdAt,
+      lastSeenAt: m.lastSeenAt,
+      banned: m.bannedAt !== null,
       isSelf: m.id === user.id,
       shareTracked: m.shareTracked,
       stats: stats[m.id] ?? {
@@ -71,5 +82,5 @@ export async function GET(req: Request) {
     })),
   );
 
-  return NextResponse.json({ members });
+  return NextResponse.json({ members, viewerIsAdmin: isAdmin });
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { AvatarUpload } from "@/components/account/avatar-upload";
 import { MemberTopPosts } from "@/components/feed/member-top-posts";
 import { SocialIcons } from "@/components/social-icons";
 
@@ -25,40 +24,31 @@ interface Member {
   bio: string | null;
   socials: SocialMap;
   createdAt: string;
+  // Set on every authenticated request, throttled to ~5 minutes.
+  // Null until a member has hit any authenticated route since the
+  // column was added.
+  lastSeenAt: string | null;
+  // Soft-banned. Only ever true for admin viewers — the API filters
+  // banned rows out of non-admin responses.
+  banned: boolean;
   isSelf: boolean;
   shareTracked: boolean;
   stats: MemberStats;
 }
 
-const SOCIAL_LABEL: Record<SocialKey, string> = {
-  linkedin: "LinkedIn",
-  twitter: "Twitter / X",
-  github: "GitHub",
-  instagram: "Instagram",
-  website: "Website",
-};
-
-const SOCIAL_PLACEHOLDER: Record<SocialKey, string> = {
-  linkedin: "linkedin.com/in/your-handle or @your-handle",
-  twitter: "twitter.com/your-handle or @your-handle",
-  github: "github.com/your-handle",
-  instagram: "instagram.com/your-handle",
-  website: "https://example.com",
-};
-
-const SOCIAL_KEYS: SocialKey[] = ["linkedin", "twitter", "github", "instagram", "website"];
-
-type Sort = "name" | "impressions" | "engagement" | "recent";
+type Sort = "name" | "impressions" | "engagement" | "recent" | "active";
 
 const SORT_LABEL: Record<Sort, string> = {
   name: "Name (A→Z)",
   impressions: "Most impressions",
   engagement: "Avg engagement",
   recent: "Most recent post",
+  active: "Recently active",
 };
 
 export function MembersGrid() {
   const [members, setMembers] = useState<Member[] | null>(null);
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<Sort>("name");
@@ -69,6 +59,7 @@ export function MembersGrid() {
     if (!res.ok) return;
     const data = await res.json();
     setMembers(data.members);
+    setViewerIsAdmin(Boolean(data.viewerIsAdmin));
   }
 
   useEffect(() => {
@@ -127,6 +118,13 @@ export function MembersGrid() {
           const bt = b.stats.lastTrackedAt
             ? new Date(b.stats.lastTrackedAt).getTime()
             : 0;
+          return bt - at;
+        });
+        break;
+      case "active":
+        sorted.sort((a, b) => {
+          const at = a.lastSeenAt ? new Date(a.lastSeenAt).getTime() : 0;
+          const bt = b.lastSeenAt ? new Date(b.lastSeenAt).getTime() : 0;
           return bt - at;
         });
         break;
@@ -217,7 +215,8 @@ export function MembersGrid() {
             <MemberCard
               key={m.id}
               member={m}
-              onSaved={() => void load(activeTag)}
+              viewerIsAdmin={viewerIsAdmin}
+              onChanged={() => void load(activeTag)}
               onTagClick={(t) => setActiveTag(t === activeTag ? null : t)}
             />
           ))}
@@ -229,83 +228,70 @@ export function MembersGrid() {
 
 function MemberCard({
   member,
-  onSaved,
+  viewerIsAdmin,
+  onChanged,
   onTagClick,
 }: {
   member: Member;
-  onSaved: () => void;
+  viewerIsAdmin: boolean;
+  onChanged: () => void;
   onTagClick: (t: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [tagsText, setTagsText] = useState(member.tags.join(", "));
-  const [bio, setBio] = useState(member.bio ?? "");
-  const [socials, setSocials] = useState<Record<SocialKey, string>>(() => {
-    const out = {} as Record<SocialKey, string>;
-    for (const k of SOCIAL_KEYS) out[k] = member.socials[k] ?? "";
-    return out;
-  });
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function startEdit() {
-    setTagsText(member.tags.join(", "));
-    setBio(member.bio ?? "");
-    const fresh = {} as Record<SocialKey, string>;
-    for (const k of SOCIAL_KEYS) fresh[k] = member.socials[k] ?? "";
-    setSocials(fresh);
+  // Admin actions hit /api/admin/members/[id]. Banning is reversible
+  // (toggles bannedAt). Remove is hard-delete and cascades through
+  // owned content (renders, themes, hide overrides) per the schema.
+  function ban(banned: boolean) {
     setError(null);
-    setEditing(true);
-  }
-
-  function save() {
-    setError(null);
-    const tags = tagsText
-      .split(/[\s,]+/)
-      .map((t) => t.trim())
-      .filter(Boolean);
-    const cleanSocials: Record<string, string> = {};
-    for (const k of SOCIAL_KEYS) {
-      const v = socials[k]?.trim();
-      if (v) cleanSocials[k] = v;
-    }
     startTransition(async () => {
-      const res = await fetch("/api/account/profile", {
-        method: "PATCH",
+      const res = await fetch(`/api/admin/members/${member.id}/ban`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tags,
-          bio: bio.trim() || null,
-          socials: cleanSocials,
-        }),
+        body: JSON.stringify({ banned }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(typeof data.error === "string" ? data.error : "Save failed.");
+        setError(typeof data.error === "string" ? data.error : "Failed.");
         return;
       }
-      setEditing(false);
-      onSaved();
+      onChanged();
+    });
+  }
+
+  function remove() {
+    if (
+      !confirm(
+        `Permanently remove ${member.name ?? member.email}? This deletes their account, renders, themes, and uploads. Cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/members/${member.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(typeof data.error === "string" ? data.error : "Failed.");
+        return;
+      }
+      onChanged();
     });
   }
 
   return (
-    <div className="space-y-3 rounded-md border p-4">
+    <div
+      className={`space-y-3 rounded-md border p-4 ${
+        member.banned ? "border-destructive/40 bg-destructive/5" : ""
+      }`}
+    >
       <div className="flex items-start gap-3">
-        {editing && member.isSelf ? (
-          // Inline avatar editor when the user opens their own
-          // card. Updates are reflected immediately on the card via
-          // an onSaved() refresh after the API call settles — same
-          // pattern the rest of the form uses.
-          <AvatarUpload
-            currentImage={member.image}
-            initials={initialsFor(member)}
-            onChange={() => onSaved()}
-          />
-        ) : (
-          <a href={`/members/${member.id}`} className="shrink-0">
-            <Avatar member={member} />
-          </a>
-        )}
+        <a href={`/members/${member.id}`} className="shrink-0">
+          <Avatar member={member} />
+        </a>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
             <a
@@ -324,6 +310,11 @@ function MemberCard({
                 you
               </span>
             )}
+            {member.banned && (
+              <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-destructive">
+                banned
+              </span>
+            )}
           </div>
           <a
             href={`mailto:${member.email}`}
@@ -331,113 +322,81 @@ function MemberCard({
           >
             {member.email}
           </a>
+          <p className="text-[11px] text-muted-foreground">
+            {lastSeenLabel(member.lastSeenAt)}
+          </p>
         </div>
-        {member.isSelf && !editing && (
-          <button
-            type="button"
-            onClick={startEdit}
+        {member.isSelf && (
+          <a
+            href="/settings#profile"
             className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-secondary"
           >
             Edit
-          </button>
+          </a>
         )}
       </div>
 
-      {editing ? (
-        <div className="space-y-3">
-          <label className="block text-sm">
-            <span className="mb-1 block text-[10px] uppercase tracking-wide text-muted-foreground">
-              Bio
-            </span>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              maxLength={500}
-              rows={2}
-              placeholder="One line about what you build."
-              className="w-full rounded-md border bg-background px-2 py-1 text-sm"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-[10px] uppercase tracking-wide text-muted-foreground">
-              Tags
-              <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">
-                comma-separated, lowercase, hyphenated
-              </span>
-            </span>
-            <input
-              value={tagsText}
-              onChange={(e) => setTagsText(e.target.value)}
-              placeholder="fintech, b2b-saas, solo-founder"
-              className="h-8 w-full rounded-md border bg-background px-2 font-mono text-xs"
-            />
-          </label>
-          <div className="space-y-2">
-            <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
-              Social links
-            </span>
-            {SOCIAL_KEYS.map((k) => (
-              <label key={k} className="flex items-center gap-2 text-sm">
-                <span className="w-20 text-xs text-muted-foreground">{SOCIAL_LABEL[k]}</span>
-                <input
-                  value={socials[k]}
-                  onChange={(e) => setSocials((s) => ({ ...s, [k]: e.target.value }))}
-                  placeholder={SOCIAL_PLACEHOLDER[k]}
-                  className="h-8 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
-                />
-              </label>
-            ))}
-          </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
-          <div className="flex gap-2">
+      {member.bio && (
+        <p className="text-sm text-muted-foreground">{member.bio}</p>
+      )}
+      <MemberStatsLine
+        stats={member.stats}
+        shareTracked={member.shareTracked}
+        isSelf={member.isSelf}
+      />
+      {member.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {member.tags.map((t) => (
             <button
+              key={t}
               type="button"
-              onClick={save}
-              disabled={pending}
-              className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              onClick={() => onTagClick(t)}
+              className="inline-flex h-6 items-center rounded-full border bg-secondary/50 px-2 font-mono text-[11px] hover:bg-secondary"
             >
-              {pending ? "Saving..." : "Save"}
+              {t}
             </button>
-            <button
-              type="button"
-              onClick={() => setEditing(false)}
-              className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
-            >
-              Cancel
-            </button>
-          </div>
+          ))}
         </div>
-      ) : (
-        <>
-          {member.bio && (
-            <p className="text-sm text-muted-foreground">{member.bio}</p>
-          )}
-          <MemberStatsLine
-            stats={member.stats}
-            shareTracked={member.shareTracked}
-            isSelf={member.isSelf}
-          />
-          {member.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {member.tags.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => onTagClick(t)}
-                  className="inline-flex h-6 items-center rounded-full border bg-secondary/50 px-2 font-mono text-[11px] hover:bg-secondary"
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          )}
-          {Object.keys(member.socials).length > 0 && (
-            <SocialIcons socials={member.socials} />
-          )}
-        </>
+      )}
+      {Object.keys(member.socials).length > 0 && (
+        <SocialIcons socials={member.socials} />
+      )}
+      {viewerIsAdmin && !member.isSelf && (
+        // Admin moderation row. "Edit" jumps to the member's profile
+        // page where the admin sees the inline editor; ban / remove
+        // are inline so the directory is one click away from full
+        // moderation.
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3 text-xs">
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Admin
+          </span>
+          <a
+            href={`/members/${member.id}#admin-edit`}
+            className="inline-flex h-7 items-center rounded-md border px-2 hover:bg-secondary"
+          >
+            Edit profile
+          </a>
+          <button
+            type="button"
+            onClick={() => ban(!member.banned)}
+            disabled={pending}
+            className="inline-flex h-7 items-center rounded-md border px-2 hover:bg-secondary disabled:opacity-50"
+          >
+            {member.banned ? "Unban" : "Ban"}
+          </button>
+          <button
+            type="button"
+            onClick={remove}
+            disabled={pending}
+            className="inline-flex h-7 items-center rounded-md border border-destructive/40 px-2 text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            Remove
+          </button>
+          {error && <span className="text-destructive">{error}</span>}
+        </div>
       )}
 
-      {!editing && <MemberTopPosts memberId={member.id} />}
+      <MemberTopPosts memberId={member.id} />
     </div>
   );
 }
@@ -538,4 +497,25 @@ function daysSince(iso: string | null): number | null {
   if (!iso) return null;
   const ms = Date.now() - new Date(iso).getTime();
   return Math.max(0, Math.floor(ms / (24 * 60 * 60 * 1000)));
+}
+
+// "Active 12m ago" / "Active 2h ago" / "Active yesterday" / "Active
+// 3d ago" / "Active 2w ago" / "Active never". Uses lastSeenAt which
+// the server bumps on every authenticated request (5-minute throttle
+// — see lib/auth.ts:LAST_SEEN_BUMP_MS).
+function lastSeenLabel(iso: string | null): string {
+  if (!iso) return "Never seen";
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60_000) return "Active just now";
+  const m = Math.floor(ms / 60_000);
+  if (m < 60) return `Active ${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `Active ${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "Active yesterday";
+  if (d < 7) return `Active ${d}d ago`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `Active ${w}w ago`;
+  const mo = Math.floor(d / 30);
+  return `Active ${mo}mo ago`;
 }

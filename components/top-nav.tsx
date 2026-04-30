@@ -41,12 +41,6 @@ export async function TopNav() {
                 Wins
               </Link>
               <Link
-                href="/library"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Library
-              </Link>
-              <Link
                 href="/members"
                 className="text-muted-foreground hover:text-foreground"
               >

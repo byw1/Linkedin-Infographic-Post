@@ -46,6 +46,10 @@ async function buildConfig(): Promise<NextAuthConfig> {
         const email = parsed.data.email.trim().toLowerCase();
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user?.passwordHash) return null;
+        // Banned accounts are blocked from credential sign-in. They
+        // could still hold a stale JWT — requireUser re-checks the
+        // ban flag on each request and 401s if it's set.
+        if (user.bannedAt) return null;
         const ok = await verifyPassword(parsed.data.password, user.passwordHash);
         if (!ok) return null;
         return {
@@ -91,12 +95,18 @@ async function buildConfig(): Promise<NextAuthConfig> {
         // existing user row, so it's authorized.
         if (account?.provider === "credentials") return true;
 
-        // Google sign-in: only existing users (created via setup or invite)
-        // can sign in. We never auto-provision from Google.
+        // Google sign-in: only existing, non-banned users (created
+        // via setup or invite) can sign in. We never auto-provision
+        // from Google.
         const email = user.email?.toLowerCase();
         if (!email) return false;
-        const existing = await prisma.user.findUnique({ where: { email } });
-        return existing != null;
+        const existing = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true, bannedAt: true },
+        });
+        if (!existing) return false;
+        if (existing.bannedAt) return false;
+        return true;
       },
       async jwt({ token, user, trigger }) {
         const t = token as AppJWT & typeof token;
@@ -154,6 +164,24 @@ export const {
 export async function requireUser() {
   const session = await auth();
   if (!session?.user?.id) {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+  // Single round-trip: update lastSeenAt for the activity column on
+  // /members and read bannedAt back so revoking access takes effect
+  // on the very next request (no JWT TTL wait). The write lands on
+  // every authenticated request — fine for a private community,
+  // would want a throttle if this app went public.
+  let u;
+  try {
+    u = await prisma.user.update({
+      where: { id: session.user.id },
+      data: { lastSeenAt: new Date() },
+      select: { bannedAt: true },
+    });
+  } catch {
+    throw new Response("Unauthorized", { status: 401 });
+  }
+  if (u.bannedAt) {
     throw new Response("Unauthorized", { status: 401 });
   }
   return session.user;

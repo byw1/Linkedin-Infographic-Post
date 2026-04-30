@@ -16,6 +16,15 @@ model User {
   passwordHash  String?   @map("password_hash")
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz(6)
+  // Updated on every authenticated request, throttled to once per
+  // ~5 minutes so we don't write on every API call. Surfaced on
+  // /members as "active 2h ago".
+  lastSeenAt    DateTime? @map("last_seen_at") @db.Timestamptz(6)
+  // Set when an admin bans this user. Non-null = banned: sign-in is
+  // blocked, the user is hidden from non-admin /members listings,
+  // and admin-side cards show an "unban" affordance. Soft-state so
+  // an accidental ban is reversible.
+  bannedAt      DateTime? @map("banned_at") @db.Timestamptz(6)
   emailVerified DateTime? @map("email_verified") @db.Timestamptz(6)
   // Free-form tags shown on the Members page (industry, focus areas,
   // anything). Lowercase + hyphenated on write so search/group is
