@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { getStoredThemeId } from "@/components/theme-picker";
 
 interface Skill {
   id: string;
@@ -15,18 +14,8 @@ interface Skill {
   downloadUrl: string;
 }
 
-interface ThemeOption {
-  id: string;
-  name: string;
-  isOfficial: boolean;
-}
-
 export function SkillsSection({ canManage }: { canManage: boolean }) {
   const [skills, setSkills] = useState<Skill[] | null>(null);
-  const [themes, setThemes] = useState<ThemeOption[]>([]);
-  // Active theme for download injection. Defaults to whatever the
-  // editor picker last persisted; "" means "no theme" (raw skill).
-  const [themeId, setThemeId] = useState<string>("");
 
   async function load() {
     const res = await fetch("/api/skills");
@@ -35,97 +24,172 @@ export function SkillsSection({ canManage }: { canManage: boolean }) {
     setSkills(data.skills);
   }
 
-  async function loadThemes() {
-    const res = await fetch("/api/themes");
-    if (!res.ok) return;
-    const data = await res.json();
-    setThemes(data.themes);
-    const stored = getStoredThemeId();
-    if (stored && data.themes.some((t: ThemeOption) => t.id === stored)) {
-      setThemeId(stored);
-    } else {
-      const official = data.themes.find((t: ThemeOption) => t.isOfficial);
-      if (official) setThemeId(official.id);
-    }
-  }
-
   useEffect(() => {
     void load();
-    void loadThemes();
   }, []);
 
   return (
-    <section className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        Download a skill, paste into Claude (Project custom instructions, or{" "}
-        <code>~/.claude/skills/&lt;name&gt;/SKILL.md</code> for Claude Code) —
-        then ask Claude to build the infographic or carousel and drop the
-        result back into <strong>New post</strong>.
-      </p>
+    <section className="space-y-6">
+      <Intro />
+      <HowToUse />
 
-      {themes.length > 0 && (
-        <div className="flex items-center gap-2 text-xs">
-          <label
-            htmlFor="skill-theme"
-            className="font-medium uppercase tracking-wide text-muted-foreground"
-          >
-            Append theme
-          </label>
-          <select
-            id="skill-theme"
-            value={themeId}
-            onChange={(e) => setThemeId(e.target.value)}
-            className="h-8 rounded-md border bg-background px-2 text-xs"
-          >
-            <option value="">None (raw skill)</option>
-            {themes.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-                {t.isOfficial ? " · official" : ""}
-              </option>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Available skills
+          </h3>
+          {skills && skills.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {skills.length} skill{skills.length === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+
+        {skills === null && (
+          <p className="rounded-md border bg-card p-6 text-center text-sm text-muted-foreground">
+            Loading…
+          </p>
+        )}
+        {skills && skills.length === 0 && (
+          <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+            <p className="text-sm font-medium">No skills yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {canManage
+                ? "Upload one below to share with the team."
+                : "Ask an admin to upload one."}
+            </p>
+          </div>
+        )}
+        {skills && skills.length > 0 && (
+          <div className="space-y-3">
+            {skills.map((s) => (
+              <SkillCard
+                key={s.id}
+                skill={s}
+                canManage={canManage}
+                onChange={() => void load()}
+              />
             ))}
-          </select>
-          <span className="text-muted-foreground">
-            — bakes brand tokens into the download.
-          </span>
+          </div>
+        )}
+      </div>
+
+      {canManage && (
+        <div className="space-y-3 border-t pt-6">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Upload a new skill
+          </h3>
+          <UploadForm onUploaded={() => void load()} />
         </div>
       )}
-
-      {skills === null && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {skills && skills.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          {canManage
-            ? "No skills uploaded yet. Use the form below to add one."
-            : "No skills uploaded yet. Ask an admin to add one."}
-        </p>
-      )}
-      {skills && skills.length > 0 && (
-        <div className="space-y-2">
-          {skills.map((s) => (
-            <SkillRow
-              key={s.id}
-              skill={s}
-              themeId={themeId || null}
-              canManage={canManage}
-              onChange={() => void load()}
-            />
-          ))}
-        </div>
-      )}
-
-      {canManage && <UploadForm onUploaded={() => void load()} />}
     </section>
   );
 }
 
-function SkillRow({
+function Intro() {
+  return (
+    <div className="rounded-lg border bg-card p-5 text-card-foreground">
+      <h3 className="text-base font-semibold">What's a skill?</h3>
+      <p className="mt-1.5 text-sm text-muted-foreground">
+        A skill is a pre-written guide that tells Claude exactly how to make
+        your LinkedIn posts — the design system, the writing style, the
+        sections, the formatting. Download one, paste it into Claude, then
+        ask Claude to make a post. Claude follows the recipe; you drop the
+        result into <strong className="text-foreground">New post</strong>{" "}
+        to render and publish.
+      </p>
+    </div>
+  );
+}
+
+function HowToUse() {
+  const steps: { title: string; body: React.ReactNode }[] = [
+    {
+      title: "Pick a skill below and click Copy markdown",
+      body: (
+        <>
+          The whole skill text lands on your clipboard. Or click{" "}
+          <strong>Download</strong> if you'd rather save it as a{" "}
+          <code>.md</code> file.
+        </>
+      ),
+    },
+    {
+      title: "Open Claude and start a new Project",
+      body: (
+        <>
+          Go to{" "}
+          <a
+            href="https://claude.ai/projects"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            claude.ai/projects
+          </a>
+          {" "}→ <strong>Create project</strong>. (Claude Code users: drop the
+          file at{" "}
+          <code className="text-xs">~/.claude/skills/&lt;name&gt;/SKILL.md</code>{" "}
+          instead.)
+        </>
+      ),
+    },
+    {
+      title: 'Click "Custom instructions" and paste the markdown',
+      body: <>Save. Claude now knows the recipe for every chat in this project.</>,
+    },
+    {
+      title: "Ask Claude to make a post",
+      body: (
+        <>
+          Something like &quot;<em>Make me a single LinkedIn post about
+          [news topic]</em>.&quot; Claude will search the web, write the
+          post body, and produce a 1080×1350 HTML file.
+        </>
+      ),
+    },
+    {
+      title: "Bring the HTML back here",
+      body: (
+        <>
+          Open <strong>New post</strong>, drop the HTML, swap in real logos
+          from the library, render the PNG / PDF, post it on LinkedIn.
+        </>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        How to use a skill
+      </h3>
+      <ol className="space-y-2.5">
+        {steps.map((s, i) => (
+          <li
+            key={i}
+            className="flex gap-3 rounded-md border bg-card p-3 text-sm text-card-foreground"
+          >
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+              {i + 1}
+            </span>
+            <div className="space-y-0.5">
+              <div className="font-medium">{s.title}</div>
+              <div className="text-xs text-muted-foreground">{s.body}</div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function SkillCard({
   skill,
-  themeId,
   canManage,
   onChange,
 }: {
   skill: Skill;
-  themeId: string | null;
   canManage: boolean;
   onChange: () => void;
 }) {
@@ -134,6 +198,27 @@ function SkillRow({
   const [description, setDescription] = useState(skill.description ?? "");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  // "idle" | "copying" | "copied" | "error" — drives the Copy
+  // button's transient label so the user gets immediate feedback
+  // instead of having to check their clipboard.
+  const [copyState, setCopyState] = useState<
+    "idle" | "copying" | "copied" | "error"
+  >("idle");
+
+  async function copyMarkdown() {
+    setCopyState("copying");
+    try {
+      const res = await fetch(`/api/skills/${skill.id}/download`);
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const text = await res.text();
+      await navigator.clipboard.writeText(text);
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 1800);
+    } catch {
+      setCopyState("error");
+      setTimeout(() => setCopyState("idle"), 1800);
+    }
+  }
 
   function save() {
     setError(null);
@@ -164,19 +249,28 @@ function SkillRow({
     });
   }
 
+  const copyLabel =
+    copyState === "copying"
+      ? "Copying…"
+      : copyState === "copied"
+        ? "Copied ✓"
+        : copyState === "error"
+          ? "Copy failed"
+          : "Copy markdown";
+
   return (
-    <div className="rounded-md border p-3">
+    <div className="rounded-lg border bg-card p-4 text-card-foreground">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-1">
+        <div className="min-w-0 flex-1 space-y-1.5">
           {editing ? (
             <input
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-8 w-full rounded-md border bg-background px-2 text-sm font-medium"
+              className="h-9 w-full rounded-md border bg-background px-3 text-base font-semibold"
             />
           ) : (
-            <div className="font-mono text-sm font-medium">{skill.name}</div>
+            <h4 className="text-base font-semibold leading-tight">{skill.name}</h4>
           )}
           {editing ? (
             <textarea
@@ -185,36 +279,46 @@ function SkillRow({
               rows={3}
               maxLength={2000}
               placeholder="When to use this skill, what it produces, etc."
-              className="w-full rounded-md border bg-background px-2 py-1 text-xs"
+              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
             />
           ) : (
             skill.description && (
-              <p className="text-xs text-muted-foreground">{skill.description}</p>
+              <p className="text-sm text-muted-foreground">{skill.description}</p>
             )
           )}
           <div className="text-[11px] text-muted-foreground">
-            {skill.filename} · {(skill.fileSize / 1024).toFixed(1)} KB · uploaded{" "}
+            {(skill.fileSize / 1024).toFixed(1)} KB · uploaded{" "}
             {new Date(skill.createdAt).toLocaleDateString()} by{" "}
             {skill.uploadedBy.name ?? skill.uploadedBy.email}
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <a
-            // Route through the in-app download endpoint so the active
-            // theme's tokens get appended in-line. Falls back to the
-            // raw S3 URL when no theme is selected — same bytes either
-            // way, but skips the proxy hop.
-            href={
-              themeId
-                ? `/api/skills/${skill.id}/download?themeId=${themeId}`
-                : `/api/skills/${skill.id}/download`
-            }
-            download={skill.filename}
-            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
-          >
-            Download
-          </a>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {!editing && (
+            <>
+              <button
+                type="button"
+                onClick={() => void copyMarkdown()}
+                disabled={copyState === "copying"}
+                className={`inline-flex h-9 items-center rounded-md px-3 text-xs font-medium transition-colors disabled:opacity-50 ${
+                  copyState === "copied"
+                    ? "border border-primary/40 bg-primary/10 text-primary"
+                    : copyState === "error"
+                      ? "border border-destructive/40 bg-destructive/10 text-destructive"
+                      : "bg-primary text-primary-foreground hover:opacity-90"
+                }`}
+              >
+                {copyLabel}
+              </button>
+              <a
+                href={`/api/skills/${skill.id}/download`}
+                download={skill.filename}
+                className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+              >
+                Download
+              </a>
+            </>
+          )}
           {canManage && (
             <>
               {editing ? (
@@ -223,14 +327,14 @@ function SkillRow({
                     type="button"
                     onClick={save}
                     disabled={pending}
-                    className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                    className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground disabled:opacity-50"
                   >
                     {pending ? "Saving…" : "Save"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditing(false)}
-                    className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+                    className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
                   >
                     Cancel
                   </button>
@@ -244,7 +348,7 @@ function SkillRow({
                       setDescription(skill.description ?? "");
                       setEditing(true);
                     }}
-                    className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+                    className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
                   >
                     Edit
                   </button>
@@ -252,7 +356,7 @@ function SkillRow({
                     type="button"
                     onClick={remove}
                     disabled={pending}
-                    className="inline-flex h-8 items-center rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                    className="inline-flex h-9 items-center rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -286,7 +390,7 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <div className="space-y-2 rounded-md border-2 border-dashed p-3">
+    <div className="space-y-2 rounded-lg border-2 border-dashed bg-card p-4 text-card-foreground">
       <label
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -294,11 +398,13 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
           const file = e.dataTransfer.files?.[0];
           if (file) upload(file);
         }}
-        className="flex cursor-pointer flex-col items-center justify-center gap-1 py-4 text-sm text-muted-foreground hover:bg-secondary/40"
+        className="flex cursor-pointer flex-col items-center justify-center gap-1 py-6 text-sm text-muted-foreground hover:bg-secondary/40"
       >
-        <span className="font-medium text-foreground">Upload a .md skill file</span>
+        <span className="font-medium text-foreground">
+          Drop a .md skill file here
+        </span>
         <span className="text-xs">
-          drop or click — name + description are pulled from the YAML frontmatter
+          or click to pick one — name + description come from the YAML frontmatter
         </span>
         <input
           type="file"
