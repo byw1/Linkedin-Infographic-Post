@@ -203,6 +203,28 @@ export const CHART_RETHEME_SCRIPT = `
   // changes reflect on body even when no charts exist.
   pinBodyFont();
 
+  // Lightweight debug log — visible in the iframe's devtools console
+  // when something doesn't render the way you expect. Shows the
+  // theme tokens we resolved + which fonts the iframe knows about
+  // and whether they've loaded.
+  try {
+    var family = readToken('--font-family-base') || readToken('--font-sans');
+    var firstFamily = family ? family.split(',')[0].trim().replace(/^['"]|['"]$/g, '') : null;
+    var loadedFamilies = [];
+    if (document.fonts && document.fonts.forEach) {
+      document.fonts.forEach(function (f) {
+        loadedFamilies.push(f.family + ' (' + f.status + ')');
+      });
+    }
+    console.info('[viral theme]', {
+      bodyFontFamily: getComputedStyle(document.body).fontFamily,
+      rootFontFamilyBase: family,
+      checkPrimary: firstFamily ? document.fonts && document.fonts.check && document.fonts.check('1em "' + firstFamily + '"') : null,
+      fontFaces: loadedFamilies,
+      fontsStatus: document.fonts ? document.fonts.status : 'unavailable',
+    });
+  } catch (e) { /* debug log is best-effort */ }
+
   var attempts = 0;
   function poll() {
     pinBodyFont();

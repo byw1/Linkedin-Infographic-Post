@@ -570,16 +570,17 @@ function captureDiagnostics(doc: Document): ThemeDiagnostics | null {
   if (!win || !doc.body) return null;
   const cs = win.getComputedStyle(doc.body);
 
-  // Pull the first quoted family out of the computed font-family
-  // stack — that's the face the browser will actually render with
-  // when it's available. Stack like `"Inter", -apple-system, …`
-  // with the unquoted system fallbacks gets handled by the regex
-  // tolerantly. We also accept unquoted bare keywords as a fallback
-  // so "system-ui, sans-serif" reports something useful.
+  // Pull the first family in the computed font-family stack —
+  // quoted or unquoted, doesn't matter. Browsers vary on whether
+  // they quote multi-word names in computed values, so picking
+  // "first quoted" can skip past the intended primary family
+  // (e.g. an unquoted `Manrope` followed by a quoted
+  // `'Helvetica Neue'` later in the stack would have wrongly
+  // returned "Helvetica Neue"). First-comma-entry is unambiguous.
   const familyValue = cs.fontFamily ?? "";
-  const quoted = familyValue.match(/['"]([^'"]+)['"]/);
-  const fallback = familyValue.split(",")[0]?.trim().replace(/['"]/g, "");
-  const fontFamily = quoted ? quoted[1] : fallback || null;
+  const firstEntry = familyValue.split(",")[0]?.trim() ?? "";
+  const fontFamily =
+    firstEntry.replace(/^['"]|['"]$/g, "") || null;
 
   // document.fonts.check() returns true only if *every* face required
   // for the spec is loaded. Wrap in try/catch — older browsers /
