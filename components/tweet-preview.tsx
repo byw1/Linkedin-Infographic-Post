@@ -36,7 +36,15 @@ const RepostGlyph = Repeat2;
 //     stays predictable across choices.
 
 export type CheckMark = "none" | "blue" | "gray" | "gold";
-export type Background = "gradient" | "black" | "white" | "transparent";
+export type Background =
+  | "gradient"
+  | "black"
+  | "white"
+  | "transparent"
+  // Solid hex color from the user. The actual color lives on
+  // `backgroundColor`. Lets people drop their brand color in
+  // without filling out a whole theme.
+  | "custom";
 export type FontScale = "sm" | "md" | "lg";
 
 export interface TweetEngagement {
@@ -79,6 +87,8 @@ export interface TweetData {
   repostedBy: string;
   // Visual style
   background: Background;
+  // Hex color used when background === "custom". Ignored otherwise.
+  backgroundColor: string;
   border: boolean;
   fontScale: FontScale;
   engagement: TweetEngagement;
@@ -103,6 +113,7 @@ export const DEFAULT_TWEET: TweetData = {
   showShare: true,
   repostedBy: "",
   background: "gradient",
+  backgroundColor: "#0a0a0f",
   border: true,
   fontScale: "md",
   engagement: {
@@ -161,7 +172,7 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
           data.background === "transparent" ? "transparent" : "#000",
       }}
     >
-      <Backdrop kind={data.background} />
+      <Backdrop kind={data.background} customColor={data.backgroundColor} />
 
       {/* Card stack — the reposted-by header sits above the article
         * when present so the whole composition reads "Bob reposted"
@@ -268,7 +279,13 @@ function AffiliationBadge({
   );
 }
 
-function Backdrop({ kind }: { kind: Background }) {
+function Backdrop({
+  kind,
+  customColor,
+}: {
+  kind: Background;
+  customColor: string;
+}) {
   // Each background is a single positioned div behind the card.
   // "transparent" returns null entirely so the canvas alpha shows
   // through in the captured PNG.
@@ -278,6 +295,13 @@ function Backdrop({ kind }: { kind: Background }) {
   }
   if (kind === "white") {
     return <div className="absolute inset-0 bg-white" />;
+  }
+  if (kind === "custom") {
+    // Solid user-picked color. Inline-style since Tailwind can't
+    // tokenize an arbitrary hex.
+    return (
+      <div className="absolute inset-0" style={{ backgroundColor: customColor }} />
+    );
   }
   return (
     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/30 via-black to-violet-900/20" />

@@ -31,7 +31,11 @@ import {
 // Persona presets save to localStorage. Cross-device sync would
 // need a model — fine to defer until people ask.
 
-const PRESETS_KEY = "viral.tweet.presets.v1";
+// "Styles" key — bumped to v2 because the saved shape now covers
+// every field except the body, not just the persona Pick the v1
+// preset key held. Old v1 data is left alone (this just won't
+// load it).
+const STYLES_KEY = "viral.tweet.styles.v2";
 // Auto-persisted "remember my settings" key. Holds the fields a
 // user repeats across sessions: persona + visuals + which
 // engagement metrics they like to show. Per-post content (body,
@@ -50,6 +54,7 @@ interface CarryoverData {
   showMore: boolean;
   showShare: boolean;
   background: TweetData["background"];
+  backgroundColor: string;
   border: boolean;
   fontScale: TweetData["fontScale"];
   // Engagement *visibility* persists; the actual numbers don't.
@@ -72,6 +77,7 @@ function extractCarryover(d: TweetData): CarryoverData {
     showMore: d.showMore,
     showShare: d.showShare,
     background: d.background,
+    backgroundColor: d.backgroundColor,
     border: d.border,
     fontScale: d.fontScale,
     showReplies: d.engagement.showReplies,
@@ -95,6 +101,7 @@ function applyCarryover(base: TweetData, c: CarryoverData): TweetData {
     showMore: c.showMore,
     showShare: c.showShare,
     background: c.background,
+    backgroundColor: c.backgroundColor,
     border: c.border,
     fontScale: c.fontScale,
     engagement: {
@@ -106,6 +113,21 @@ function applyCarryover(base: TweetData, c: CarryoverData): TweetData {
       showImpressions: c.showImpressions,
     },
   };
+}
+
+// The native <input type="color"> only accepts 7-char "#rrggbb"
+// strings. The user's hex field accepts anything they type, so
+// coerce here — fall back to a safe black if it doesn't parse.
+function normalizeHex(input: string): string {
+  const trimmed = input.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed;
+  if (/^#[0-9a-fA-F]{3}$/.test(trimmed)) {
+    const r = trimmed[1];
+    const g = trimmed[2];
+    const b = trimmed[3];
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return "#000000";
 }
 
 function loadCarryover(): CarryoverData | null {
@@ -124,20 +146,15 @@ interface SlideRow {
   data: TweetData;
 }
 
-interface PresetRow {
+interface StyleRow {
   id: string;
   label: string;
-  // Persona-only snapshot. Body / engagement / visuals are local
-  // to the slide so loading a preset doesn't blow away the draft.
-  data: Pick<
-    TweetData,
-    | "name"
-    | "username"
-    | "avatarUrl"
-    | "checkmark"
-    | "affiliationLogo"
-    | "affiliationLabel"
-  >;
+  // Snapshot of every TweetData field except `body` — persona +
+  // visuals + engagement values + time-ago + reposted-by all
+  // round-trip. Loading a style overwrites the active slide
+  // wholesale (minus the body) so users can swap "looks" without
+  // losing the draft they're typing.
+  data: Omit<TweetData, "body">;
 }
 
 interface BatchResult {
@@ -164,7 +181,7 @@ export function TweetFlow({ storageReady }: Props) {
     return [{ id: crypto.randomUUID(), data }];
   });
   const [activeId, setActiveId] = useState(() => slides[0].id);
-  const [presets, setPresets] = useState<PresetRow[]>([]);
+  const [presets, setPresets] = useState<StyleRow[]>([]);
   const [stage, setStage] = useState<Stage>("edit");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -176,8 +193,8 @@ export function TweetFlow({ storageReady }: Props) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(PRESETS_KEY);
-      if (raw) setPresets(JSON.parse(raw) as PresetRow[]);
+      const raw = localStorage.getItem(STYLES_KEY);
+      if (raw) setPresets(JSON.parse(raw) as StyleRow[]);
     } catch {
       // Corrupt JSON just means no presets — silent skip.
     }
@@ -199,9 +216,9 @@ export function TweetFlow({ storageReady }: Props) {
     }
   }, [carryoverKey]);
 
-  function persistPresets(next: PresetRow[]) {
+  function persistPresets(next: StyleRow[]) {
     setPresets(next);
-    localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
+    localStorage.setItem(STYLES_KEY, JSON.stringify(next));
   }
 
   // Update the active slide's data with a partial patch.
@@ -270,40 +287,40 @@ export function TweetFlow({ storageReady }: Props) {
     });
   }
 
-  function savePreset() {
-    const label = prompt("Preset name?", activeSlide.data.name)?.trim();
+  function saveStyle() {
+    const label = prompt("Style name?", activeSlide.data.name)?.trim();
     if (!label) return;
     const id = crypto.randomUUID();
-    const d = activeSlide.data;
-    persistPresets([
-      ...presets,
-      {
-        id,
-        label,
-        data: {
-          name: d.name,
-          username: d.username,
-          avatarUrl: d.avatarUrl,
-          checkmark: d.checkmark,
-          affiliationLogo: d.affiliationLogo,
-          affiliationLabel: d.affiliationLabel,
-        },
-      },
-    ]);
+    // Strip body — every other field round-trips. The user is
+    // saving "the look", not the message.
+    const { body: _body, ...rest } = activeSlide.data;
+    persistPresets([...presets, { id, label, data: rest }]);
   }
 
-  function loadPreset(p: PresetRow) {
-    patchActive({
-      name: p.data.name,
-      username: p.data.username,
-      avatarUrl: p.data.avatarUrl,
-      checkmark: p.data.checkmark,
-      affiliationLogo: p.data.affiliationLogo,
-      affiliationLabel: p.data.affiliationLabel,
-    });
+  function loadStyle(p: StyleRow) {
+    // Spread the saved fields over the active slide's current data
+    // but keep body untouched. Engagement is a nested object so it
+    // gets merged explicitly so any new fields (added later) fall
+    // through to the saved snapshot's values without losing the
+    // current body.
+    setSlides((prev) =>
+      prev.map((s) =>
+        s.id === activeId
+          ? {
+              ...s,
+              data: {
+                ...s.data,
+                ...p.data,
+                engagement: { ...p.data.engagement },
+                body: s.data.body,
+              },
+            }
+          : s,
+      ),
+    );
   }
 
-  function deletePreset(id: string) {
+  function deleteStyle(id: string) {
     persistPresets(presets.filter((p) => p.id !== id));
   }
 
@@ -425,10 +442,10 @@ export function TweetFlow({ storageReady }: Props) {
           data={activeSlide.data}
           patch={patchActive}
           patchEngagement={patchEngagement}
-          presets={presets}
-          savePreset={savePreset}
-          loadPreset={loadPreset}
-          deletePreset={deletePreset}
+          styles={presets}
+          saveStyle={saveStyle}
+          loadStyle={loadStyle}
+          deleteStyle={deleteStyle}
           randomize={randomize}
           onAvatarFile={onAvatarFile}
           onAffiliationFile={onAffiliationFile}
@@ -458,10 +475,10 @@ function Form({
   data,
   patch,
   patchEngagement,
-  presets,
-  savePreset,
-  loadPreset,
-  deletePreset,
+  styles,
+  saveStyle,
+  loadStyle,
+  deleteStyle,
   randomize,
   onAvatarFile,
   onAffiliationFile,
@@ -473,10 +490,10 @@ function Form({
   data: TweetData;
   patch: (p: Partial<TweetData>) => void;
   patchEngagement: (p: Partial<TweetData["engagement"]>) => void;
-  presets: PresetRow[];
-  savePreset: () => void;
-  loadPreset: (p: PresetRow) => void;
-  deletePreset: (id: string) => void;
+  styles: StyleRow[];
+  saveStyle: () => void;
+  loadStyle: (p: StyleRow) => void;
+  deleteStyle: (id: string) => void;
   randomize: () => void;
   onAvatarFile: (file: File | null) => void;
   onAffiliationFile: (file: File | null) => void;
@@ -554,30 +571,31 @@ function Form({
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button
             type="button"
-            onClick={savePreset}
+            onClick={saveStyle}
             className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
+            title="Save persona + visuals + engagement layout (everything except the body text)"
           >
-            + Save current persona
+            + Save current style
           </button>
-          {presets.length > 0 && (
-            <span className="text-[11px] text-muted-foreground">presets:</span>
+          {styles.length > 0 && (
+            <span className="text-[11px] text-muted-foreground">styles:</span>
           )}
-          {presets.map((p) => (
+          {styles.map((p) => (
             <span
               key={p.id}
               className="inline-flex items-center gap-1 rounded-full border bg-secondary/50 pl-2.5 pr-1 text-[11px]"
             >
               <button
                 type="button"
-                onClick={() => loadPreset(p)}
+                onClick={() => loadStyle(p)}
                 className="py-0.5 hover:text-foreground"
               >
                 {p.label}
               </button>
               <button
                 type="button"
-                onClick={() => deletePreset(p.id)}
-                aria-label={`Delete preset ${p.label}`}
+                onClick={() => deleteStyle(p.id)}
+                aria-label={`Delete style ${p.label}`}
                 className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
               >
                 ×
@@ -632,8 +650,32 @@ function Form({
               <option value="gradient">Gradient (brand)</option>
               <option value="black">Solid black</option>
               <option value="white">Solid white (light mode)</option>
+              <option value="custom">Custom color…</option>
               <option value="transparent">Transparent</option>
             </select>
+            {data.background === "custom" && (
+              <div className="mt-1 flex items-center gap-2">
+                {/* native swatch picker — pairs with a hex text input
+                  * so the user can paste a brand hex directly. */}
+                <input
+                  type="color"
+                  value={normalizeHex(data.backgroundColor)}
+                  onChange={(ev) =>
+                    patch({ backgroundColor: ev.target.value })
+                  }
+                  className="h-7 w-10 cursor-pointer rounded border bg-background"
+                />
+                <input
+                  type="text"
+                  value={data.backgroundColor}
+                  onChange={(ev) =>
+                    patch({ backgroundColor: ev.target.value })
+                  }
+                  placeholder="#0a0a0f"
+                  className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
+                />
+              </div>
+            )}
           </label>
           <label className="block text-sm">
             <span className="block text-[11px] text-muted-foreground">Font scale</span>
