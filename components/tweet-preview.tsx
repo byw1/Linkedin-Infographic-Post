@@ -91,6 +91,10 @@ export interface TweetData {
   backgroundColor: string;
   border: boolean;
   fontScale: FontScale;
+  // Optional override for the body text size in pixels. Lets users
+  // crank it up for "huge text" viral posts. When null the body
+  // uses the default size scaled by fontScale.
+  bodyFontSize: number | null;
   engagement: TweetEngagement;
 }
 
@@ -116,6 +120,7 @@ export const DEFAULT_TWEET: TweetData = {
   backgroundColor: "#0a0a0f",
   border: true,
   fontScale: "md",
+  bodyFontSize: null,
   engagement: {
     replies: 91,
     reposts: 3,
@@ -241,7 +246,10 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
 
         <p
           className={`mt-5 whitespace-pre-wrap leading-snug ${cardText}`}
-          style={{ fontSize: 28 * fs }}
+          // Body size honors an explicit override when set —
+          // scaled fontSize otherwise. Big-text viral posts often
+          // run 60-120px at this 1080×1350 canvas.
+          style={{ fontSize: data.bodyFontSize ?? 28 * fs }}
         >
           {data.body || "Your tweet body."}
         </p>

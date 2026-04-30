@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import * as htmlToImage from "html-to-image";
+import { ChevronDown, ChevronRight, Settings2 } from "lucide-react";
 import {
   DEFAULT_TWEET,
   TWEET_CANVAS,
@@ -57,6 +58,7 @@ interface CarryoverData {
   backgroundColor: string;
   border: boolean;
   fontScale: TweetData["fontScale"];
+  bodyFontSize: number | null;
   // Engagement *visibility* persists; the actual numbers don't.
   showReplies: boolean;
   showReposts: boolean;
@@ -80,6 +82,7 @@ function extractCarryover(d: TweetData): CarryoverData {
     backgroundColor: d.backgroundColor,
     border: d.border,
     fontScale: d.fontScale,
+    bodyFontSize: d.bodyFontSize,
     showReplies: d.engagement.showReplies,
     showReposts: d.engagement.showReposts,
     showLikes: d.engagement.showLikes,
@@ -104,6 +107,7 @@ function applyCarryover(base: TweetData, c: CarryoverData): TweetData {
     backgroundColor: c.backgroundColor,
     border: c.border,
     fontScale: c.fontScale,
+    bodyFontSize: c.bodyFontSize,
     engagement: {
       ...base.engagement,
       showReplies: c.showReplies,
@@ -504,17 +508,13 @@ function Form({
 }) {
   const e = data.engagement;
   return (
-    <div className="space-y-4 rounded-md border bg-card p-4 text-card-foreground">
+    <div className="space-y-3 rounded-md border bg-card p-4 text-card-foreground">
       <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Tweet · slide {slideCount > 1 ? "(thread)" : ""}
       </div>
 
-      {/* Persona */}
-      <fieldset className="space-y-3">
-        <legend className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          Persona
-        </legend>
-
+      {/* Persona — collapsible */}
+      <Section title="Persona">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
             label="Display name"
@@ -555,7 +555,7 @@ function Form({
         <div className="grid gap-3 sm:grid-cols-2">
           <FileField
             label="Affiliation logo (optional)"
-            hint="Small square logo right of the checkmark — for accounts affiliated with an org."
+            hint="Small square logo right of the checkmark."
             hasFile={Boolean(data.affiliationLogo)}
             onFile={onAffiliationFile}
             onClear={() => patch({ affiliationLogo: null })}
@@ -568,6 +568,9 @@ function Form({
           />
         </div>
 
+        {/* Style strip — save / load / delete saved styles. Saving
+          * captures every TweetData field except body so you can
+          * jump between named "looks" while typing a draft. */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <button
             type="button"
@@ -603,43 +606,39 @@ function Form({
             </span>
           ))}
         </div>
-      </fieldset>
+      </Section>
 
-      {/* Body + post header */}
-      <fieldset className="space-y-2">
-        <legend className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          Body
-        </legend>
-        <textarea
-          value={data.body}
-          onChange={(ev) => patch({ body: ev.target.value })}
-          rows={5}
-          maxLength={4000}
-          placeholder="Type the tweet text. Multi-line + line breaks work."
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-        />
+      {/* Visuals — collapsible. Gear popover hides the show/hide
+        * toggles so the form's main surface stays focused on what
+        * the user is *editing*, not on/off switches. */}
+      <Section
+        title="Visuals"
+        actions={
+          <GearPopover>
+            <ToggleChip
+              label="Notification icon"
+              checked={data.showBell}
+              onChange={(v) => patch({ showBell: v })}
+            />
+            <ToggleChip
+              label="More (⋯) menu"
+              checked={data.showMore}
+              onChange={(v) => patch({ showMore: v })}
+            />
+            <ToggleChip
+              label="Share icon"
+              checked={data.showShare}
+              onChange={(v) => patch({ showShare: v })}
+            />
+            <ToggleChip
+              label="Card border"
+              checked={data.border}
+              onChange={(v) => patch({ border: v })}
+            />
+          </GearPopover>
+        }
+      >
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field
-            label="Time ago (blank to hide)"
-            value={data.timeAgo}
-            onChange={(v) => patch({ timeAgo: v })}
-            placeholder="10h, 3m, Apr 30"
-          />
-          <Field
-            label="Reposted by (blank to hide)"
-            value={data.repostedBy}
-            onChange={(v) => patch({ repostedBy: v })}
-            placeholder="Bob"
-          />
-        </div>
-      </fieldset>
-
-      {/* Visuals — collapsible-feeling row of compact controls */}
-      <fieldset className="space-y-2">
-        <legend className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          Visuals
-        </legend>
-        <div className="grid gap-3 sm:grid-cols-3">
           <label className="block text-sm">
             <span className="block text-[11px] text-muted-foreground">Background</span>
             <select
@@ -655,22 +654,16 @@ function Form({
             </select>
             {data.background === "custom" && (
               <div className="mt-1 flex items-center gap-2">
-                {/* native swatch picker — pairs with a hex text input
-                  * so the user can paste a brand hex directly. */}
                 <input
                   type="color"
                   value={normalizeHex(data.backgroundColor)}
-                  onChange={(ev) =>
-                    patch({ backgroundColor: ev.target.value })
-                  }
+                  onChange={(ev) => patch({ backgroundColor: ev.target.value })}
                   className="h-7 w-10 cursor-pointer rounded border bg-background"
                 />
                 <input
                   type="text"
                   value={data.backgroundColor}
-                  onChange={(ev) =>
-                    patch({ backgroundColor: ev.target.value })
-                  }
+                  onChange={(ev) => patch({ backgroundColor: ev.target.value })}
                   placeholder="#0a0a0f"
                   className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
                 />
@@ -678,7 +671,7 @@ function Form({
             )}
           </label>
           <label className="block text-sm">
-            <span className="block text-[11px] text-muted-foreground">Font scale</span>
+            <span className="block text-[11px] text-muted-foreground">Font scale (overall)</span>
             <select
               value={data.fontScale}
               onChange={(ev) => patch({ fontScale: ev.target.value as FontScale })}
@@ -689,41 +682,36 @@ function Form({
               <option value="lg">Large</option>
             </select>
           </label>
-          <label className="flex items-end gap-2 pb-1 text-sm">
-            <input
-              type="checkbox"
-              checked={data.border}
-              onChange={(ev) => patch({ border: ev.target.checked })}
-              className="h-4 w-4"
-            />
-            <span className="text-xs text-muted-foreground">Card border</span>
-          </label>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
-          <ToggleChip
-            label="Notification icon"
-            checked={data.showBell}
-            onChange={(v) => patch({ showBell: v })}
-          />
-          <ToggleChip
-            label="More (⋯) menu"
-            checked={data.showMore}
-            onChange={(v) => patch({ showMore: v })}
-          />
-          <ToggleChip
-            label="Share icon"
-            checked={data.showShare}
-            onChange={(v) => patch({ showShare: v })}
-          />
-        </div>
-      </fieldset>
 
-      {/* Engagement */}
-      <fieldset className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <legend className="text-[11px] uppercase tracking-wide text-muted-foreground">
-            Engagement
-          </legend>
+        {/* Body font-size override — for the "huge text" viral
+          * post pattern. Toggle on to take direct control of the
+          * body's px size; off lets it inherit from font scale. */}
+        <BodySizeOverride
+          value={data.bodyFontSize}
+          onChange={(v) => patch({ bodyFontSize: v })}
+        />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label="Time ago (blank to hide)"
+            value={data.timeAgo}
+            onChange={(v) => patch({ timeAgo: v })}
+            placeholder="10h, 3m, Apr 30"
+          />
+          <Field
+            label="Reposted by (blank to hide)"
+            value={data.repostedBy}
+            onChange={(v) => patch({ repostedBy: v })}
+            placeholder="Bob"
+          />
+        </div>
+      </Section>
+
+      {/* Engagement — collapsible, randomize action up top right */}
+      <Section
+        title="Engagement"
+        actions={
           <button
             type="button"
             onClick={randomize}
@@ -731,7 +719,8 @@ function Form({
           >
             Randomize
           </button>
-        </div>
+        }
+      >
         <MetricRow
           label="Replies"
           value={e.replies}
@@ -767,6 +756,23 @@ function Form({
           onValue={(v) => patchEngagement({ impressions: v })}
           onShow={(v) => patchEngagement({ showImpressions: v })}
         />
+      </Section>
+
+      {/* Body lives at the bottom — it's the focus, treat it as
+        * the primary writing surface rather than buried in form
+        * fields. No collapsing here on purpose. */}
+      <fieldset className="space-y-2">
+        <legend className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          Body
+        </legend>
+        <textarea
+          value={data.body}
+          onChange={(ev) => patch({ body: ev.target.value })}
+          rows={5}
+          maxLength={4000}
+          placeholder="Type the tweet text. Multi-line + line breaks work."
+          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+        />
       </fieldset>
 
       {error && (
@@ -793,6 +799,133 @@ function Form({
         </span>
       </div>
     </div>
+  );
+}
+
+// Collapsible section wrapper. Click the title chevron to fold the
+// body out of view; an optional `actions` slot floats to the right
+// of the header for things like "randomize" or the gear popover.
+function Section({
+  title,
+  children,
+  defaultOpen = true,
+  actions,
+}: {
+  title: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  actions?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <fieldset className="space-y-3 rounded-md border border-input/40 bg-background/40 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        >
+          {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          {title}
+        </button>
+        {actions && <div className="flex items-center gap-2">{actions}</div>}
+      </div>
+      {open && <div className="space-y-3">{children}</div>}
+    </fieldset>
+  );
+}
+
+// Click-toggle gear popover. Closes on outside click via a document
+// mousedown handler. Used in the Visuals section to host the on/off
+// toggles for X UI elements without bloating the main editor.
+function GearPopover({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(ev: MouseEvent) {
+      if (ref.current && !ref.current.contains(ev.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] hover:bg-secondary"
+        title="Show / hide UI elements"
+      >
+        <Settings2 size={12} />
+        Elements
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-md border bg-card p-3 text-card-foreground shadow-lg">
+          <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+            Show / hide
+          </div>
+          <div className="flex flex-col gap-1.5">{children}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Optional override for the body text size in pixels. Off → body
+// inherits from the overall font scale. On → user takes control,
+// 12-300px range covers everything from "tiny clarification post"
+// to "BIG TEXT VIRAL HOOK".
+function BodySizeOverride({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  const enabled = value !== null;
+  const px = value ?? 28;
+  return (
+    <label className="block text-sm">
+      <span className="block text-[11px] text-muted-foreground">
+        Body size override
+      </span>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(ev) => onChange(ev.target.checked ? px : null)}
+          className="h-4 w-4"
+          aria-label="Override body size"
+        />
+        <input
+          type="range"
+          min={12}
+          max={300}
+          value={px}
+          disabled={!enabled}
+          onChange={(ev) => onChange(Number(ev.target.value))}
+          className="h-2 flex-1 disabled:opacity-50"
+        />
+        <input
+          type="number"
+          min={12}
+          max={300}
+          value={px}
+          disabled={!enabled}
+          onChange={(ev) => {
+            const n = Number(ev.target.value);
+            if (Number.isFinite(n)) onChange(Math.max(12, Math.min(300, n)));
+          }}
+          className="h-8 w-16 rounded-md border bg-background px-2 text-xs tabular-nums disabled:opacity-50"
+        />
+        <span className="text-[10px] text-muted-foreground">px</span>
+      </div>
+    </label>
   );
 }
 
