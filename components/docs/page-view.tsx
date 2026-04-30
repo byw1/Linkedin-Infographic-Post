@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { DocsMarkdown } from "@/components/docs/docs-markdown";
 import { PageEditor } from "@/components/docs/page-editor";
@@ -8,22 +9,31 @@ export interface DocPage {
   id: string;
   slug: string;
   title: string;
+  section: string | null;
   markdown: string;
   position: number;
   updatedAt: string | null;
   updatedBy: { name: string | null; email: string } | null;
 }
 
+interface PrevNext {
+  slug: string;
+  title: string;
+}
+
 interface Props {
   page: DocPage;
   canEdit: boolean;
+  prev?: PrevNext | null;
+  next?: PrevNext | null;
 }
 
-// One wiki page. Read mode shows rendered markdown + a small
-// metadata footnote (last edited by who, when). Edit mode (admin
-// only) swaps in the side-by-side PageEditor; on save it reloads
-// the route so other open tabs / sidebars pick up renames.
-export function PageView({ page, canEdit }: Props) {
+// One wiki page. Read mode shows the section breadcrumb, rendered
+// markdown, prev/next navigation tiles, and a metadata footnote.
+// Edit mode (admin only) swaps in the side-by-side PageEditor; on
+// save it reloads the route so other open tabs / sidebars pick up
+// renames + section moves.
+export function PageView({ page, canEdit, prev, next }: Props) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -33,9 +43,6 @@ export function PageView({ page, canEdit }: Props) {
         onCancel={() => setEditing(false)}
         onSaved={() => {
           setEditing(false);
-          // The /docs/[slug] route is server-rendered; refreshing
-          // the window route picks up renames + content edits +
-          // sidebar reorders without a full reload.
           if (typeof window !== "undefined") {
             window.location.reload();
           }
@@ -45,21 +52,15 @@ export function PageView({ page, canEdit }: Props) {
   }
 
   return (
-    <article className="space-y-6">
+    <article className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight">{page.title}</h2>
-          {page.updatedAt && (
-            <p className="text-xs text-muted-foreground">
-              Last edited {new Date(page.updatedAt).toLocaleString()}
-              {page.updatedBy?.name
-                ? ` by ${page.updatedBy.name}`
-                : page.updatedBy?.email
-                  ? ` by ${page.updatedBy.email}`
-                  : ""}
-              .
+        <div className="min-w-0 space-y-1">
+          {page.section && (
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {page.section}
             </p>
           )}
+          <h2 className="text-2xl font-semibold tracking-tight">{page.title}</h2>
         </div>
         {canEdit && (
           <button
@@ -74,6 +75,56 @@ export function PageView({ page, canEdit }: Props) {
       <div className="docs-prose">
         <DocsMarkdown markdown={page.markdown} />
       </div>
+
+      {(prev || next) && (
+        <nav
+          aria-label="Page navigation"
+          className="grid gap-3 border-t pt-5 sm:grid-cols-2"
+        >
+          {prev ? (
+            <Link
+              href={`/docs/${prev.slug}`}
+              className="group flex flex-col gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-secondary/50"
+            >
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                ← Previous
+              </span>
+              <span className="text-sm font-medium group-hover:text-foreground">
+                {prev.title}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
+          {next ? (
+            <Link
+              href={`/docs/${next.slug}`}
+              className="group flex flex-col items-end gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-secondary/50 sm:text-right"
+            >
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Next →
+              </span>
+              <span className="text-sm font-medium group-hover:text-foreground">
+                {next.title}
+              </span>
+            </Link>
+          ) : (
+            <div />
+          )}
+        </nav>
+      )}
+
+      {page.updatedAt && (
+        <p className="text-[11px] text-muted-foreground">
+          Last edited {new Date(page.updatedAt).toLocaleString()}
+          {page.updatedBy?.name
+            ? ` by ${page.updatedBy.name}`
+            : page.updatedBy?.email
+              ? ` by ${page.updatedBy.email}`
+              : ""}
+          .
+        </p>
+      )}
     </article>
   );
 }

@@ -19,7 +19,13 @@ export default async function DocsLayout({
   // handbook grows.
   const pages = await prisma.docPage.findMany({
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-    select: { id: true, slug: true, title: true, position: true },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      section: true,
+      position: true,
+    },
   });
 
   return (
@@ -33,7 +39,7 @@ export default async function DocsLayout({
             : "ask an admin to add or change a page."}
         </p>
       </header>
-      <div className="grid gap-8 md:grid-cols-[220px_1fr]">
+      <div className="grid gap-8 md:grid-cols-[260px_1fr]">
         <DocsSidebar pages={pages} canEdit={session.user.role === "admin"} />
         <div className="min-w-0">{children}</div>
       </div>

@@ -11,9 +11,9 @@ import { normalizeSlug } from "@/lib/slug-utils";
 // reservation is a name we've stolen from the team's vocabulary.
 const RESERVED_SLUGS = new Set(["skills", "new"]);
 
-// List every wiki page in sidebar order. Title + slug only — the
-// page body is fetched on demand from /api/docs/pages/[slug] so
-// the sidebar payload stays small as the handbook grows.
+// List every wiki page in sidebar order. Title + slug + section
+// only — the page body is fetched on demand from /api/docs/pages/
+// [slug] so the sidebar payload stays small as the handbook grows.
 export async function GET() {
   try {
     await requireUser();
@@ -26,6 +26,7 @@ export async function GET() {
       id: true,
       slug: true,
       title: true,
+      section: true,
       position: true,
       updatedAt: true,
     },
@@ -38,6 +39,7 @@ const CreateBody = z.object({
   // Optional explicit slug; otherwise derived from title. Lower-
   // case, hyphenated, ascii-only via normalizeSlug.
   slug: z.string().trim().max(120).optional(),
+  section: z.string().trim().max(120).nullable().optional(),
   markdown: z.string().max(200_000).optional(),
 });
 
@@ -73,6 +75,7 @@ export async function POST(req: Request) {
       data: {
         slug,
         title: parsed.data.title,
+        section: parsed.data.section?.trim() || null,
         markdown: parsed.data.markdown ?? `# ${parsed.data.title}\n\n`,
         position,
         updatedById: admin.id,

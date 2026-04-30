@@ -338,12 +338,18 @@ model DocPage {
   title       String
   markdown    String   @db.Text
   position    Int      @default(0)
+  // Optional section header — pages with the same section render
+  // as one collapsible group in the sidebar, ordered alphabetically
+  // (so a "Part I: …" prefix bubbles up before "Part II: …").
+  // Null pages land in an "Uncategorized" trailing bucket.
+  section     String?
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   updatedById String?  @map("updated_by_id") @db.Uuid
   updatedBy   User?    @relation("DocPageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@index([position], name: "idx_doc_pages_position")
+  @@index([section], name: "idx_doc_pages_section")
   @@map("doc_pages")
 }
 

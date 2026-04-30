@@ -32,6 +32,7 @@ export async function GET(
 const PatchBody = z.object({
   title: z.string().trim().min(1).max(120).optional(),
   slug: z.string().trim().max(120).optional(),
+  section: z.string().trim().max(120).nullable().optional(),
   markdown: z.string().max(200_000).optional(),
   // Manual position override. Sidebar shows pages in ascending
   // position order, so swapping two pages is two PATCHes that
@@ -63,6 +64,10 @@ export async function PATCH(
   if (parsed.data.title !== undefined) data.title = parsed.data.title;
   if (parsed.data.markdown !== undefined) data.markdown = parsed.data.markdown;
   if (parsed.data.position !== undefined) data.position = parsed.data.position;
+  if (parsed.data.section !== undefined) {
+    const trimmed = parsed.data.section?.trim();
+    data.section = trimmed ? trimmed : null;
+  }
   if (parsed.data.slug !== undefined) {
     const nextSlug = normalizeSlug(parsed.data.slug);
     if (!nextSlug) {

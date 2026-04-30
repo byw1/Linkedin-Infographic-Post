@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { DocsMarkdown } from "@/components/docs/docs-markdown";
 import type { DocPage } from "@/components/docs/page-view";
 
@@ -13,21 +13,41 @@ interface Props {
   onSaved: () => void;
 }
 
-// Admin editor for a wiki page. Three controls live on the toolbar:
-//   - rename (title + slug; empty slug auto-derives from title)
-//   - delete (destructive, behind a confirm)
-//   - save / cancel
-// The body is a side-by-side textarea + live ReactMarkdown preview
-// so admins can see formatting as they type instead of save-and-
-// squinting like the old single-blob editor required.
+// Admin editor for a wiki page. Toolbar controls cover rename
+// (title + slug; empty slug auto-derives from title) + section
+// move (free-form, autocompletes from existing sections) + delete +
+// save / cancel. Body is a side-by-side textarea + live preview so
+// formatting + tool/skill cards + callouts render as the admin types.
 export function PageEditor({ initial, onCancel, onSaved }: Props) {
   const router = useRouter();
   const [title, setTitle] = useState(initial.title);
   const [slug, setSlug] = useState(initial.slug);
+  const [section, setSection] = useState(initial.section ?? "");
+  const [knownSections, setKnownSections] = useState<string[]>([]);
   const [markdown, setMarkdown] = useState(initial.markdown);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [deleting, startDelete] = useTransition();
+
+  // Pull every existing section name once so the section input can
+  // autocomplete via <datalist>. Keeps admins from inventing
+  // "Part 1: …" alongside an existing "Part I: …".
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch("/api/docs/pages");
+      if (!res.ok || cancelled) return;
+      const data = await res.json();
+      const set = new Set<string>();
+      for (const p of data.pages as Array<{ section: string | null }>) {
+        if (p.section) set.add(p.section);
+      }
+      if (!cancelled) setKnownSections(Array.from(set).sort());
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Track whether the user has manually edited the slug. If they
   // haven't, we keep auto-deriving it from the title so renaming
@@ -63,7 +83,12 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
       const res = await fetch(`/api/docs/pages/${initial.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title.trim(), slug: slug.trim(), markdown }),
+        body: JSON.stringify({
+          title: title.trim(),
+          slug: slug.trim(),
+          section: section.trim() || null,
+          markdown,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -140,19 +165,37 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="font-mono">/docs/</span>
-        <input
-          value={slug}
-          onChange={(e) => {
-            setSlugTouched(true);
-            setSlug(e.target.value);
-          }}
-          placeholder="slug"
-          maxLength={120}
-          className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
-        />
-      </label>
+      <div className="grid gap-2 sm:grid-cols-[1fr_1fr]">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-mono">/docs/</span>
+          <input
+            value={slug}
+            onChange={(e) => {
+              setSlugTouched(true);
+              setSlug(e.target.value);
+            }}
+            placeholder="slug"
+            maxLength={120}
+            className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
+          />
+        </label>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Section</span>
+          <input
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+            list="page-section-list"
+            placeholder="(none — appears under Other)"
+            maxLength={120}
+            className="h-7 flex-1 rounded-md border bg-background px-2 text-xs"
+          />
+          <datalist id="page-section-list">
+            {knownSections.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </label>
+      </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
         <textarea
