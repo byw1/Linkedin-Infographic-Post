@@ -8,11 +8,11 @@ import { FEED_SELECT, shapeFeedPost } from "@/lib/feed";
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
 
-// Recent shared posts across the team — the chronological feed for
-// /posts → Team tab. Eligibility mirrors /api/feed/wins (author
-// shareTracked = true, trackedAt set), so untracked drafts don't
-// leak. Cursor-based pagination on the trackedAt timestamp + id
-// tiebreak.
+// Recent shared posts across the community — the chronological
+// feed for /posts → Community tab. Eligibility mirrors
+// /api/feed/wins (author shareTracked = true, trackedAt set), so
+// untracked drafts don't leak. Cursor-based pagination on the
+// trackedAt timestamp + id tiebreak.
 export async function GET(req: Request) {
   try {
     await requireUser();

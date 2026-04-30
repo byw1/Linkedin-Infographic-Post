@@ -13,9 +13,11 @@ export default async function PostsPage() {
       <header className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">Posts</h1>
         <p className="text-sm text-muted-foreground">
-          Everything you&apos;ve rendered. Click <strong>Remix</strong> on any
-          post to re-open it in the editor — change theme, swap logos, edit
-          copy — without re-uploading from Claude.
+          <strong>My posts</strong> = everything you&apos;ve rendered, with
+          a <strong>Remix</strong> button that re-opens any post in the
+          editor without re-uploading from Claude.{" "}
+          <strong>Community</strong> = posts other members have published
+          and tracked. Track yours to put them on the wall.
         </p>
       </header>
       <PostsList />

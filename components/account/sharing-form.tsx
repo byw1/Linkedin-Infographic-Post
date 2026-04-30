@@ -6,8 +6,8 @@ interface Props {
   initialShareTracked: boolean;
 }
 
-// One-toggle form for "share my tracked posts with the team."
-// Hides the user's tracking metrics from /wins, /posts → Team,
+// One-toggle form for "share my tracked posts with the community."
+// Hides the user's tracking metrics from /wins, /posts → Community,
 // and the slideshow on their member card when off. Doesn't affect
 // the user's own /posts list — they still see their own work.
 export function SharingForm({ initialShareTracked }: Props) {
@@ -30,7 +30,9 @@ export function SharingForm({ initialShareTracked }: Props) {
         setMessage("Save failed.");
         return;
       }
-      setMessage(next ? "Visible to teammates." : "Hidden from teammates.");
+      setMessage(
+        next ? "Visible to other members." : "Hidden from other members.",
+      );
     });
   }
 
@@ -46,14 +48,15 @@ export function SharingForm({ initialShareTracked }: Props) {
         />
         <div className="flex-1">
           <div className="text-sm font-medium">
-            Share my tracked posts with the team
+            Share my tracked posts with the community
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Posts you&apos;ve added impressions / reactions to will appear on{" "}
-            <strong>Wins</strong>, the <strong>Team</strong> tab on Posts, and
-            the slideshow on your <strong>Members</strong> card. Untracked
-            drafts are never shared. Your own Posts page always shows
-            everything regardless of this setting.
+            Posts you&apos;ve clicked <strong>Track</strong> on (filled in
+            real LinkedIn impressions / reactions) appear on{" "}
+            <strong>Wins</strong>, the <strong>Community</strong> tab on
+            Posts, and the rail on your <strong>Members</strong> card.
+            Untracked drafts are never shared. Your own <em>My posts</em>{" "}
+            tab always shows everything regardless of this setting.
           </p>
         </div>
       </label>

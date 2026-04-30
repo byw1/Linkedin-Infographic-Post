@@ -59,11 +59,15 @@ export function WinsView() {
         <p className="text-sm text-muted-foreground">Loading…</p>
       )}
       {posts && posts.length === 0 && (
-        <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
-          <p className="text-sm font-medium">Nothing tracked here yet</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            As soon as someone fills in impressions on a post and shares
-            tracking, the leaderboard fills up. Try a wider window above.
+        <div className="space-y-2 rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+          <p className="text-sm font-medium">No wins to show yet</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Wins ranks tracked posts by engagement rate or reach. The
+            leaderboard fills up as soon as a member publishes a post,
+            comes back here, hits <strong>Track</strong> on the render,
+            and types in the LinkedIn numbers (impressions / reactions /
+            comments / reposts). Try a wider window above, or be the first
+            to track one.
           </p>
         </div>
       )}

@@ -24,7 +24,7 @@ interface RenderRow {
   };
 }
 
-type Tab = "mine" | "team";
+type Tab = "mine" | "community";
 const PAGE_SIZE = 30;
 
 // Posts archive — shows everything the user has rendered with a
@@ -42,11 +42,14 @@ export function PostsList() {
         <TabButton active={tab === "mine"} onClick={() => setTab("mine")}>
           My posts
         </TabButton>
-        <TabButton active={tab === "team"} onClick={() => setTab("team")}>
-          Team
+        <TabButton
+          active={tab === "community"}
+          onClick={() => setTab("community")}
+        >
+          Community
         </TabButton>
       </div>
-      {tab === "mine" ? <MinePosts /> : <TeamFeed />}
+      {tab === "mine" ? <MinePosts /> : <CommunityFeed />}
     </div>
   );
 }
@@ -143,7 +146,7 @@ function MinePosts() {
   );
 }
 
-function TeamFeed() {
+function CommunityFeed() {
   const [posts, setPosts] = useState<FeedPost[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, startLoadMore] = useTransition();
@@ -178,12 +181,18 @@ function TeamFeed() {
   }
   if (posts.length === 0) {
     return (
-      <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
-        <p className="text-sm font-medium">No team posts yet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          When your teammates track a post and have sharing on,
-          it&apos;ll show up here. Track one of your own from the Mine
-          tab to seed the feed.
+      <div className="space-y-2 rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+        <p className="text-sm font-medium">Nothing in the feed yet</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          This feed is the community&apos;s wall of posts: anything a member
+          has tracked (filled in real LinkedIn impressions / reactions /
+          comments) and hasn&apos;t hidden via{" "}
+          <Link href="/settings" className="underline">
+            Sharing
+          </Link>{" "}
+          shows up here. Once you publish a post, click{" "}
+          <strong>Track</strong> on it from the <em>My posts</em> tab to seed
+          the feed for everyone.
         </p>
       </div>
     );

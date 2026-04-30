@@ -25,12 +25,12 @@ export interface FeedPost {
 interface Props {
   post: FeedPost;
   // When true the card includes an "Open in LinkedIn" button if the
-  // author logged a post URL. /wins + Team feed both want this; the
-  // member-card slideshow can keep it off to stay compact.
+  // author logged a post URL. /wins + Community feed both want this;
+  // the member-card slideshow can keep it off to stay compact.
   showLinkedInLink?: boolean;
 }
 
-// Card shown on /wins and the /posts → Team tab. Hero is the
+// Card shown on /wins and the /posts → Community tab. Hero is the
 // rendered image (or a PDF placeholder for carousels). Tracking
 // row pairs the absolute counts with the engagement rate so the
 // reader sees both reach and quality at a glance.

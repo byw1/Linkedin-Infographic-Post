@@ -13,9 +13,9 @@ export default async function WinsPage() {
       <header className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">Wins</h1>
         <p className="text-sm text-muted-foreground">
-          What&apos;s hitting across the team. Top tracked posts by
-          engagement rate or raw reach. Shared by teammates who have{" "}
-          <strong>Sharing</strong> on in their settings.
+          What&apos;s hitting across the community. Top tracked posts by
+          engagement rate or raw reach. Members can opt out anytime via{" "}
+          <strong>Sharing</strong> in their settings.
         </p>
       </header>
       <WinsView />

@@ -23,8 +23,9 @@ const Query = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
 
-// Top performing shared posts across the team. Used by /wins (the
-// "what's hitting" wall) and the homepage when we want a hero rail.
+// Top performing shared posts across the community. Used by /wins
+// (the "what's hitting" wall) and the homepage when we want a hero
+// rail.
 //
 // Eligibility: the author has shareTracked enabled AND the render
 // has tracking metrics filled in (trackedAt set, impressions
@@ -53,7 +54,7 @@ export async function GET(req: Request) {
   // doesn't expose cleanly, so we fetch by impressions DESC (best
   // candidates for high engagement rate sit there too) and re-sort
   // in JS. Cap the over-fetch at limit*4 so a small pool can't blow
-  // up the response — a team of 10 won't have thousands of posts.
+  // up the response — a community of a dozen won't have thousands of posts.
   const fetchLimit = sort === "engagement" ? Math.max(limit * 4, 50) : limit;
 
   const rows = await prisma.render.findMany({
