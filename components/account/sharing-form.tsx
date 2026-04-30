@@ -7,9 +7,10 @@ interface Props {
 }
 
 // One-toggle form for "share my tracked posts with the community."
-// Hides the user's tracking metrics from /wins, /posts → Community,
-// and the slideshow on their member card when off. Doesn't affect
-// the user's own /posts list — they still see their own work.
+// Hides the user's tracking metrics from /posts → Community
+// (Recent + Top) and the slideshow on their member card when off.
+// Doesn't affect the user's own /posts list — they still see their
+// own work.
 export function SharingForm({ initialShareTracked }: Props) {
   const [shareTracked, setShareTracked] = useState(initialShareTracked);
   const [pending, startTransition] = useTransition();
@@ -52,9 +53,9 @@ export function SharingForm({ initialShareTracked }: Props) {
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Posts you&apos;ve clicked <strong>Track</strong> on (filled in
-            real LinkedIn impressions / reactions) appear on{" "}
-            <strong>Wins</strong>, the <strong>Community</strong> tab on
-            Posts, and the rail on your <strong>Members</strong> card.
+            real LinkedIn impressions / reactions) appear on the{" "}
+            <strong>Community</strong> tab on Posts (both Recent and Top),
+            and on the rail on your <strong>Members</strong> card.
             Untracked drafts are never shared. Your own <em>My posts</em>{" "}
             tab always shows everything regardless of this setting.
           </p>

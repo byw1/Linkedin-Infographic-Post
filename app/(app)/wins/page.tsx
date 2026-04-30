@@ -1,24 +1,10 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { WinsView } from "@/components/feed/wins-view";
 
+// Wins folded into the Community tab on /posts ("Top" sub-view).
+// Keep this route so old bookmarks / member-profile links land in
+// the right place.
 export const dynamic = "force-dynamic";
 
-export default async function WinsPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/auth/signin");
-
-  return (
-    <main className="container mx-auto max-w-5xl space-y-6 py-10">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Wins</h1>
-        <p className="text-sm text-muted-foreground">
-          What&apos;s hitting across the community. Top tracked posts by
-          engagement rate or raw reach. Members can opt out anytime via{" "}
-          <strong>Sharing</strong> in their settings.
-        </p>
-      </header>
-      <WinsView />
-    </main>
-  );
+export default function WinsPage() {
+  redirect("/posts?tab=community&view=top");
 }

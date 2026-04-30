@@ -17,7 +17,8 @@ export default async function PostsPage() {
           a <strong>Remix</strong> button that re-opens any post in the
           editor without re-uploading from Claude.{" "}
           <strong>Community</strong> = posts other members have published
-          and tracked. Track yours to put them on the wall.
+          and tracked. Inside Community, switch to <strong>Top</strong> for
+          the wins leaderboard. Track yours to put them on the wall.
         </p>
       </header>
       <PostsList />

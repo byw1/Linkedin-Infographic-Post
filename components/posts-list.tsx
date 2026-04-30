@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { FeedPostCard, type FeedPost } from "@/components/feed/feed-post-card";
 
 interface RenderRow {
@@ -25,33 +26,86 @@ interface RenderRow {
 }
 
 type Tab = "mine" | "community";
+type CommunityView = "recent" | "top";
+type Period = "week" | "month" | "all";
+type Sort = "engagement" | "impressions";
+
 const PAGE_SIZE = 30;
 
 // Posts archive — shows everything the user has rendered with a
 // thumbnail + a Remix button that re-opens the post in the editor.
 // Tracking metrics surface inline so a glance tells you which past
-// posts hit. Pagination via cursor; legacy renders without source
-// HTML get the Remix button hidden (re-uploading from Claude is
-// the only path to edit those).
+// posts hit. The Community tab is the merged community wall: a
+// chronological "Recent" view + a "Top" leaderboard (formerly the
+// /wins page) toggleable with a sub-pill. URL is the source of
+// truth (?tab=&view=&period=&sort=) so links from /wins still land
+// in the right spot.
 export function PostsList() {
-  const [tab, setTab] = useState<Tab>("mine");
+  const router = useRouter();
+  const params = useSearchParams();
+
+  const tab: Tab = params.get("tab") === "community" ? "community" : "mine";
+  const view: CommunityView = params.get("view") === "top" ? "top" : "recent";
+  const period: Period = parsePeriod(params.get("period"));
+  const sort: Sort = parseSort(params.get("sort"));
+
+  const setQuery = useCallback(
+    (patch: Record<string, string | null>) => {
+      const next = new URLSearchParams(params);
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null) next.delete(k);
+        else next.set(k, v);
+      }
+      const qs = next.toString();
+      router.replace(qs ? `/posts?${qs}` : "/posts", { scroll: false });
+    },
+    [params, router],
+  );
 
   return (
     <div className="space-y-4">
       <div className="inline-flex rounded-md border p-0.5 text-sm">
-        <TabButton active={tab === "mine"} onClick={() => setTab("mine")}>
+        <TabButton
+          active={tab === "mine"}
+          onClick={() => setQuery({ tab: null, view: null, period: null, sort: null })}
+        >
           My posts
         </TabButton>
         <TabButton
           active={tab === "community"}
-          onClick={() => setTab("community")}
+          onClick={() => setQuery({ tab: "community" })}
         >
           Community
         </TabButton>
       </div>
-      {tab === "mine" ? <MinePosts /> : <CommunityFeed />}
+      {tab === "mine" ? (
+        <MinePosts />
+      ) : (
+        <CommunityFeed
+          view={view}
+          period={period}
+          sort={sort}
+          onViewChange={(v) =>
+            setQuery({ view: v === "recent" ? null : v })
+          }
+          onPeriodChange={(p) =>
+            setQuery({ period: p === "month" ? null : p })
+          }
+          onSortChange={(s) =>
+            setQuery({ sort: s === "engagement" ? null : s })
+          }
+        />
+      )}
     </div>
   );
+}
+
+function parsePeriod(v: string | null): Period {
+  return v === "week" || v === "all" ? v : "month";
+}
+
+function parseSort(v: string | null): Sort {
+  return v === "impressions" ? v : "engagement";
 }
 
 function TabButton({
@@ -146,20 +200,75 @@ function MinePosts() {
   );
 }
 
-function CommunityFeed() {
-  const [posts, setPosts] = useState<FeedPost[] | null>(null);
+const PERIOD_LABEL: Record<Period, string> = {
+  week: "Past 7 days",
+  month: "Past 30 days",
+  all: "All time",
+};
+
+const SORT_LABEL: Record<Sort, string> = {
+  engagement: "By engagement rate",
+  impressions: "By impressions",
+};
+
+function CommunityFeed({
+  view,
+  period,
+  sort,
+  onViewChange,
+  onPeriodChange,
+  onSortChange,
+}: {
+  view: CommunityView;
+  period: Period;
+  sort: Sort;
+  onViewChange: (v: CommunityView) => void;
+  onPeriodChange: (p: Period) => void;
+  onSortChange: (s: Sort) => void;
+}) {
+  const [recentPosts, setRecentPosts] = useState<FeedPost[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [topPosts, setTopPosts] = useState<FeedPost[] | null>(null);
   const [loadingMore, startLoadMore] = useTransition();
 
-  async function loadFirst() {
-    const res = await fetch(`/api/feed/recent?limit=${PAGE_SIZE}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    setPosts(data.posts);
-    setNextCursor(data.next_cursor ?? null);
-  }
+  // Load recent on mount; reload top when view becomes top or its
+  // params change. Keep the two streams separate so flipping back
+  // and forth doesn't refetch unnecessarily.
+  useEffect(() => {
+    if (view !== "recent") return;
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(`/api/feed/recent?limit=${PAGE_SIZE}`);
+      if (!res.ok || cancelled) return;
+      const data = await res.json();
+      if (cancelled) return;
+      setRecentPosts(data.posts);
+      setNextCursor(data.next_cursor ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [view]);
 
-  function loadMore() {
+  useEffect(() => {
+    if (view !== "top") return;
+    let cancelled = false;
+    setTopPosts(null);
+    void (async () => {
+      const res = await fetch(
+        `/api/feed/wins?period=${period}&sort=${sort}&limit=24`,
+      );
+      if (!res.ok || cancelled) return;
+      const data = await res.json();
+      if (cancelled) return;
+      setTopPosts(data.posts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [view, period, sort]);
+
+  function loadMoreRecent() {
     if (!nextCursor) return;
     startLoadMore(async () => {
       const res = await fetch(
@@ -167,49 +276,84 @@ function CommunityFeed() {
       );
       if (!res.ok) return;
       const data = await res.json();
-      setPosts((prev) => (prev ? [...prev, ...data.posts] : data.posts));
+      setRecentPosts((prev) => (prev ? [...prev, ...data.posts] : data.posts));
       setNextCursor(data.next_cursor ?? null);
     });
   }
 
-  useEffect(() => {
-    void loadFirst();
-  }, []);
-
-  if (posts === null) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
-  }
-  if (posts.length === 0) {
-    return (
-      <div className="space-y-2 rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
-        <p className="text-sm font-medium">Nothing in the feed yet</p>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          This feed is the community&apos;s wall of posts: anything a member
-          has tracked (filled in real LinkedIn impressions / reactions /
-          comments) and hasn&apos;t hidden via{" "}
-          <Link href="/settings" className="underline">
-            Sharing
-          </Link>{" "}
-          shows up here. Once you publish a post, click{" "}
-          <strong>Track</strong> on it from the <em>My posts</em> tab to seed
-          the feed for everyone.
-        </p>
-      </div>
-    );
-  }
+  const posts = view === "recent" ? recentPosts : topPosts;
+  const showLoadMore = view === "recent" && nextCursor;
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {posts.map((p) => (
-          <FeedPostCard key={p.id} post={p} />
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <Pills
+          values={["recent", "top"] as const}
+          active={view}
+          labels={{ recent: "Recent", top: "Top" }}
+          onChange={onViewChange}
+        />
+        {view === "top" && (
+          <>
+            <Pills
+              values={["week", "month", "all"] as const}
+              active={period}
+              labels={PERIOD_LABEL}
+              onChange={onPeriodChange}
+            />
+            <Pills
+              values={["engagement", "impressions"] as const}
+              active={sort}
+              labels={SORT_LABEL}
+              onChange={onSortChange}
+            />
+          </>
+        )}
       </div>
-      {nextCursor && (
+
+      {posts === null && (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      )}
+      {posts && posts.length === 0 && (
+        <div className="space-y-2 rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+          <p className="text-sm font-medium">
+            {view === "recent" ? "Nothing in the feed yet" : "No wins to show yet"}
+          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {view === "recent" ? (
+              <>
+                The Community feed shows posts members have tracked (filled in
+                real LinkedIn impressions / reactions / comments) and
+                haven&apos;t hidden via{" "}
+                <Link href="/settings#sharing" className="underline">
+                  Sharing
+                </Link>
+                . Once you publish a post, hit <strong>Track</strong> on it
+                from the <em>My posts</em> tab to seed the feed.
+              </>
+            ) : (
+              <>
+                <strong>Top</strong> ranks tracked posts by engagement rate or
+                reach. The leaderboard fills as members publish posts and add
+                their LinkedIn metrics. Try a wider window above, or be the
+                first to track one.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+      {posts && posts.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {posts.map((p) => (
+            <FeedPostCard key={p.id} post={p} />
+          ))}
+        </div>
+      )}
+      {showLoadMore && posts && posts.length > 0 && (
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={loadMore}
+            onClick={loadMoreRecent}
             disabled={loadingMore}
             className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary disabled:opacity-50"
           >
@@ -217,6 +361,37 @@ function CommunityFeed() {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function Pills<T extends string>({
+  values,
+  active,
+  labels,
+  onChange,
+}: {
+  values: readonly T[];
+  active: T;
+  labels: Record<T, string>;
+  onChange: (next: T) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-md border p-0.5 text-xs">
+      {values.map((v) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          className={`rounded-sm px-3 py-1.5 font-medium transition-colors ${
+            active === v
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {labels[v]}
+        </button>
+      ))}
     </div>
   );
 }
