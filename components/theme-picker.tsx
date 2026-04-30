@@ -242,6 +242,24 @@ function DiagnosticsPanel({
     !(isSystemFamily(declaredFirstFamily) && isSystemFamily(d.fontFamily));
   const noRewrites = d.inlineStyledElements > 0 && d.tokenizedElements === 0;
 
+  // Trim the raw stack to ~3 families so the row stays one line in
+  // the dropdown. The full string is on the title attribute for
+  // hover-to-reveal.
+  const compactStack = d.fontFamilyRaw
+    ? d.fontFamilyRaw
+        .split(",")
+        .slice(0, 3)
+        .map((s) => s.trim().replace(/^['"]|['"]$/g, ""))
+        .join(", ") + (d.fontFamilyRaw.split(",").length > 3 ? ", …" : "")
+    : "—";
+
+  // The injection chain has three failure points: the <link> element
+  // never gets added, the :root --font-family-base never resolves,
+  // and the body rule never wins the cascade. The three diagnostic
+  // rows below (Loader, Token, Body) map one-to-one to those steps,
+  // so the broken row is the one to fix.
+  const noLinks = d.themeLinks === 0;
+  const tokenMissing = !d.rootFontFamilyVar;
   return (
     <>
       <div className="my-1 border-t" />
@@ -256,13 +274,33 @@ function DiagnosticsPanel({
           />
         )}
         <DiagnosticRow
-          label="Rendering"
+          label="Loader links"
+          value={`${d.themeLinks} <link>${d.themeLinks === 1 ? "" : "s"}`}
+          flag={noLinks && Boolean(declaredFirstFamily)}
+        />
+        <DiagnosticRow
+          label="Root token"
+          value={
+            d.rootFontFamilyVar
+              ? firstFamilyOf(d.rootFontFamilyVar) ?? "(empty)"
+              : "(unset)"
+          }
+          flag={tokenMissing && Boolean(declaredFirstFamily)}
+        />
+        <DiagnosticRow
+          label="Body uses"
+          value={compactStack}
+          flag={Boolean(fontNotLoaded || fontMismatch)}
+          fullValue={d.fontFamilyRaw}
+        />
+        <DiagnosticRow
+          label="Loaded?"
           value={
             d.fontFamily
               ? `${d.fontFamily}${d.fontLoaded === false ? " · not loaded" : d.fontLoaded ? " ✓" : ""}`
               : "—"
           }
-          flag={Boolean(fontNotLoaded || fontMismatch)}
+          flag={Boolean(fontNotLoaded)}
         />
         <DiagnosticRow label="Background" value={d.backgroundColor || "—"} />
         <DiagnosticRow label="Text color" value={d.color || "—"} />
@@ -284,17 +322,21 @@ function DiagnosticRow({
   label,
   value,
   flag,
+  fullValue,
 }: {
   label: string;
   value: string;
   flag?: boolean;
+  // Optional longer string to expose on hover. Defaults to `value`
+  // so simple rows still get a readable tooltip when truncated.
+  fullValue?: string;
 }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
       <span className="text-muted-foreground">{label}</span>
       <span
         className={`truncate font-mono ${flag ? "text-destructive" : "text-foreground"}`}
-        title={value}
+        title={fullValue ?? value}
       >
         {value}
       </span>

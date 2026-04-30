@@ -35,13 +35,30 @@ export interface SlidePreviewHandle {
 // user can see at a glance whether fonts loaded, hex got rewritten,
 // charts were detected, etc. — without opening devtools.
 export interface ThemeDiagnostics {
-  // First quoted family in body's computed font-family (the face the
-  // browser will actually render with), or null if there's no quoted
-  // family in the stack.
+  // First family in body's computed font-family stack — the face the
+  // browser will use when it's available. Quoted families take
+  // priority; falls through to unquoted keywords (system-ui,
+  // -apple-system, sans-serif). null when neither path matches.
   fontFamily: string | null;
   // Whether `document.fonts.check()` says the family is loaded. null
   // when there's no family to check.
   fontLoaded: boolean | null;
+  // Full body computed font-family stack, verbatim. Lets the user
+  // see whether their custom family is even in the stack — if body
+  // resolves to e.g. `system-ui, -apple-system, sans-serif` with no
+  // 'Manrope' anywhere, the override never landed and the cascade
+  // is what to debug, not the font fetch.
+  fontFamilyRaw: string;
+  // Raw `--font-family-base` resolved from the iframe's `:root` via
+  // getComputedStyle on `documentElement`. This is the value the
+  // theme injection set after cascade. If body's font-family doesn't
+  // match this, the body rule lost the cascade fight; if this
+  // doesn't match what the theme stores, the injection never won
+  // over the source HTML.
+  rootFontFamilyVar: string;
+  // Number of `<link rel="stylesheet" data-viral-theme>` elements in
+  // the iframe head. 0 = our font-loading injection didn't fire.
+  themeLinks: number;
   // body's computed background-color + color, in rgb()/rgba() form
   // (whatever getComputedStyle returns). Lets the user spot
   // "background is still the source HTML's white" type bugs.
@@ -579,9 +596,20 @@ function captureDiagnostics(doc: Document): ThemeDiagnostics | null {
   const inlineStyled = doc.querySelectorAll('[style]');
   const tokenized = doc.querySelectorAll('[style*="var(--"]');
 
+  const rootFontFamilyVar = win
+    .getComputedStyle(doc.documentElement)
+    .getPropertyValue("--font-family-base")
+    .trim();
+  const themeLinks = doc.querySelectorAll(
+    'link[data-viral-theme]',
+  ).length;
+
   return {
     fontFamily,
     fontLoaded,
+    fontFamilyRaw: familyValue,
+    rootFontFamilyVar,
+    themeLinks,
     backgroundColor: cs.backgroundColor,
     color: cs.color,
     tokenizedElements: tokenized.length,
