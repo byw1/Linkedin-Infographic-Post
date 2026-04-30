@@ -29,6 +29,12 @@ export async function TopNav() {
                 New
               </Link>
               <Link
+                href="/posts"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Posts
+              </Link>
+              <Link
                 href="/library"
                 className="text-muted-foreground hover:text-foreground"
               >

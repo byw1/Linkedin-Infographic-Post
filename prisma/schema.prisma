@@ -155,6 +155,17 @@ model Render {
   themeId String? @map("theme_id") @db.Uuid
   theme   Theme?  @relation(fields: [themeId], references: [id], onDelete: SetNull)
 
+  // Source HTML preserved for the Remix flow — re-opening a past
+  // render in the editor without re-uploading from Claude. Stored as
+  // a single shape regardless of format: `{ slides: [{filename, html}] }`.
+  // Single posts get a 1-element slides array; carousels keep their
+  // full slide deck. JSONB for query flexibility, but in practice we
+  // only read it whole.
+  sourceHtml Json?   @map("source_html") @db.JsonB
+  // "single" or "carousel". Tells the Remix loader which editor to
+  // mount. Null on legacy renders predating this column.
+  format     String?
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)], name: "idx_renders_user")

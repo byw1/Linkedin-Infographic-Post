@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { VisualEditor } from "@/components/visual-editor";
@@ -8,13 +8,66 @@ import { RenderResult } from "@/components/render-result";
 
 type Stage = "upload" | "edit" | "render";
 
-export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
-  const [stage, setStage] = useState<Stage>("upload");
+interface Props {
+  storageReady: boolean;
+  // When set, the flow skips the dropzone and re-loads a past
+  // render's source HTML directly into the editor. Set by
+  // ModeSwitcher when the URL has `?remix=<id>&format=single`.
+  remixId?: string | null;
+}
+
+export function InfographicFlow({ storageReady, remixId }: Props) {
+  const [stage, setStage] = useState<Stage>(remixId ? "edit" : "upload");
   const [html, setHtml] = useState<string>("");
   const [filename, setFilename] = useState<string | null>(null);
   const [entities, setEntities] = useState<ResolvedEntity[]>([]);
   const [pngUrl, setPngUrl] = useState<string | null>(null);
   const [renderId, setRenderId] = useState<string | null>(null);
+  const [remixError, setRemixError] = useState<string | null>(null);
+  const [remixLoading, setRemixLoading] = useState(Boolean(remixId));
+
+  // Remix loader: fetch the saved source HTML, run /api/parse to
+  // get the entity list (re-resolved against the user's current
+  // library), seed editor state, jump straight to the edit stage.
+  // Skipping the dropzone is the whole point — Remix is a
+  // one-click "open this past post" flow.
+  useEffect(() => {
+    if (!remixId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/render/${remixId}?include=source`);
+        if (!res.ok) throw new Error(`Couldn't fetch render (${res.status}).`);
+        const data = await res.json();
+        const slides = (data.source_html?.slides ?? []) as Array<{
+          filename: string;
+          html: string;
+        }>;
+        const slide = slides[0];
+        if (!slide?.html) throw new Error("This render has no source HTML to remix.");
+
+        const parseRes = await fetch("/api/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ html: slide.html }),
+        });
+        if (!parseRes.ok) throw new Error(`Couldn't parse the source HTML.`);
+        const parsed = await parseRes.json();
+        if (cancelled) return;
+        setHtml(slide.html);
+        setFilename(data.filename ?? slide.filename ?? null);
+        setEntities(parsed.entities);
+        setStage("edit");
+      } catch (err) {
+        if (!cancelled) setRemixError((err as Error).message);
+      } finally {
+        if (!cancelled) setRemixLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [remixId]);
 
   function reset() {
     setStage("upload");
@@ -23,6 +76,31 @@ export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
     setEntities([]);
     setPngUrl(null);
     setRenderId(null);
+  }
+
+  if (remixLoading) {
+    return (
+      <p className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
+        Loading remix…
+      </p>
+    );
+  }
+  if (remixError) {
+    return (
+      <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+        <p>{remixError}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setRemixError(null);
+            setStage("upload");
+          }}
+          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+        >
+          Start a new post instead
+        </button>
+      </div>
+    );
   }
 
   if (stage === "render" && pngUrl && renderId) {
@@ -45,6 +123,10 @@ export function InfographicFlow({ storageReady }: { storageReady: boolean }) {
           if (filename) form.append("filename", filename);
           form.append("entity_count", String(entityCount));
           if (themeId) form.append("theme_id", themeId);
+          // Send the source HTML (with data-entity placeholders
+          // intact) so this render can be reopened via Remix later
+          // without re-uploading from Claude.
+          if (html) form.append("source_html", html);
 
           const res = await fetch("/api/render", { method: "POST", body: form });
           if (!res.ok) {

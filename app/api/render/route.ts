@@ -84,6 +84,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: meta.error.flatten() }, { status: 400 });
   }
 
+  // Optional source HTML — when present, persisted on the Render
+  // row so a Remix can re-open this post in the editor without
+  // re-uploading from Claude. Same shape used by carousels (a
+  // single-element slides array) so the loader is uniform.
+  const sourceHtmlField = form.get("source_html");
+  const sourceHtml =
+    typeof sourceHtmlField === "string" && sourceHtmlField.length > 0
+      ? sourceHtmlField
+      : null;
+  // Cap at 2 MB — typical Claude HTML is 50-200 KB, but a chart-heavy
+  // page with inline base64 could grow. Anything bigger is suspect.
+  const SOURCE_HTML_MAX = 2 * 1024 * 1024;
+  if (sourceHtml && sourceHtml.length > SOURCE_HTML_MAX) {
+    return NextResponse.json(
+      { error: "Source HTML too large to remix (over 2 MB)." },
+      { status: 413 },
+    );
+  }
+
   // Validate that the caller can actually use the theme they referenced
   // (their own or an official one). Bad ids drop silently to null —
   // the render still succeeds without a theme attribution.
@@ -120,6 +139,17 @@ export async function POST(req: Request) {
       pngUrl: publicUrl,
       completedAt: new Date(),
       themeId: themeIdToStore,
+      format: "single",
+      sourceHtml: sourceHtml
+        ? {
+            slides: [
+              {
+                filename: meta.data.filename ?? "post.html",
+                html: sourceHtml,
+              },
+            ],
+          }
+        : undefined,
     },
   });
 

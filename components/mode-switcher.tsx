@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { InfographicFlow } from "@/components/infographic-flow";
 import { CarouselFlow } from "@/components/carousel-flow";
 
@@ -15,6 +16,18 @@ const MODE_COPY: Record<Mode, string> = {
 
 export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
   const [mode, setMode] = useState<Mode>("infographic");
+  const searchParams = useSearchParams();
+  // ?remix=<id> + ?format=<single|carousel> arrive when the user
+  // clicks Remix on /posts. We preselect the matching editor mode
+  // so the flow component renders directly (skipping the dropzone)
+  // and pass the id down to it for the source-HTML fetch.
+  const remixId = searchParams.get("remix");
+  const remixFormat = searchParams.get("format");
+
+  useEffect(() => {
+    if (remixFormat === "carousel") setMode("carousel");
+    else if (remixFormat === "single") setMode("infographic");
+  }, [remixFormat]);
 
   return (
     <div className="space-y-6">
@@ -31,9 +44,15 @@ export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
       </div>
 
       {mode === "infographic" ? (
-        <InfographicFlow storageReady={storageReady} />
+        <InfographicFlow
+          storageReady={storageReady}
+          remixId={remixFormat === "single" ? remixId : null}
+        />
       ) : (
-        <CarouselFlow storageReady={storageReady} />
+        <CarouselFlow
+          storageReady={storageReady}
+          remixId={remixFormat === "carousel" ? remixId : null}
+        />
       )}
     </div>
   );

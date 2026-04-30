@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import {
   CarouselUploadDropzone,
@@ -33,11 +33,65 @@ function resultKind(format: Format): "pdf" | "zip" {
   return format === "png-zip" ? "zip" : "pdf";
 }
 
-export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
-  const [stage, setStage] = useState<Stage>("upload");
+interface Props {
+  storageReady: boolean;
+  // When set, the flow skips the dropzone and re-loads a past
+  // carousel render's source slides directly into the editor. Set
+  // by ModeSwitcher when the URL has `?remix=<id>&format=carousel`.
+  remixId?: string | null;
+}
+
+export function CarouselFlow({ storageReady, remixId }: Props) {
+  const [stage, setStage] = useState<Stage>(remixId ? "edit" : "upload");
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [zipName, setZipName] = useState<string | null>(null);
   const [entities, setEntities] = useState<ResolvedEntity[]>([]);
+  const [remixError, setRemixError] = useState<string | null>(null);
+  const [remixLoading, setRemixLoading] = useState(Boolean(remixId));
+
+  // Remix loader for carousels: fetch saved slides, parse the
+  // first slide's HTML to seed the entity list (entities are
+  // de-duped across slides during the original render, so any
+  // single slide's parse covers the deck), jump straight to the
+  // editor.
+  useEffect(() => {
+    if (!remixId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/render/${remixId}?include=source`);
+        if (!res.ok) throw new Error(`Couldn't fetch render (${res.status}).`);
+        const data = await res.json();
+        const sourceSlides = (data.source_html?.slides ?? []) as CarouselSlide[];
+        if (sourceSlides.length === 0) {
+          throw new Error("This render has no source slides to remix.");
+        }
+        // Concatenate all slides into one parse so cross-slide
+        // entities get a single entry with the right count. The
+        // parse route de-dupes by slug.
+        const combined = sourceSlides.map((s) => s.html).join("\n");
+        const parseRes = await fetch("/api/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ html: combined }),
+        });
+        if (!parseRes.ok) throw new Error(`Couldn't parse the source slides.`);
+        const parsed = await parseRes.json();
+        if (cancelled) return;
+        setSlides(sourceSlides);
+        setZipName(data.filename ?? null);
+        setEntities(parsed.entities);
+        setStage("edit");
+      } catch (err) {
+        if (!cancelled) setRemixError((err as Error).message);
+      } finally {
+        if (!cancelled) setRemixLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [remixId]);
 
   // The first render the user produces is the "primary" — its
   // RenderResult panel hosts the Track / Delete affordances. The
@@ -155,6 +209,31 @@ export function CarouselFlow({ storageReady }: { storageReady: boolean }) {
   }
 
   // ----- render stage: primary exists (alternate may also exist or be polling)
+
+  if (remixLoading) {
+    return (
+      <p className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
+        Loading remix…
+      </p>
+    );
+  }
+  if (remixError) {
+    return (
+      <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+        <p>{remixError}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setRemixError(null);
+            setStage("upload");
+          }}
+          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+        >
+          Start a new carousel instead
+        </button>
+      </div>
+    );
+  }
 
   if (stage === "render" && primary) {
     const otherFormat: Format = primary.format === "pdf" ? "png-zip" : "pdf";

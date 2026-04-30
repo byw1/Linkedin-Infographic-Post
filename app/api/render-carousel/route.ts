@@ -119,6 +119,19 @@ export async function POST(req: Request) {
       unknownCount: 0,
       status: "pending",
       themeId: themeIdToStore,
+      format: "carousel",
+      // Persist the slide HTML for the Remix flow — uniform shape
+      // with single-post renders so the loader doesn't branch on
+      // format. Slides are stored verbatim (with their data-entity
+      // placeholders intact); the rendered PDF/PNG is the resolved
+      // version, but Remix re-opens the editor with placeholders so
+      // the user can swap logos again.
+      sourceHtml: {
+        slides: parsed.data.slides.map((s) => ({
+          filename: s.filename,
+          html: s.html,
+        })),
+      },
     },
   });
 

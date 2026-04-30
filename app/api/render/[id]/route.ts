@@ -24,8 +24,15 @@ function shapeRender(
     errorMessage: string | null;
     pngUrl: string | null;
     filename: string | null;
+    format: string | null;
+    sourceHtml: unknown;
   } & TrackingShape,
   url: string | null,
+  // Pass `true` only on Remix loads — the source HTML payload can
+  // be hundreds of KB to multi-MB and we don't want it in every
+  // tracking-form refresh response. Default false keeps the row
+  // shape lean.
+  includeSource = false,
 ) {
   return {
     id: render.id,
@@ -33,6 +40,9 @@ function shapeRender(
     url,
     error_message: render.errorMessage,
     filename: render.filename,
+    format: render.format,
+    has_source: render.sourceHtml !== null,
+    source_html: includeSource ? render.sourceHtml : undefined,
     tracking: {
       post_url: render.postUrl,
       impressions: render.impressions,
@@ -44,7 +54,7 @@ function shapeRender(
   };
 }
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   let user;
   try {
     user = await requireUser();
@@ -57,8 +67,13 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // `?include=source` opt-in for the Remix loader so we don't ship
+  // the heavy HTML payload on every tracking-form refresh.
+  const includeSource =
+    new URL(req.url).searchParams.get("include") === "source";
+
   const url = render.pngUrl ? ((await refreshUrl(render.pngUrl)) ?? render.pngUrl) : null;
-  return NextResponse.json(shapeRender(render, url));
+  return NextResponse.json(shapeRender(render, url, includeSource));
 }
 
 const PatchBody = z.object({
