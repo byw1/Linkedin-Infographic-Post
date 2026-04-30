@@ -30,12 +30,15 @@ interface Props {
   showLinkedInLink?: boolean;
 }
 
-// Card shown on /wins and the /posts → Community tab. Hero is the
-// rendered image (or a PDF placeholder for carousels). Tracking
-// row pairs the absolute counts with the engagement rate so the
-// reader sees both reach and quality at a glance.
+// Card shown on /posts → Community (Recent + Top). Hero is the
+// rendered image (or a PDF placeholder for carousels, or an
+// "external · LinkedIn" placeholder when the author logged a post
+// they made elsewhere). Tracking row pairs the absolute counts with
+// the engagement rate so the reader sees both reach and quality at
+// a glance.
 export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
   const isPdf = post.format === "carousel";
+  const isExternal = post.format === "external";
   const author = post.author.name ?? "Member";
   const dateStr = post.trackedAt
     ? new Date(post.trackedAt).toLocaleDateString(undefined, {
@@ -43,15 +46,27 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
         day: "numeric",
       })
     : null;
+  const title = post.filename;
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card text-card-foreground">
       <div className="aspect-[4/5] bg-muted">
-        {post.url && !isPdf ? (
+        {isExternal ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-4 text-center text-muted-foreground">
+            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium uppercase tracking-wide">
+              External · LinkedIn
+            </span>
+            {title && (
+              <p className="line-clamp-4 text-sm font-medium text-foreground">
+                {title}
+              </p>
+            )}
+          </div>
+        ) : post.url && !isPdf ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={post.url}
-            alt={post.filename ?? "post"}
+            alt={title ?? "post"}
             className="h-full w-full object-cover"
           />
         ) : isPdf ? (

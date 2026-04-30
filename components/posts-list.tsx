@@ -2,27 +2,28 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { FeedPostCard, type FeedPost } from "@/components/feed/feed-post-card";
+import {
+  TrackForm,
+  type Tracking,
+  trackingUpdatedLabel,
+} from "@/components/tracking/track-form";
 
 interface RenderRow {
   id: string;
   filename: string | null;
   url: string | null;
   status: string;
-  format: "single" | "carousel" | null;
+  // "single" / "carousel" are tool-generated. "external" is a
+  // manually-tracked LinkedIn post that wasn't made here. null on
+  // legacy renders predating the format column.
+  format: "single" | "carousel" | "external" | null;
   hasSource: boolean;
   createdAt: string;
   completedAt: string | null;
   entityCount: number | null;
-  tracking: {
-    post_url: string | null;
-    impressions: number | null;
-    reactions: number | null;
-    comments: number | null;
-    reposts: number | null;
-    tracked_at: string | null;
-  };
+  tracking: Tracking;
 }
 
 type Tab = "mine" | "community";
@@ -136,6 +137,7 @@ function MinePosts() {
   const [renders, setRenders] = useState<RenderRow[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, startLoadMore] = useTransition();
+  const [addingExternal, setAddingExternal] = useState(false);
 
   async function loadFirst() {
     const res = await fetch(`/api/renders?limit=${PAGE_SIZE}`);
@@ -162,40 +164,178 @@ function MinePosts() {
     void loadFirst();
   }, []);
 
-  if (renders === null) {
-    return <p className="text-sm text-muted-foreground">Loading…</p>;
-  }
-  if (renders.length === 0) {
-    return (
-      <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
-        <p className="text-sm font-medium">No posts yet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Generate one from <Link href="/" className="underline">New post</Link>{" "}
-          and it&apos;ll show up here.
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Tip: come back any time to update tracking as your post matures —
+          the &ldquo;Updated X ago&rdquo; label shows when you last logged
+          numbers.
         </p>
+        <button
+          type="button"
+          onClick={() => setAddingExternal((v) => !v)}
+          className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+        >
+          {addingExternal ? "Cancel" : "+ Add external post"}
+        </button>
       </div>
-    );
+
+      {addingExternal && (
+        <ExternalPostForm
+          onCreated={() => {
+            setAddingExternal(false);
+            void loadFirst();
+          }}
+          onCancel={() => setAddingExternal(false)}
+        />
+      )}
+
+      {renders === null ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : renders.length === 0 ? (
+        <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+          <p className="text-sm font-medium">No posts yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Generate one from <Link href="/" className="underline">New post</Link>{" "}
+            or click <strong>+ Add external post</strong> above to log a
+            LinkedIn post you made elsewhere.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {renders.map((r) => (
+              <PostCard key={r.id} render={r} onChange={loadFirst} />
+            ))}
+          </div>
+          {nextCursor && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary disabled:opacity-50"
+              >
+                {loadingMore ? "Loading…" : "Load more"}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ExternalPostForm({
+  onCreated,
+  onCancel,
+}: {
+  onCreated: () => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [showTracking, setShowTracking] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  // Hold tracking input here so the user can fill metrics in one go
+  // instead of "create row" → "update tracking". The TrackForm
+  // hands its values back via the onSave callback.
+  const [tracking, setTracking] = useState<Tracking>({
+    post_url: null,
+    impressions: null,
+    reactions: null,
+    comments: null,
+    reposts: null,
+    tracked_at: null,
+  });
+
+  function create(next?: Partial<Tracking>) {
+    setError(null);
+    const body = {
+      title: title.trim(),
+      post_url: next?.post_url ?? tracking.post_url,
+      impressions: next?.impressions ?? tracking.impressions,
+      reactions: next?.reactions ?? tracking.reactions,
+      comments: next?.comments ?? tracking.comments,
+      reposts: next?.reposts ?? tracking.reposts,
+    };
+    if (!body.title) {
+      setError("Add a short title.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await fetch("/api/posts/external", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(typeof data.error === "string" ? data.error : "Save failed.");
+        return;
+      }
+      onCreated();
+    });
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {renders.map((r) => (
-          <PostCard key={r.id} render={r} onChange={loadFirst} />
-        ))}
+    <div className="space-y-3 rounded-md border-2 border-dashed bg-card p-4">
+      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Add external post
       </div>
-      {nextCursor && (
-        <div className="flex justify-center">
+      <p className="text-xs text-muted-foreground">
+        Logs a LinkedIn post you posted somewhere else (or earlier) so its
+        metrics count toward your stats and the community feed. No file
+        upload needed — just title + numbers.
+      </p>
+      <label className="block text-sm">
+        <span className="block text-[11px] text-muted-foreground">Title</span>
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={120}
+          placeholder="e.g. 'Why I left FAANG' carousel"
+          className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+        />
+      </label>
+      <button
+        type="button"
+        onClick={() => setShowTracking((v) => !v)}
+        className="text-xs text-muted-foreground hover:text-foreground"
+      >
+        {showTracking ? "Hide metrics" : "Add metrics now (optional)"}
+      </button>
+      {showTracking ? (
+        <TrackForm
+          tracking={tracking}
+          saveLabel="Add post"
+          onSave={async (next) => {
+            setTracking((prev) => ({ ...prev, ...next }));
+            create(next);
+          }}
+          onCancel={onCancel}
+        />
+      ) : (
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={loadMore}
-            disabled={loadingMore}
-            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary disabled:opacity-50"
+            onClick={() => create()}
+            disabled={pending}
+            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-50"
           >
-            {loadingMore ? "Loading…" : "Load more"}
+            {pending ? "Adding..." : "Add post"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary"
+          >
+            Cancel
           </button>
         </div>
       )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
@@ -404,6 +544,7 @@ function PostCard({
   onChange: () => void;
 }) {
   const [pending, startTransition] = useTransition();
+  const [editingTrack, setEditingTrack] = useState(false);
 
   function deleteRender() {
     if (!confirm("Delete this post? The rendered file is removed too.")) return;
@@ -413,32 +554,71 @@ function PostCard({
     });
   }
 
+  async function saveTracking(next: Partial<Tracking>) {
+    const body: Record<string, unknown> = {};
+    if (next.post_url !== undefined) body.post_url = next.post_url || null;
+    if (next.impressions !== undefined) body.impressions = next.impressions;
+    if (next.reactions !== undefined) body.reactions = next.reactions;
+    if (next.comments !== undefined) body.comments = next.comments;
+    if (next.reposts !== undefined) body.reposts = next.reposts;
+    const res = await fetch(`/api/render/${r.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(typeof data.error === "string" ? data.error : "Save failed.");
+    }
+    setEditingTrack(false);
+    onChange();
+  }
+
   const isPdf = r.format === "carousel";
+  const isExternal = r.format === "external";
   const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 
-  // Compact tracking summary if any metrics are filled in.
   const t = r.tracking;
   const hasMetrics =
     t.impressions !== null ||
     t.reactions !== null ||
     t.comments !== null ||
     t.reposts !== null;
+  const tracked = t.tracked_at !== null;
+  const updatedLabel = trackingUpdatedLabel(t.tracked_at);
 
   // Remix preselects the right editor mode via ?format= so the
   // home page doesn't have to fetch the render twice (once on
   // /posts and once on / to figure out which mode to show).
-  const remixHref = r.hasSource && r.format
+  // External posts have no source HTML, so Remix is hidden for them.
+  const remixHref = r.hasSource && r.format && !isExternal
     ? `/?remix=${r.id}&format=${r.format}`
     : null;
 
   return (
     <div className="overflow-hidden rounded-lg border bg-card text-card-foreground">
       <div className="aspect-[4/5] bg-muted">
-        {r.url && !isPdf ? (
+        {isExternal ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium uppercase tracking-wide">
+              External · LinkedIn
+            </span>
+            {t.post_url && (
+              <a
+                href={t.post_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs underline underline-offset-2"
+              >
+                Open on LinkedIn ↗
+              </a>
+            )}
+          </div>
+        ) : r.url && !isPdf ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={r.url}
@@ -480,12 +660,13 @@ function PostCard({
             </div>
             <div className="text-[11px] text-muted-foreground">
               {dateStr}
-              {r.entityCount !== null && (
+              {!isExternal && r.entityCount !== null && (
                 <>
                   {" "}
                   · {r.entityCount} logo{r.entityCount === 1 ? "" : "s"}
                 </>
               )}
+              {isExternal && <> · external</>}
             </div>
           </div>
         </div>
@@ -515,6 +696,10 @@ function PostCard({
           </div>
         )}
 
+        {updatedLabel && (
+          <div className="text-[10px] text-muted-foreground">{updatedLabel}</div>
+        )}
+
         <div className="flex flex-wrap gap-1.5">
           {remixHref && (
             <Link
@@ -524,7 +709,7 @@ function PostCard({
               Remix
             </Link>
           )}
-          {r.url && (
+          {r.url && !isExternal && (
             <a
               href={r.url}
               target="_blank"
@@ -536,6 +721,13 @@ function PostCard({
           )}
           <button
             type="button"
+            onClick={() => setEditingTrack((v) => !v)}
+            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+          >
+            {tracked ? "Update stats" : "Track"}
+          </button>
+          <button
+            type="button"
             onClick={deleteRender}
             disabled={pending}
             className="ml-auto inline-flex h-8 items-center rounded-md border border-destructive/40 px-2.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-50"
@@ -544,7 +736,15 @@ function PostCard({
           </button>
         </div>
 
-        {!r.hasSource && (
+        {editingTrack && (
+          <TrackForm
+            tracking={t}
+            onSave={saveTracking}
+            onCancel={() => setEditingTrack(false)}
+          />
+        )}
+
+        {!isExternal && !r.hasSource && (
           <div className="text-[10px] italic text-muted-foreground">
             Saved before Remix shipped — re-upload from Claude to edit.
           </div>
