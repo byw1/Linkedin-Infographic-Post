@@ -27,6 +27,12 @@ model User {
   // re-validating client-side.
   bio           String?
   socials       Json      @default("{}") @db.JsonB
+  // Whether this user's tracked posts (renders with tracking metrics
+  // filled in) are visible to the rest of the team — feeds the
+  // /wins page, the team-feed tab on /posts, and the top-posts
+  // slideshow on /members. Default true so the social loop is on
+  // out of the box; flip to false in /settings to opt out.
+  shareTracked  Boolean   @default(true) @map("share_tracked")
 
   accounts        Account[]
   sessions        Session[]

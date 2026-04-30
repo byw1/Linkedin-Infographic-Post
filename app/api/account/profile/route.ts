@@ -11,6 +11,10 @@ const Body = z.object({
   bio: z.string().trim().max(500).nullable().optional(),
   tags: TagsSchema.optional(),
   socials: SocialsSchema.optional(),
+  // Whether the user's tracked posts show up on the team-wide
+  // feed (Wins, /posts team tab, member-card slideshow). Toggled
+  // from /settings.
+  share_tracked: z.boolean().optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -33,6 +37,9 @@ export async function PATCH(req: Request) {
   }
   if (parsed.data.tags !== undefined) data.tags = parsed.data.tags;
   if (parsed.data.socials !== undefined) data.socials = parsed.data.socials;
+  if (parsed.data.share_tracked !== undefined) {
+    data.shareTracked = parsed.data.share_tracked;
+  }
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
@@ -49,6 +56,7 @@ export async function PATCH(req: Request) {
       bio: true,
       tags: true,
       socials: true,
+      shareTracked: true,
     },
   });
   return NextResponse.json({

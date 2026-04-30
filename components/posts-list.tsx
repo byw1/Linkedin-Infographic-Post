@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
+import { FeedPostCard, type FeedPost } from "@/components/feed/feed-post-card";
 
 interface RenderRow {
   id: string;
@@ -23,6 +24,7 @@ interface RenderRow {
   };
 }
 
+type Tab = "mine" | "team";
 const PAGE_SIZE = 30;
 
 // Posts archive — shows everything the user has rendered with a
@@ -32,6 +34,48 @@ const PAGE_SIZE = 30;
 // HTML get the Remix button hidden (re-uploading from Claude is
 // the only path to edit those).
 export function PostsList() {
+  const [tab, setTab] = useState<Tab>("mine");
+
+  return (
+    <div className="space-y-4">
+      <div className="inline-flex rounded-md border p-0.5 text-sm">
+        <TabButton active={tab === "mine"} onClick={() => setTab("mine")}>
+          My posts
+        </TabButton>
+        <TabButton active={tab === "team"} onClick={() => setTab("team")}>
+          Team
+        </TabButton>
+      </div>
+      {tab === "mine" ? <MinePosts /> : <TeamFeed />}
+    </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-sm px-3 py-1.5 font-medium transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function MinePosts() {
   const [renders, setRenders] = useState<RenderRow[] | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, startLoadMore] = useTransition();
@@ -81,6 +125,75 @@ export function PostsList() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {renders.map((r) => (
           <PostCard key={r.id} render={r} onChange={loadFirst} />
+        ))}
+      </div>
+      {nextCursor && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary disabled:opacity-50"
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeamFeed() {
+  const [posts, setPosts] = useState<FeedPost[] | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, startLoadMore] = useTransition();
+
+  async function loadFirst() {
+    const res = await fetch(`/api/feed/recent?limit=${PAGE_SIZE}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setPosts(data.posts);
+    setNextCursor(data.next_cursor ?? null);
+  }
+
+  function loadMore() {
+    if (!nextCursor) return;
+    startLoadMore(async () => {
+      const res = await fetch(
+        `/api/feed/recent?limit=${PAGE_SIZE}&cursor=${nextCursor}`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      setPosts((prev) => (prev ? [...prev, ...data.posts] : data.posts));
+      setNextCursor(data.next_cursor ?? null);
+    });
+  }
+
+  useEffect(() => {
+    void loadFirst();
+  }, []);
+
+  if (posts === null) {
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
+  }
+  if (posts.length === 0) {
+    return (
+      <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+        <p className="text-sm font-medium">No team posts yet</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          When your teammates track a post and have sharing on,
+          it&apos;ll show up here. Track one of your own from the Mine
+          tab to seed the feed.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {posts.map((p) => (
+          <FeedPostCard key={p.id} post={p} />
         ))}
       </div>
       {nextCursor && (

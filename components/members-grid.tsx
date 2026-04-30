@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { MemberTopPosts } from "@/components/feed/member-top-posts";
 
 type SocialKey = "linkedin" | "twitter" | "github" | "instagram" | "website";
 type SocialMap = Partial<Record<SocialKey, string>>;
@@ -317,6 +318,8 @@ function MemberCard({
           )}
         </>
       )}
+
+      {!editing && <MemberTopPosts memberId={member.id} />}
     </div>
   );
 }
