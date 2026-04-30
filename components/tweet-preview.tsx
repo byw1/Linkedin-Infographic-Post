@@ -86,7 +86,15 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
         style={{ fontFamily: '"Helvetica Neue", system-ui, sans-serif' }}
       >
         <header className="flex items-start gap-4">
-          <Avatar src={data.avatarUrl} initials={initials} />
+          <Avatar
+            src={data.avatarUrl}
+            initials={initials}
+            // Gold checkmarks emulate LinkedIn company pages, which
+            // use squircle (rounded-square) logos rather than the
+            // circular avatars personal accounts get. Anything else
+            // (blue/gray/none) stays a circle.
+            shape={data.checkmark === "gold" ? "squircle" : "circle"}
+          />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5 text-[26px] leading-tight">
               <span className="font-bold text-white">{data.name || "Display name"}</span>
@@ -150,7 +158,20 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
   );
 });
 
-function Avatar({ src, initials }: { src: string | null; initials: string }) {
+function Avatar({
+  src,
+  initials,
+  shape,
+}: {
+  src: string | null;
+  initials: string;
+  shape: "circle" | "squircle";
+}) {
+  // Tailwind's `rounded-full` for the personal/circle case;
+  // `rounded-2xl` for the company squircle (matches LinkedIn's
+  // company-page logo radius — soft enough to read as "shape" but
+  // not so round it loses the squareness).
+  const radius = shape === "squircle" ? "rounded-2xl" : "rounded-full";
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
     return (
@@ -158,12 +179,14 @@ function Avatar({ src, initials }: { src: string | null; initials: string }) {
         src={src}
         alt=""
         crossOrigin="anonymous"
-        className="h-[80px] w-[80px] shrink-0 rounded-full border border-white/10 object-cover"
+        className={`h-[80px] w-[80px] shrink-0 border border-white/10 object-cover ${radius}`}
       />
     );
   }
   return (
-    <div className="flex h-[80px] w-[80px] shrink-0 items-center justify-center rounded-full border border-white/10 bg-gradient-to-br from-indigo-500 to-violet-600 text-[34px] font-semibold uppercase">
+    <div
+      className={`flex h-[80px] w-[80px] shrink-0 items-center justify-center border border-white/10 bg-gradient-to-br from-indigo-500 to-violet-600 text-[34px] font-semibold uppercase ${radius}`}
+    >
       {initials}
     </div>
   );
