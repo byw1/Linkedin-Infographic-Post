@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -99,7 +100,19 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
   // Once the user dismisses the picker via Escape, we suppress it
   // until the trigger position changes (i.e. they start a new one).
   const [dismissedStart, setDismissedStart] = useState<number | null>(null);
+  // Caret coords (relative to the textarea's top-left) for floating
+  // the picker right at the slash. Recomputed via useLayoutEffect so
+  // the picker lands in the right spot in the same frame the textarea
+  // value updates. `flip` true means render the picker above the
+  // caret line (used near the bottom of the textarea).
+  const [caretCoords, setCaretCoords] = useState<{
+    top: number;
+    left: number;
+    height: number;
+    flip: boolean;
+  } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [scrollTick, setScrollTick] = useState(0);
 
   // Fetch the tool + skill catalog once. Same shape as DocsMarkdown's
   // loader — open to any signed-in user.
@@ -180,6 +193,39 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
     trigger !== null &&
     matches.length > 0 &&
     dismissedStart !== trigger.start;
+
+  // Measure where the slash sits inside the textarea so the picker
+  // can dock right under it. Re-runs on value/trigger changes and on
+  // scroll (scrollTick bumps via the textarea's onScroll handler).
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    if (!showPicker || !ta || !trigger) {
+      setCaretCoords(null);
+      return;
+    }
+    const c = caretCoordinates(ta, trigger.start);
+    // If the caret has scrolled out of view, suppress the picker
+    // (don't draw it floating over unrelated text).
+    const yInView = c.top - ta.scrollTop;
+    if (yInView < -c.height || yInView > ta.clientHeight) {
+      setCaretCoords(null);
+      return;
+    }
+    // Clamp horizontally so the right edge stays inside the textarea.
+    const pickerWidth = 288;
+    const pickerMaxHeight = 248;
+    const margin = 4;
+    const maxLeft = Math.max(0, ta.clientWidth - pickerWidth - margin);
+    // If there isn't room below the caret line, flip above instead.
+    const spaceBelow = ta.clientHeight - (yInView + c.height);
+    const flip = spaceBelow < pickerMaxHeight && yInView > pickerMaxHeight;
+    setCaretCoords({
+      top: c.top - ta.scrollTop,
+      left: Math.min(c.left - ta.scrollLeft, maxLeft),
+      height: c.height,
+      flip,
+    });
+  }, [showPicker, trigger?.start, markdown, scrollTick]);
 
   function applyMatch(item: SlashMatch) {
     if (!trigger) return;
@@ -404,12 +450,13 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             onSelect={syncCursor}
             onClick={syncCursor}
             onKeyUp={syncCursor}
+            onScroll={() => setScrollTick((n) => n + 1)}
             spellCheck={false}
             rows={28}
             className="w-full rounded-md border bg-background p-3 font-mono text-xs leading-relaxed"
             placeholder="# Page heading"
           />
-          {showPicker && trigger && (
+          {showPicker && trigger && caretCoords && (
             <SlashPicker
               kind={trigger.kind}
               query={trigger.query}
@@ -417,6 +464,10 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
               activeIndex={pickerIndex}
               onHover={setPickerIndex}
               onPick={applyMatch}
+              anchorTop={caretCoords.top}
+              anchorLeft={caretCoords.left}
+              caretHeight={caretCoords.height}
+              flip={caretCoords.flip}
             />
           )}
         </div>
@@ -437,6 +488,10 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
 
 // ---------- slash-command picker UI ----------------------------------
 
+// Picker docks at the caret. `anchorTop` is the caret line's top in
+// the wrapper's coordinate system; the picker either sits below the
+// line (anchorTop + caretHeight + gap) or flips above when there
+// isn't room below.
 function SlashPicker({
   kind,
   query,
@@ -444,6 +499,10 @@ function SlashPicker({
   activeIndex,
   onHover,
   onPick,
+  anchorTop,
+  anchorLeft,
+  caretHeight,
+  flip,
 }: {
   kind: "tool" | "skill";
   query: string;
@@ -451,24 +510,61 @@ function SlashPicker({
   activeIndex: number;
   onHover: (i: number) => void;
   onPick: (m: SlashMatch) => void;
+  anchorTop: number;
+  anchorLeft: number;
+  caretHeight: number;
+  flip: boolean;
 }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  // Pull the highlighted row into view if keyboard nav walks past
+  // the visible window.
+  useEffect(() => {
+    const el = ref.current?.querySelector<HTMLElement>(
+      `[data-idx="${activeIndex}"]`,
+    );
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  const positionStyle: React.CSSProperties = flip
+    ? {
+        // Anchor at the caret line's top, then translate fully up
+        // so the bottom of the picker sits 4px above the caret.
+        top: anchorTop,
+        left: Math.max(0, anchorLeft),
+        transform: "translateY(calc(-100% - 4px))",
+      }
+    : {
+        top: anchorTop + caretHeight + 4,
+        left: Math.max(0, anchorLeft),
+      };
   return (
-    <div className="absolute left-2 right-2 top-full z-20 mt-1 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-lg">
+    <div
+      ref={ref}
+      role="listbox"
+      aria-label={kind === "tool" ? "Insert tool" : "Insert skill"}
+      style={positionStyle}
+      className="pointer-events-auto absolute z-30 w-72 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-xl"
+    >
       <div className="flex items-center justify-between gap-2 border-b px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-        <span>
-          {kind === "tool" ? "Tools" : "Skills"}
+        <span className="flex items-center gap-1.5">
+          {kind === "tool" ? (
+            <Wrench size={11} aria-hidden />
+          ) : (
+            <Download size={11} aria-hidden />
+          )}
+          <span>{kind === "tool" ? "Tool" : "Skill"}</span>
           {query && (
             <>
-              {" · "}
+              <span className="text-muted-foreground/50">·</span>
               <span className="lowercase text-foreground/80">{query}</span>
             </>
           )}
         </span>
-        <span>↑↓ enter</span>
+        <span className="font-mono text-[9px]">↑↓ ⏎</span>
       </div>
-      <ul className="max-h-64 overflow-y-auto py-1">
+      <ul className="max-h-56 overflow-y-auto py-1">
         {matches.map((m, i) => (
-          <li key={`${m.kind}:${m.id}`}>
+          <li key={`${m.kind}:${m.id}`} data-idx={i}>
             <button
               type="button"
               onMouseDown={(e) => {
@@ -530,4 +626,84 @@ function prettyHost(url: string): string {
   } catch {
     return "";
   }
+}
+
+// Mirror-div technique for measuring where a given character offset
+// sits inside a textarea (in pixels, relative to the textarea's
+// top-left, ignoring scroll). We clone the textarea's box + text
+// styles into an off-screen div, paste the prefix, then measure a
+// span placed at the target position. Battle-tested approach used
+// by every modern @-mention/slash menu against a textarea.
+function caretCoordinates(
+  el: HTMLTextAreaElement,
+  position: number,
+): { top: number; left: number; height: number } {
+  const div = document.createElement("div");
+  document.body.appendChild(div);
+  const computed = window.getComputedStyle(el);
+  const style = div.style;
+
+  style.position = "absolute";
+  style.visibility = "hidden";
+  style.whiteSpace = "pre-wrap";
+  style.wordWrap = "break-word";
+  style.top = "0";
+  style.left = "-9999px";
+  style.overflow = "hidden";
+
+  const props = [
+    "boxSizing",
+    "width",
+    "height",
+    "borderTopWidth",
+    "borderRightWidth",
+    "borderBottomWidth",
+    "borderLeftWidth",
+    "borderStyle",
+    "paddingTop",
+    "paddingRight",
+    "paddingBottom",
+    "paddingLeft",
+    "fontStyle",
+    "fontVariant",
+    "fontWeight",
+    "fontStretch",
+    "fontSize",
+    "fontFamily",
+    "lineHeight",
+    "textAlign",
+    "textTransform",
+    "textIndent",
+    "letterSpacing",
+    "wordSpacing",
+    "tabSize",
+  ] as const;
+  for (const prop of props) {
+    style.setProperty(
+      hyphenate(prop),
+      computed.getPropertyValue(hyphenate(prop)),
+    );
+  }
+
+  div.textContent = el.value.substring(0, position);
+  const span = document.createElement("span");
+  // Trailing content / non-empty span keeps measurement stable when
+  // the caret is at the end of the value.
+  span.textContent = el.value.substring(position) || ".";
+  div.appendChild(span);
+
+  const lineHeight =
+    parseFloat(computed.lineHeight) ||
+    parseFloat(computed.fontSize) * 1.2;
+  const result = {
+    top: span.offsetTop,
+    left: span.offsetLeft,
+    height: lineHeight,
+  };
+  document.body.removeChild(div);
+  return result;
+}
+
+function hyphenate(camel: string): string {
+  return camel.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 }
