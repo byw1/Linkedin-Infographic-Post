@@ -42,10 +42,16 @@ export default async function OgImage() {
           </span>
         </div>
 
-        {/* Middle: punchline */}
+        {/* Middle: punchline. Satori requires every multi-child
+          * <div> to have display:flex set, and inline text + spans
+          * inside one div count as multiple children — so split the
+          * headline into two stacked single-child rows instead of
+          * the inline highlight pattern. Bonus: bigger, bolder. */}
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div
             style={{
+              display: "flex",
+              flexDirection: "column",
               fontSize: 84,
               lineHeight: 1.05,
               fontWeight: 800,
@@ -53,8 +59,8 @@ export default async function OgImage() {
               maxWidth: 980,
             }}
           >
-            We figured out how to{" "}
-            <span style={{ color: "#a5b4fc" }}>hack virality</span>.
+            <div>We figured out how to</div>
+            <div style={{ color: "#a5b4fc" }}>hack virality.</div>
           </div>
           <div
             style={{
