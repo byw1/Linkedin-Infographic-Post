@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { DocsMarkdown } from "@/components/docs/docs-markdown";
 import { PageEditor } from "@/components/docs/page-editor";
 
 export interface DocPage {
@@ -73,7 +72,7 @@ export function PageView({ page, canEdit }: Props) {
         )}
       </div>
       <div className="docs-prose">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{page.markdown}</ReactMarkdown>
+        <DocsMarkdown markdown={page.markdown} />
       </div>
     </article>
   );

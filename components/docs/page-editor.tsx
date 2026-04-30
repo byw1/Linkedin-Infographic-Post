@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { DocsMarkdown } from "@/components/docs/docs-markdown";
 import type { DocPage } from "@/components/docs/page-view";
 
 interface Props {
@@ -169,7 +168,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             Live preview
           </div>
           <div className="docs-prose">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
+            <DocsMarkdown markdown={previewMarkdown} />
           </div>
         </div>
       </div>
