@@ -46,9 +46,20 @@ const SOCIAL_PLACEHOLDER: Record<SocialKey, string> = {
 
 const SOCIAL_KEYS: SocialKey[] = ["linkedin", "twitter", "github", "instagram", "website"];
 
+type Sort = "name" | "impressions" | "engagement" | "recent";
+
+const SORT_LABEL: Record<Sort, string> = {
+  name: "Name (A→Z)",
+  impressions: "Most impressions",
+  engagement: "Avg engagement",
+  recent: "Most recent post",
+};
+
 export function MembersGrid() {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<Sort>("name");
 
   async function load(tag: string | null) {
     const params = tag ? `?tag=${encodeURIComponent(tag)}` : "";
@@ -71,8 +82,94 @@ export function MembersGrid() {
     return Array.from(set.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [members]);
 
+  // Filter + sort happen client-side. Search matches name, email
+  // local-part, bio, and tags — covers the four ways someone might
+  // recall a teammate. Sort uses the stats payload from /api/members
+  // so "most impressions / avg engagement / recent" are first-class
+  // without a server-side index.
+  const visible = useMemo(() => {
+    if (!members) return null;
+    const q = search.trim().toLowerCase();
+    let out = members;
+    if (q) {
+      out = out.filter((m) => {
+        const name = (m.name ?? "").toLowerCase();
+        const emailLocal = m.email.split("@")[0]?.toLowerCase() ?? "";
+        const bio = (m.bio ?? "").toLowerCase();
+        if (name.includes(q) || emailLocal.includes(q) || bio.includes(q)) {
+          return true;
+        }
+        for (const t of m.tags) if (t.toLowerCase().includes(q)) return true;
+        return false;
+      });
+    }
+    const sorted = [...out];
+    switch (sort) {
+      case "impressions":
+        sorted.sort(
+          (a, b) => b.stats.totalImpressions - a.stats.totalImpressions,
+        );
+        break;
+      case "engagement":
+        sorted.sort(
+          (a, b) =>
+            (b.stats.avgEngagementRate ?? -1) -
+            (a.stats.avgEngagementRate ?? -1),
+        );
+        break;
+      case "recent":
+        sorted.sort((a, b) => {
+          const at = a.stats.lastTrackedAt
+            ? new Date(a.stats.lastTrackedAt).getTime()
+            : 0;
+          const bt = b.stats.lastTrackedAt
+            ? new Date(b.stats.lastTrackedAt).getTime()
+            : 0;
+          return bt - at;
+        });
+        break;
+      case "name":
+      default:
+        sorted.sort((a, b) => {
+          const an = (a.name ?? a.email).toLowerCase();
+          const bn = (b.name ?? b.email).toLowerCase();
+          return an.localeCompare(bn);
+        });
+    }
+    return sorted;
+  }, [members, search, sort]);
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search name, bio, tag…"
+          className="h-9 w-full max-w-xs rounded-md border bg-background px-3 text-sm"
+        />
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as Sort)}
+          className="h-9 rounded-md border bg-background px-2 text-sm"
+          aria-label="Sort members"
+        >
+          {(Object.keys(SORT_LABEL) as Sort[]).map((s) => (
+            <option key={s} value={s}>
+              {SORT_LABEL[s]}
+            </option>
+          ))}
+        </select>
+        {visible && members && (
+          <span className="text-xs text-muted-foreground">
+            {visible.length === members.length
+              ? `${members.length} member${members.length === 1 ? "" : "s"}`
+              : `${visible.length} of ${members.length}`}
+          </span>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -102,17 +199,19 @@ export function MembersGrid() {
         ))}
       </div>
 
-      {members === null && <p className="text-sm text-muted-foreground">Loading...</p>}
-      {members && members.length === 0 && (
+      {visible === null && <p className="text-sm text-muted-foreground">Loading...</p>}
+      {visible && visible.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          {activeTag
-            ? `No members tagged ${activeTag} yet.`
-            : "No members yet."}
+          {search.trim()
+            ? `No matches for "${search.trim()}".`
+            : activeTag
+              ? `No members tagged ${activeTag} yet.`
+              : "No members yet."}
         </p>
       )}
-      {members && members.length > 0 && (
+      {visible && visible.length > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {members.map((m) => (
+          {visible.map((m) => (
             <MemberCard
               key={m.id}
               member={m}
