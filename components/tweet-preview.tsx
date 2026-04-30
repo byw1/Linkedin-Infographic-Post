@@ -179,7 +179,7 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
         )}
 
         <article
-          className={`relative w-[860px] rounded-3xl px-10 py-9 shadow-2xl ${cardBg} ${cardText} ${ring}`}
+          className={`relative w-[860px] rounded-3xl px-10 py-9 ${data.border ? "shadow-2xl" : ""} ${cardBg} ${cardText} ${ring}`}
           style={{ fontFamily: '"Helvetica Neue", system-ui, sans-serif' }}
         >
           <header className="flex items-start gap-4">

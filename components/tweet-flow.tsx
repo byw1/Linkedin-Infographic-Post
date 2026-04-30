@@ -32,6 +32,92 @@ import {
 // need a model — fine to defer until people ask.
 
 const PRESETS_KEY = "viral.tweet.presets.v1";
+// Auto-persisted "remember my settings" key. Holds the fields a
+// user repeats across sessions: persona + visuals + which
+// engagement metrics they like to show. Per-post content (body,
+// time, reposted-by, engagement counts) is intentionally NOT
+// persisted — those are per-tweet, not per-user.
+const CARRYOVER_KEY = "viral.tweet.carryover.v1";
+
+interface CarryoverData {
+  name: string;
+  username: string;
+  avatarUrl: string | null;
+  checkmark: TweetData["checkmark"];
+  affiliationLogo: string | null;
+  affiliationLabel: string;
+  showBell: boolean;
+  showMore: boolean;
+  showShare: boolean;
+  background: TweetData["background"];
+  border: boolean;
+  fontScale: TweetData["fontScale"];
+  // Engagement *visibility* persists; the actual numbers don't.
+  showReplies: boolean;
+  showReposts: boolean;
+  showLikes: boolean;
+  showBookmarks: boolean;
+  showImpressions: boolean;
+}
+
+function extractCarryover(d: TweetData): CarryoverData {
+  return {
+    name: d.name,
+    username: d.username,
+    avatarUrl: d.avatarUrl,
+    checkmark: d.checkmark,
+    affiliationLogo: d.affiliationLogo,
+    affiliationLabel: d.affiliationLabel,
+    showBell: d.showBell,
+    showMore: d.showMore,
+    showShare: d.showShare,
+    background: d.background,
+    border: d.border,
+    fontScale: d.fontScale,
+    showReplies: d.engagement.showReplies,
+    showReposts: d.engagement.showReposts,
+    showLikes: d.engagement.showLikes,
+    showBookmarks: d.engagement.showBookmarks,
+    showImpressions: d.engagement.showImpressions,
+  };
+}
+
+function applyCarryover(base: TweetData, c: CarryoverData): TweetData {
+  return {
+    ...base,
+    name: c.name,
+    username: c.username,
+    avatarUrl: c.avatarUrl,
+    checkmark: c.checkmark,
+    affiliationLogo: c.affiliationLogo,
+    affiliationLabel: c.affiliationLabel,
+    showBell: c.showBell,
+    showMore: c.showMore,
+    showShare: c.showShare,
+    background: c.background,
+    border: c.border,
+    fontScale: c.fontScale,
+    engagement: {
+      ...base.engagement,
+      showReplies: c.showReplies,
+      showReposts: c.showReposts,
+      showLikes: c.showLikes,
+      showBookmarks: c.showBookmarks,
+      showImpressions: c.showImpressions,
+    },
+  };
+}
+
+function loadCarryover(): CarryoverData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(CARRYOVER_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as CarryoverData;
+  } catch {
+    return null;
+  }
+}
 
 interface SlideRow {
   id: string;
@@ -67,9 +153,16 @@ interface Props {
 type Stage = "edit" | "result";
 
 export function TweetFlow({ storageReady }: Props) {
-  const [slides, setSlides] = useState<SlideRow[]>(() => [
-    { id: crypto.randomUUID(), data: { ...DEFAULT_TWEET } },
-  ]);
+  const [slides, setSlides] = useState<SlideRow[]>(() => {
+    // Hydrate the first slide from the auto-persisted carryover
+    // ("remember my settings"). Per-tweet content stays default —
+    // we don't want a stale body/time loaded from last session.
+    const carryover = loadCarryover();
+    const data = carryover
+      ? applyCarryover(DEFAULT_TWEET, carryover)
+      : { ...DEFAULT_TWEET };
+    return [{ id: crypto.randomUUID(), data }];
+  });
   const [activeId, setActiveId] = useState(() => slides[0].id);
   const [presets, setPresets] = useState<PresetRow[]>([]);
   const [stage, setStage] = useState<Stage>("edit");
@@ -89,6 +182,22 @@ export function TweetFlow({ storageReady }: Props) {
       // Corrupt JSON just means no presets — silent skip.
     }
   }, []);
+
+  // Auto-persist the active slide's carryover fields so the next
+  // visit lands on the same persona / visuals / show-flags. We
+  // serialize JSON.stringify(carryover) as the dep so the effect
+  // only writes when those specific fields actually change — not
+  // on every body keystroke.
+  const carryover = extractCarryover(activeSlide.data);
+  const carryoverKey = JSON.stringify(carryover);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CARRYOVER_KEY, carryoverKey);
+    } catch {
+      // Storage full or disabled — skip silently. The session
+      // still works; just won't restore on next visit.
+    }
+  }, [carryoverKey]);
 
   function persistPresets(next: PresetRow[]) {
     setPresets(next);
