@@ -23,8 +23,13 @@ export default async function OgImage() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 80,
-          background:
-            "radial-gradient(ellipse at 25% 20%, #4f46e5 0%, transparent 55%), radial-gradient(ellipse at 80% 75%, #7c3aed 0%, transparent 55%), #0a0a0f",
+          // satori (next/og) rejects mixing a solid color into the
+          // `background` shorthand alongside gradients, so split:
+          // backgroundColor for the base, backgroundImage for the
+          // gradient stack on top.
+          backgroundColor: "#0a0a0f",
+          backgroundImage:
+            "radial-gradient(ellipse at 25% 20%, #4f46e5 0%, transparent 55%), radial-gradient(ellipse at 80% 75%, #7c3aed 0%, transparent 55%)",
           color: "#fff",
           fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
         }}
