@@ -8,8 +8,10 @@ export interface FeedPost {
   url: string | null;
   format: string | null;
   createdAt: string;
+  publishedAt: string | null;
   trackedAt: string | null;
   postUrl: string | null;
+  postText: string | null;
   impressions: number | null;
   reactions: number | null;
   comments: number | null;
@@ -40,8 +42,13 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
   const isPdf = post.format === "carousel";
   const isExternal = post.format === "external";
   const author = post.author.name ?? "Member";
-  const dateStr = post.trackedAt
-    ? new Date(post.trackedAt).toLocaleDateString(undefined, {
+  // Anchor on publishedAt if the author logged it — that's the
+  // moment that matters for the algo. Fall back to trackedAt
+  // (when metrics were last logged) for legacy posts that didn't
+  // capture a publish date.
+  const anchor = post.publishedAt ?? post.trackedAt;
+  const dateStr = anchor
+    ? new Date(anchor).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
       })
@@ -114,6 +121,15 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
           </Link>
           {dateStr && <span className="text-muted-foreground">· {dateStr}</span>}
         </div>
+
+        {/* Post-text excerpt — usually carries more signal than
+          * the visual. line-clamp keeps cards uniform. Hidden when
+          * the author hasn't logged it yet. */}
+        {post.postText && (
+          <p className="line-clamp-3 whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">
+            {post.postText}
+          </p>
+        )}
 
         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
           <Stat label="Impressions" value={fmtCount(post.impressions)} />

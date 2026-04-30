@@ -6,7 +6,9 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
   FEED_SELECT,
+  communityWhere,
   engagementRate,
+  isCommunityMature,
   shapeFeedPost,
 } from "@/lib/feed";
 
@@ -60,17 +62,18 @@ export async function GET(
   const rows = await prisma.render.findMany({
     where: {
       userId: params.id,
-      trackedAt: { not: null },
+      ...communityWhere(),
       impressions: { gt: 0 },
     },
     orderBy,
-    take: fetchLimit,
+    take: fetchLimit * 2,
     select: FEED_SELECT,
   });
 
-  let ranked = rows;
+  const mature = rows.filter(isCommunityMature);
+  let ranked = mature;
   if (sort === "engagement") {
-    ranked = [...rows].sort(
+    ranked = [...mature].sort(
       (a, b) => (engagementRate(b) ?? 0) - (engagementRate(a) ?? 0),
     );
   }

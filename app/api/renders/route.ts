@@ -47,6 +47,8 @@ export async function GET(req: Request) {
       completedAt: true,
       entityCount: true,
       postUrl: true,
+      publishedAt: true,
+      postText: true,
       impressions: true,
       reactions: true,
       comments: true,
@@ -71,6 +73,8 @@ export async function GET(req: Request) {
       entityCount: r.entityCount,
       tracking: {
         post_url: r.postUrl,
+        published_at: r.publishedAt,
+        post_text: r.postText,
         impressions: r.impressions,
         reactions: r.reactions,
         comments: r.comments,

@@ -243,6 +243,8 @@ function ExternalPostForm({
   // hands its values back via the onSave callback.
   const [tracking, setTracking] = useState<Tracking>({
     post_url: null,
+    published_at: null,
+    post_text: null,
     impressions: null,
     reactions: null,
     comments: null,
@@ -255,6 +257,8 @@ function ExternalPostForm({
     const body = {
       title: title.trim(),
       post_url: next?.post_url ?? tracking.post_url,
+      published_at: next?.published_at ?? tracking.published_at,
+      post_text: next?.post_text ?? tracking.post_text,
       impressions: next?.impressions ?? tracking.impressions,
       reactions: next?.reactions ?? tracking.reactions,
       comments: next?.comments ?? tracking.comments,
@@ -590,6 +594,16 @@ function PostCard({
     t.reposts !== null;
   const tracked = t.tracked_at !== null;
   const updatedLabel = trackingUpdatedLabel(t.tracked_at);
+  // "Posted Mar 14" / null. Surfaced in place of createdAt on cards
+  // where the user has filled it in — that's the date that matters
+  // for the algo / community-maturity gate.
+  const publishedLabel = t.published_at
+    ? `Posted ${new Date(t.published_at).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })}`
+    : null;
 
   // Remix preselects the right editor mode via ?format= so the
   // home page doesn't have to fetch the render twice (once on
@@ -659,7 +673,11 @@ function PostCard({
               {r.filename ?? "Untitled"}
             </div>
             <div className="text-[11px] text-muted-foreground">
-              {dateStr}
+              {/* Anchor date is "posted on" when the user has filled
+                * it in (the truth they care about) — fall back to
+                * createdAt for legacy rows / drafts that haven't
+                * been logged yet. */}
+              {publishedLabel ?? dateStr}
               {!isExternal && r.entityCount !== null && (
                 <>
                   {" "}
@@ -670,6 +688,14 @@ function PostCard({
             </div>
           </div>
         </div>
+
+        {/* Post body excerpt — truncated to keep cards compact;
+          * the full text lives in the tracking edit form. */}
+        {t.post_text && (
+          <p className="line-clamp-3 whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">
+            {t.post_text}
+          </p>
+        )}
 
         {hasMetrics && (
           <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">

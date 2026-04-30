@@ -10,6 +10,8 @@ import { getSettings } from "@/lib/settings";
 
 interface TrackingShape {
   postUrl: string | null;
+  publishedAt: Date | null;
+  postText: string | null;
   impressions: number | null;
   reactions: number | null;
   comments: number | null;
@@ -45,6 +47,8 @@ function shapeRender(
     source_html: includeSource ? render.sourceHtml : undefined,
     tracking: {
       post_url: render.postUrl,
+      published_at: render.publishedAt,
+      post_text: render.postText,
       impressions: render.impressions,
       reactions: render.reactions,
       comments: render.comments,
@@ -78,6 +82,17 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 const PatchBody = z.object({
   post_url: z.string().trim().url().nullable().optional(),
+  // ISO datetime string. Empty / null clears it. Drives community
+  // eligibility — see lib/feed.ts:isCommunityMature.
+  published_at: z
+    .string()
+    .datetime()
+    .nullable()
+    .optional()
+    .or(z.literal("").transform(() => null)),
+  // Original post copy. Cap at LinkedIn's 3000-char post limit so
+  // a paste of an entire carousel caption + post body fits.
+  post_text: z.string().max(3000).nullable().optional(),
   impressions: z.coerce.number().int().min(0).max(2_000_000_000).nullable().optional(),
   reactions: z.coerce.number().int().min(0).max(2_000_000_000).nullable().optional(),
   comments: z.coerce.number().int().min(0).max(2_000_000_000).nullable().optional(),
@@ -106,6 +121,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const data: Record<string, unknown> = {};
   if (parsed.data.post_url !== undefined) data.postUrl = parsed.data.post_url;
+  if (parsed.data.published_at !== undefined) {
+    data.publishedAt = parsed.data.published_at
+      ? new Date(parsed.data.published_at)
+      : null;
+  }
+  if (parsed.data.post_text !== undefined) {
+    const trimmed = parsed.data.post_text?.trim();
+    data.postText = trimmed ? trimmed : null;
+  }
   if (parsed.data.impressions !== undefined) data.impressions = parsed.data.impressions;
   if (parsed.data.reactions !== undefined) data.reactions = parsed.data.reactions;
   if (parsed.data.comments !== undefined) data.comments = parsed.data.comments;

@@ -3,16 +3,26 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { FEED_SELECT, shapeFeedPost } from "@/lib/feed";
+import {
+  FEED_SELECT,
+  communityWhere,
+  isCommunityMature,
+  shapeFeedPost,
+} from "@/lib/feed";
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
 
 // Recent shared posts across the community — the chronological
-// feed for /posts → Community tab. Eligibility mirrors
-// /api/feed/wins (author shareTracked = true, trackedAt set), so
-// untracked drafts don't leak. Cursor-based pagination on the
-// trackedAt timestamp + id tiebreak.
+// feed for /posts → Community tab. Eligibility: author has
+// shareTracked = true, post is at least 7 days past publishedAt,
+// and tracking has been logged in that window (see
+// isCommunityMature in lib/feed.ts for the exact rule).
+//
+// SQL handles the cheap necessary preconditions; the cross-column
+// "trackedAt ≥ publishedAt + 7d" check happens in JS after fetch.
+// We over-fetch by 2× the page size so the filter doesn't leave
+// half-empty pages on most queries — fine for a private community.
 export async function GET(req: Request) {
   try {
     await requireUser();
@@ -30,16 +40,17 @@ export async function GET(req: Request) {
   const rows = await prisma.render.findMany({
     where: {
       user: { shareTracked: true },
-      trackedAt: { not: null },
+      ...communityWhere(),
     },
     orderBy: [{ trackedAt: "desc" }, { id: "desc" }],
-    take: limit + 1,
+    take: limit * 2 + 1,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: FEED_SELECT,
   });
 
-  const hasMore = rows.length > limit;
-  const page = hasMore ? rows.slice(0, limit) : rows;
+  const mature = rows.filter(isCommunityMature);
+  const hasMore = mature.length > limit;
+  const page = hasMore ? mature.slice(0, limit) : mature;
   const posts = await Promise.all(page.map(shapeFeedPost));
 
   return NextResponse.json({

@@ -6,7 +6,9 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
   FEED_SELECT,
+  communityWhere,
   engagementRate,
+  isCommunityMature,
   periodFilter,
   shapeFeedPost,
 } from "@/lib/feed";
@@ -23,13 +25,13 @@ const Query = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
 
-// Top performing shared posts across the community. Used by /wins
-// (the "what's hitting" wall) and the homepage when we want a hero
-// rail.
+// Top performing shared posts across the community. Used by the
+// /posts → Community Top sub-view and the homepage when we want a
+// hero rail.
 //
-// Eligibility: the author has shareTracked enabled AND the render
-// has tracking metrics filled in (trackedAt set, impressions
-// non-zero — without a denominator engagement rate is meaningless).
+// Eligibility: the author has shareTracked enabled, the render is
+// past its 7-day maturity window (see lib/feed.ts), and impressions
+// is non-zero — without a denominator engagement rate is meaningless.
 export async function GET(req: Request) {
   try {
     await requireUser();
@@ -60,18 +62,21 @@ export async function GET(req: Request) {
   const rows = await prisma.render.findMany({
     where: {
       user: { shareTracked: true },
-      trackedAt: { not: null },
+      ...communityWhere(),
       impressions: { gt: 0 },
       ...periodFilter(period),
     },
     orderBy: { impressions: "desc" },
-    take: fetchLimit,
+    // Bigger pad than before — the 7-day cross-column gate happens
+    // in JS, so under-fetching would shrink the visible leaderboard.
+    take: fetchLimit * 2,
     select: FEED_SELECT,
   });
 
-  let ranked = rows;
+  const mature = rows.filter(isCommunityMature);
+  let ranked = mature;
   if (sort === "engagement") {
-    ranked = [...rows].sort(
+    ranked = [...mature].sort(
       (a, b) => (engagementRate(b) ?? 0) - (engagementRate(a) ?? 0),
     );
   }

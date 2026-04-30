@@ -35,6 +35,8 @@ export function RenderResult({
   const [tracking, setTracking] = useState<Tracking>(
     initialTracking ?? {
       post_url: null,
+      published_at: null,
+      post_text: null,
       impressions: null,
       reactions: null,
       comments: null,

@@ -181,6 +181,18 @@ model Render {
   // Kept as discrete columns rather than a JSON blob so we can sort
   // and aggregate ("top posts by impressions") without parsing.
   postUrl     String?   @map("post_url")
+  // When the user actually posted on the platform — different from
+  // createdAt (when the render was generated) and trackedAt (when
+  // metrics were last logged). Drives the community-feed
+  // eligibility window: a post needs to be at least 7 days past
+  // publishedAt with metrics logged in that window before it shows
+  // up to the community (LinkedIn's algo dies off after ~a week,
+  // earlier numbers are still climbing).
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
+  // The actual LinkedIn post copy. Surfaced on the post card +
+  // community feed so members can scan what wording worked, since
+  // the text usually matters more than the visual.
+  postText    String?   @map("post_text") @db.Text
   impressions Int?
   reactions   Int?
   comments    Int?

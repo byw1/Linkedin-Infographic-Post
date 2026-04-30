@@ -1,5 +1,13 @@
 import { refreshUrl } from "@/lib/storage";
 
+// Community-feed eligibility window. A post needs to be at least 7
+// days past publishedAt with metrics logged in that window before
+// it surfaces to the community — LinkedIn's algo dies off after
+// ~a week, so earlier numbers are still climbing and would skew
+// the wins leaderboard.
+export const COMMUNITY_MATURITY_DAYS = 7;
+const MATURITY_MS = COMMUNITY_MATURITY_DAYS * 24 * 60 * 60 * 1000;
+
 // Render row + author shape returned by every feed endpoint. Keeps
 // /wins, /posts team tab, and member cards consistent — same fields,
 // same engagement_rate calculation, same URL refresh path.
@@ -9,8 +17,10 @@ export interface FeedPost {
   url: string | null;
   format: string | null;
   createdAt: Date;
+  publishedAt: Date | null;
   trackedAt: Date | null;
   postUrl: string | null;
+  postText: string | null;
   impressions: number | null;
   reactions: number | null;
   comments: number | null;
@@ -36,8 +46,10 @@ export interface FeedRenderRow {
   pngUrl: string | null;
   format: string | null;
   createdAt: Date;
+  publishedAt: Date | null;
   trackedAt: Date | null;
   postUrl: string | null;
+  postText: string | null;
   impressions: number | null;
   reactions: number | null;
   comments: number | null;
@@ -60,6 +72,31 @@ export function engagementRate(r: {
   return sum / r.impressions;
 }
 
+// Cross-column predicate: trackedAt must be ≥ publishedAt + 7 days
+// — i.e. the user came back at least a week after posting to log
+// numbers. Prisma can't express column-arithmetic in a where clause
+// so callers SQL-filter for the necessary precondition (publishedAt
+// older than 7 days, trackedAt set) and run rows through this for
+// the precise gate.
+export function isCommunityMature(row: {
+  publishedAt: Date | null;
+  trackedAt: Date | null;
+}): boolean {
+  if (!row.publishedAt || !row.trackedAt) return false;
+  return row.trackedAt.getTime() - row.publishedAt.getTime() >= MATURITY_MS;
+}
+
+// Necessary preconditions for community visibility. Apply at the
+// SQL layer to shrink the candidate set; pair with isCommunityMature
+// in JS to enforce the cross-column condition.
+export function communityWhere() {
+  const cutoff = new Date(Date.now() - MATURITY_MS);
+  return {
+    publishedAt: { not: null, lte: cutoff },
+    trackedAt: { not: null },
+  } as const;
+}
+
 // Refresh the rendered file URL through the storage proxy so a
 // feed payload can be served straight to the browser. Authoring
 // timestamps stay as Date objects — Next.js JSON-serializes them
@@ -71,8 +108,10 @@ export async function shapeFeedPost(row: FeedRenderRow): Promise<FeedPost> {
     url: row.pngUrl ? ((await refreshUrl(row.pngUrl)) ?? row.pngUrl) : null,
     format: row.format,
     createdAt: row.createdAt,
+    publishedAt: row.publishedAt,
     trackedAt: row.trackedAt,
     postUrl: row.postUrl,
+    postText: row.postText,
     impressions: row.impressions,
     reactions: row.reactions,
     comments: row.comments,
@@ -94,8 +133,10 @@ export const FEED_SELECT = {
   pngUrl: true,
   format: true,
   createdAt: true,
+  publishedAt: true,
   trackedAt: true,
   postUrl: true,
+  postText: true,
   impressions: true,
   reactions: true,
   comments: true,
