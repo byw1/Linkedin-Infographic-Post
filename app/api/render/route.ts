@@ -28,6 +28,11 @@ const Meta = z.object({
   filename: z.string().max(120).optional(),
   entity_count: z.coerce.number().int().min(0).optional(),
   theme_id: z.string().uuid().optional(),
+  // Render format. Optional with a "single" default for backwards
+  // compatibility with the original infographic flow that doesn't
+  // pass this. The tweet generator passes "tweet" so /posts +
+  // feed cards can render the right placeholder hero.
+  format: z.enum(["single", "tweet"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -139,7 +144,7 @@ export async function POST(req: Request) {
       pngUrl: publicUrl,
       completedAt: new Date(),
       themeId: themeIdToStore,
-      format: "single",
+      format: meta.data.format ?? "single",
       sourceHtml: sourceHtml
         ? {
             slides: [

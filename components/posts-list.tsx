@@ -15,10 +15,10 @@ interface RenderRow {
   filename: string | null;
   url: string | null;
   status: string;
-  // "single" / "carousel" are tool-generated. "external" is a
-  // manually-tracked LinkedIn post that wasn't made here. null on
-  // legacy renders predating the format column.
-  format: "single" | "carousel" | "external" | null;
+  // "single" / "carousel" / "tweet" are tool-generated. "external"
+  // is a manually-tracked LinkedIn post that wasn't made here. null
+  // on legacy renders predating the format column.
+  format: "single" | "carousel" | "tweet" | "external" | null;
   hasSource: boolean;
   createdAt: string;
   completedAt: string | null;
@@ -580,6 +580,7 @@ function PostCard({
 
   const isPdf = r.format === "carousel";
   const isExternal = r.format === "external";
+  const isTweet = r.format === "tweet";
   const dateStr = new Date(r.createdAt).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -678,12 +679,13 @@ function PostCard({
                 * createdAt for legacy rows / drafts that haven't
                 * been logged yet. */}
               {publishedLabel ?? dateStr}
-              {!isExternal && r.entityCount !== null && (
+              {!isExternal && !isTweet && r.entityCount !== null && (
                 <>
                   {" "}
                   · {r.entityCount} logo{r.entityCount === 1 ? "" : "s"}
                 </>
               )}
+              {isTweet && <> · tweet</>}
               {isExternal && <> · external</>}
             </div>
           </div>
