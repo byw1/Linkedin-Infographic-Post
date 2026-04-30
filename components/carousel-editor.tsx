@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { EditorPanel } from "@/components/editor-panel";
 import { SlidePreview, type ThemeDiagnostics } from "@/components/slide-preview";
+import { SlideRail } from "@/components/carousel/slide-rail";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
 import { ThemePicker, type ActiveTheme } from "@/components/theme-picker";
 
@@ -144,43 +145,62 @@ export function CarouselEditor({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <SlidePreview
-        // Re-mount when the slide changes so DOM-swap state from the
-        // previous slide can't leak across iframe documents.
-        key={activeIndex}
-        html={currentSlide.html}
-        entities={entities}
-        onSlugClick={setActiveSlug}
-        renderWidth={SLIDE_WIDTH}
-        renderHeight={SLIDE_HEIGHT}
-        displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
-        themeCss={theme?.css ?? null}
-        onThemeApplied={setDiagnostics}
-      />
+      {/* Two-pane layout: vertical thumbnail rail on the left so the
+          whole deck is visible at a glance + clickable jump targets,
+          active slide expanded on the right. Collapses to single
+          column under lg so mobile still works. */}
+      <div className="grid gap-4 lg:grid-cols-[156px_1fr]">
+        <SlideRail
+          slides={slides}
+          activeIndex={activeIndex}
+          entities={entities}
+          themeCss={theme?.css ?? null}
+          onPick={setActiveIndex}
+        />
+        <div className="min-w-0 space-y-3">
+          <SlidePreview
+            // Re-mount when the slide changes so DOM-swap state from
+            // the previous slide can't leak across iframe documents.
+            key={activeIndex}
+            html={currentSlide.html}
+            entities={entities}
+            onSlugClick={setActiveSlug}
+            renderWidth={SLIDE_WIDTH}
+            renderHeight={SLIDE_HEIGHT}
+            displayMaxWidth={PREVIEW_DISPLAY_WIDTH}
+            themeCss={theme?.css ?? null}
+            onThemeApplied={setDiagnostics}
+          />
 
-      <div className="flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
-          disabled={activeIndex === 0}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
-          aria-label="Previous slide"
-        >
-          ←
-        </button>
-        <span className="text-sm tabular-nums text-muted-foreground">
-          {activeIndex + 1} / {slides.length}
-          <span className="ml-2 hidden text-xs sm:inline">{currentSlide.filename}</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => setActiveIndex((i) => Math.min(slides.length - 1, i + 1))}
-          disabled={activeIndex === slides.length - 1}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
-          aria-label="Next slide"
-        >
-          →
-        </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
+              disabled={activeIndex === 0}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
+              aria-label="Previous slide"
+            >
+              ←
+            </button>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {activeIndex + 1} / {slides.length}
+              <span className="ml-2 hidden text-xs sm:inline">
+                {currentSlide.filename}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setActiveIndex((i) => Math.min(slides.length - 1, i + 1))
+              }
+              disabled={activeIndex === slides.length - 1}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
+              aria-label="Next slide"
+            >
+              →
+            </button>
+          </div>
+        </div>
       </div>
 
       {!allResolved && unresolved.length > 0 && (
