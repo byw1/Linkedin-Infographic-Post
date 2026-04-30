@@ -9,8 +9,12 @@ import { getSettings } from "@/lib/settings";
 // endpoint (Railway's Bucket service is private-network only).
 //
 // Authorization is prefix-based:
-// - "logos/<userId>/", "renders/<userId>/": only the owning user can fetch.
-// - "skills/": team-shared, any signed-in user can fetch.
+// - "renders/<userId>/": only the owning user can fetch (private).
+// - "logos/", "skills/", "avatars/": community-shared, any signed-in
+//   user can fetch. Logos sit under logos/<uploaderId>/ but the
+//   library itself is community-wide, so cards rendered for one
+//   member point at another member's upload key — gating by uploader
+//   would 403 every cross-member view.
 // The stored URL pattern is itself the access-control surface — keep that in
 // mind if you ever change the upload key shape.
 export async function GET(
@@ -25,11 +29,8 @@ export async function GET(
   }
 
   const key = params.key.map(decodeURIComponent).join("/");
-  const ownPrefixes = [`logos/${user.id}/`, `renders/${user.id}/`];
-  // Avatars + skills are visible to every signed-in member —
-  // member directory cards / profile pages render any user's
-  // avatar, and skills are team-shared by design.
-  const sharedPrefixes = ["skills/", "avatars/"];
+  const ownPrefixes = [`renders/${user.id}/`];
+  const sharedPrefixes = ["logos/", "skills/", "avatars/"];
   const allowed =
     ownPrefixes.some((p) => key.startsWith(p)) ||
     sharedPrefixes.some((p) => key.startsWith(p));
