@@ -22,6 +22,45 @@ interface Props {
   isAdmin: boolean;
 }
 
+// Special tier tags admins can apply to mark a tool's standing.
+// Drives card-border glow + chip styling + sort priority. Names
+// are case-insensitive on read; written lowercase.
+type Tier = "gold" | "silver" | "risky" | "trash" | null;
+const TIER_NAMES = ["gold", "silver", "risky", "trash"] as const;
+
+function detectTier(tags: string[]): Tier {
+  const set = new Set(tags.map((t) => t.toLowerCase()));
+  // Border priority: more "stand-out" wins for the visual tag
+  // chip + ring color. Trash overrides gold here so a "do not
+  // use this" signal isn't masked by an aspirational gold mark.
+  if (set.has("trash")) return "trash";
+  if (set.has("gold")) return "gold";
+  if (set.has("silver")) return "silver";
+  if (set.has("risky")) return "risky";
+  return null;
+}
+
+// Sort tier — distinct from `detectTier` because trash is meant
+// to *land at the bottom* of its category, not first like any
+// other "loud" tier would. Lower numbers sort earlier.
+function sortTier(tool: { tags: string[] }): number {
+  const set = new Set(tool.tags.map((t) => t.toLowerCase()));
+  if (set.has("trash")) return 5;
+  if (set.has("gold")) return 1;
+  if (set.has("silver")) return 2;
+  if (set.has("risky")) return 4;
+  return 3;
+}
+
+// How many cards each section shows when collapsed. Beyond this,
+// users hit "Show more" to expand. Sections smaller than this
+// don't bother showing the toggle.
+const CARDS_PER_SECTION_DEFAULT = 3;
+// How many tag chips show in the filter strip when collapsed.
+// 40+ tags don't fit in one row; gate the long tail behind a
+// "Show all" toggle.
+const TAG_CHIPS_DEFAULT = 10;
+
 // Member-facing tools catalog with optional admin actions. Cards
 // group by category (one tool per section — its primary category).
 // Tags stay on the card as chips. Search above filters everything.
@@ -35,6 +74,21 @@ export function ToolsBrowser({ isAdmin }: Props) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Per-category expand state — sections collapse to N cards by
+  // default and remember which ones the user expanded.
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [showAllTagChips, setShowAllTagChips] = useState(false);
+
+  function toggleCategory(category: string) {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  }
 
   async function load() {
     const res = await fetch("/api/tools");
@@ -84,7 +138,11 @@ export function ToolsBrowser({ isAdmin }: Props) {
 
   // Group visible tools by category. Each tool sits in exactly
   // one section (its primary category, or "Uncategorized" for
-  // tools without one). Within a section, alphabetical by name.
+  // tools without one). Within a section, sorted by tier:
+  //   gold → silver → normal (alpha) → risky → trash
+  // Trash stays at the very bottom even when also flagged gold,
+  // since the user's "trash means avoid" rule is the strongest
+  // signal we encode.
   const sections = useMemo(() => {
     if (!visible) return [];
     const buckets = new Map<string, Tool[]>();
@@ -101,7 +159,12 @@ export function ToolsBrowser({ isAdmin }: Props) {
     });
     return ordered.map(([category, items]) => ({
       category,
-      items: items.sort((x, y) => x.name.localeCompare(y.name)),
+      items: items.slice().sort((x, y) => {
+        const tx = sortTier(x);
+        const ty = sortTier(y);
+        if (tx !== ty) return tx - ty;
+        return x.name.localeCompare(y.name);
+      }),
     }));
   }, [visible]);
 
@@ -156,34 +219,14 @@ export function ToolsBrowser({ isAdmin }: Props) {
       </div>
 
       {tagCounts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTag(null)}
-            className={`inline-flex h-7 items-center rounded-full border px-3 text-xs ${
-              activeTag === null
-                ? "border-primary bg-primary/10"
-                : "hover:bg-secondary"
-            }`}
-          >
-            All
-          </button>
-          {tagCounts.map(([tag, count]) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={() => setActiveTag(tag === activeTag ? null : tag)}
-              className={`inline-flex h-7 items-center gap-1 rounded-full border px-3 font-mono text-xs ${
-                tag === activeTag
-                  ? "border-primary bg-primary/10"
-                  : "hover:bg-secondary"
-              }`}
-            >
-              {tag}
-              <span className="text-muted-foreground">{count}</span>
-            </button>
-          ))}
-        </div>
+        <TagFilterStrip
+          tagCounts={tagCounts}
+          activeTag={activeTag}
+          onTagClick={(tag) => setActiveTag(tag === activeTag ? null : tag)}
+          onClear={() => setActiveTag(null)}
+          showAll={showAllTagChips}
+          setShowAll={setShowAllTagChips}
+        />
       )}
 
       {adding && isAdmin && (
@@ -213,55 +256,79 @@ export function ToolsBrowser({ isAdmin }: Props) {
       )}
 
       <div className="space-y-8">
-        {sections.map((section) => (
-          <section key={section.category} className="space-y-3">
-            <h3 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              <span>{section.category}</span>
-              <span className="text-[10px] font-normal lowercase text-muted-foreground/70">
-                {section.items.length}
-              </span>
-            </h3>
-            <motion.div
-              layout
-              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              <AnimatePresence mode="popLayout">
-                {section.items.map((t) =>
-                  editingId === t.id ? (
-                    <motion.div
-                      key={t.id}
-                      layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="sm:col-span-2 lg:col-span-3"
-                    >
-                      <ToolForm
-                        mode="edit"
-                        initial={t}
-                        allKnownTags={allKnownTags}
-                        allKnownCategories={allKnownCategories}
-                        onSaved={() => {
-                          setEditingId(null);
-                          void load();
-                        }}
-                        onCancel={() => setEditingId(null)}
+        {sections.map((section) => {
+          const expanded = expandedCategories.has(section.category);
+          // Always render any item being edited so the inline form
+          // doesn't disappear under the collapse cutoff. Otherwise
+          // slice to the default cap.
+          const visibleItems = expanded
+            ? section.items
+            : section.items.filter(
+                (t, i) => i < CARDS_PER_SECTION_DEFAULT || editingId === t.id,
+              );
+          const hidden = section.items.length - visibleItems.length;
+          return (
+            <section key={section.category} className="space-y-3">
+              <h3 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                <span>{section.category}</span>
+                <span className="text-[10px] font-normal lowercase text-muted-foreground/70">
+                  {section.items.length}
+                </span>
+              </h3>
+              <motion.div
+                layout
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                <AnimatePresence mode="popLayout">
+                  {visibleItems.map((t) =>
+                    editingId === t.id ? (
+                      <motion.div
+                        key={t.id}
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="sm:col-span-2 lg:col-span-3"
+                      >
+                        <ToolForm
+                          mode="edit"
+                          initial={t}
+                          allKnownTags={allKnownTags}
+                          allKnownCategories={allKnownCategories}
+                          onSaved={() => {
+                            setEditingId(null);
+                            void load();
+                          }}
+                          onCancel={() => setEditingId(null)}
+                        />
+                      </motion.div>
+                    ) : (
+                      <ToolCard
+                        key={t.id}
+                        tool={t}
+                        isAdmin={isAdmin}
+                        onEdit={() => setEditingId(t.id)}
+                        onDeleted={() => void load()}
                       />
-                    </motion.div>
-                  ) : (
-                    <ToolCard
-                      key={t.id}
-                      tool={t}
-                      isAdmin={isAdmin}
-                      onEdit={() => setEditingId(t.id)}
-                      onDeleted={() => void load()}
-                    />
-                  ),
+                    ),
+                  )}
+                </AnimatePresence>
+              </motion.div>
+              {(hidden > 0 || expanded) &&
+                section.items.length > CARDS_PER_SECTION_DEFAULT && (
+                  <button
+                    type="button"
+                    onClick={() => toggleCategory(section.category)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {expanded
+                      ? "Show less"
+                      : `Show ${hidden} more →`}
+                  </button>
                 )}
-              </AnimatePresence>
-            </motion.div>
-          </section>
-        ))}
+            </section>
+          );
+        })}
       </div>
     </div>
   );
@@ -271,6 +338,91 @@ function push<K, V>(map: Map<K, V[]>, key: K, value: V) {
   const arr = map.get(key);
   if (arr) arr.push(value);
   else map.set(key, [value]);
+}
+
+// Collapsible chip strip for the tag filter row. With 40+ tags
+// the full set spills well past one row; default to the top
+// `TAG_CHIPS_DEFAULT` by count and gate the long tail behind a
+// Show all toggle.
+function TagFilterStrip({
+  tagCounts,
+  activeTag,
+  onTagClick,
+  onClear,
+  showAll,
+  setShowAll,
+}: {
+  tagCounts: [string, number][];
+  activeTag: string | null;
+  onTagClick: (tag: string) => void;
+  onClear: () => void;
+  showAll: boolean;
+  setShowAll: (v: boolean) => void;
+}) {
+  // Always include the active tag in the visible set even when
+  // it'd otherwise sit past the cap — otherwise the user filters
+  // by a long-tail tag and the chip vanishes from the strip.
+  const cap = TAG_CHIPS_DEFAULT;
+  const headWithActive = (() => {
+    if (showAll || tagCounts.length <= cap) return tagCounts;
+    const head = tagCounts.slice(0, cap);
+    if (activeTag && !head.find(([t]) => t === activeTag)) {
+      const extra = tagCounts.find(([t]) => t === activeTag);
+      if (extra) head.push(extra);
+    }
+    return head;
+  })();
+  const hidden = tagCounts.length - headWithActive.length;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={onClear}
+        className={`inline-flex h-7 items-center rounded-full border px-3 text-xs ${
+          activeTag === null
+            ? "border-primary bg-primary/10"
+            : "hover:bg-secondary"
+        }`}
+      >
+        All
+      </button>
+      {headWithActive.map(([tag, count]) => {
+        const tagTier = TIER_NAMES.includes(
+          tag.toLowerCase() as (typeof TIER_NAMES)[number],
+        )
+          ? (tag.toLowerCase() as (typeof TIER_NAMES)[number])
+          : null;
+        const tierCls = tagTier ? `tier-chip-${tagTier}` : "";
+        const activeCls =
+          tag === activeTag
+            ? "border-primary bg-primary/10"
+            : "hover:bg-secondary";
+        return (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => onTagClick(tag)}
+            className={`inline-flex h-7 items-center gap-1 rounded-full border px-3 font-mono text-xs ${
+              tagTier ? tierCls : activeCls
+            }`}
+          >
+            {tag}
+            <span className="text-muted-foreground">{count}</span>
+          </button>
+        );
+      })}
+      {tagCounts.length > cap && (
+        <button
+          type="button"
+          onClick={() => setShowAll(!showAll)}
+          className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          {showAll ? "Show less" : `Show ${hidden} more`}
+        </button>
+      )}
+    </div>
+  );
 }
 
 function ToolCard({
@@ -296,6 +448,9 @@ function ToolCard({
     });
   }
 
+  const tier = detectTier(tool.tags);
+  const tierClass = tier ? `tier-card-${tier}` : "";
+
   return (
     <motion.div
       layout
@@ -304,7 +459,7 @@ function ToolCard({
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -4, transition: { duration: 0.18 } }}
-      className="group relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-5 text-card-foreground shadow-sm transition-shadow duration-300 hover:shadow-lg"
+      className={`group relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-5 text-card-foreground shadow-sm transition-shadow duration-300 hover:shadow-lg ${tierClass}`}
     >
       <a
         href={tool.url}
@@ -326,9 +481,9 @@ function ToolCard({
               className="shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
             />
           </div>
-          <span className="truncate text-[11px] text-muted-foreground">
-            {prettyHost(tool.url)}
-          </span>
+          {/* URL hidden on cards by design — clicking the card
+            * goes to it, but admins want to swap in affiliate
+            * links without showing the bare destination. */}
         </div>
       </div>
 
@@ -340,14 +495,24 @@ function ToolCard({
 
       {tool.tags.length > 0 && (
         <div className="relative mt-auto flex flex-wrap gap-1">
-          {tool.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex h-5 items-center rounded-full border bg-secondary/50 px-2 font-mono text-[10px]"
-            >
-              {tag}
-            </span>
-          ))}
+          {tool.tags.map((tag) => {
+            const tagTier = TIER_NAMES.includes(
+              tag.toLowerCase() as (typeof TIER_NAMES)[number],
+            )
+              ? (tag.toLowerCase() as (typeof TIER_NAMES)[number])
+              : null;
+            const cls = tagTier
+              ? `tier-chip-${tagTier}`
+              : "bg-secondary/50";
+            return (
+              <span
+                key={tag}
+                className={`inline-flex h-5 items-center rounded-full border px-2 font-mono text-[10px] ${cls}`}
+              >
+                {tag}
+              </span>
+            );
+          })}
         </div>
       )}
 
@@ -717,17 +882,6 @@ function Field({
       />
     </label>
   );
-}
-
-// Strip protocol + trailing slash for compact display under the
-// tool name. Falls back to the raw URL if parsing fails.
-function prettyHost(url: string): string {
-  try {
-    const u = new URL(url);
-    return u.host + (u.pathname !== "/" ? u.pathname : "");
-  } catch {
-    return url;
-  }
 }
 
 // Use Google's favicon service as the default logo — it returns a

@@ -97,3 +97,53 @@
 .docs-prose img {
   @apply my-4 max-w-full rounded-md border;
 }
+
+/* Tool catalog tier glows. Used by /docs/tools to mark tools the
+ * admin tagged gold / silver / risky / trash. The chip + the card
+ * border share the same animation so a tier reads at a glance. */
+@keyframes tierGlowPulse {
+  0%, 100% { box-shadow: 0 0 6px var(--tier-glow), 0 0 0 1px var(--tier-edge); }
+  50%      { box-shadow: 0 0 14px var(--tier-glow), 0 0 0 1px var(--tier-edge); }
+}
+
+.tier-card-gold,
+.tier-card-silver,
+.tier-card-risky,
+.tier-card-trash {
+  animation: tierGlowPulse 2.6s ease-in-out infinite;
+}
+
+.tier-card-gold   { --tier-glow: rgba(245, 158, 11, 0.55); --tier-edge: rgba(245, 158, 11, 0.85); }
+.tier-card-silver { --tier-glow: rgba(212, 212, 216, 0.55); --tier-edge: rgba(212, 212, 216, 0.85); }
+.tier-card-risky  { --tier-glow: rgba(250, 204, 21, 0.55); --tier-edge: rgba(250, 204, 21, 0.85); }
+.tier-card-trash  { --tier-glow: rgba(239, 68, 68, 0.55);  --tier-edge: rgba(239, 68, 68, 0.85); }
+
+.tier-chip-gold,
+.tier-chip-silver,
+.tier-chip-risky,
+.tier-chip-trash {
+  animation: tierGlowPulse 2.6s ease-in-out infinite;
+}
+
+.tier-chip-gold   { --tier-glow: rgba(245, 158, 11, 0.6);  --tier-edge: rgba(245, 158, 11, 0.7);
+  background-color: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.4); }
+.tier-chip-silver { --tier-glow: rgba(212, 212, 216, 0.6); --tier-edge: rgba(212, 212, 216, 0.7);
+  background-color: rgba(212, 212, 216, 0.12); color: #e4e4e7; border-color: rgba(212, 212, 216, 0.4); }
+.tier-chip-risky  { --tier-glow: rgba(250, 204, 21, 0.6);  --tier-edge: rgba(250, 204, 21, 0.7);
+  background-color: rgba(250, 204, 21, 0.12); color: #fde68a; border-color: rgba(250, 204, 21, 0.4); }
+.tier-chip-trash  { --tier-glow: rgba(239, 68, 68, 0.6);   --tier-edge: rgba(239, 68, 68, 0.7);
+  background-color: rgba(239, 68, 68, 0.12);  color: #fca5a5; border-color: rgba(239, 68, 68, 0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tier-card-gold,
+  .tier-card-silver,
+  .tier-card-risky,
+  .tier-card-trash,
+  .tier-chip-gold,
+  .tier-chip-silver,
+  .tier-chip-risky,
+  .tier-chip-trash {
+    animation: none;
+    box-shadow: 0 0 0 1px var(--tier-edge);
+  }
+}
