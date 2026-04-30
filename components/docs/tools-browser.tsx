@@ -3,6 +3,7 @@
 import { ExternalLink, Plus, Search, Upload, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { CategoryPicker } from "@/components/ui/category-picker";
 import { TagInput } from "@/components/ui/tag-input";
 
 interface Tool {
@@ -427,7 +428,11 @@ function ToolForm({
   const [name, setName] = useState(initial?.name ?? "");
   const [url, setUrl] = useState(initial?.url ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [category, setCategory] = useState(initial?.category ?? "");
+  // Category is a single string-or-null. Tracked as null so the
+  // chip widget stays empty when the tool has no category.
+  const [category, setCategory] = useState<string | null>(
+    initial?.category ?? null,
+  );
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   // Local logo state so the preview reflects upload-in-progress
   // before the parent re-fetches. Seeded from the initial row.
@@ -473,7 +478,7 @@ function ToolForm({
       name: name.trim(),
       url: url.trim(),
       description: description.trim() || null,
-      category: category.trim() || null,
+      category,
       logoUrl,
       tags,
     };
@@ -571,21 +576,15 @@ function ToolForm({
           <span className="block text-[11px] text-muted-foreground">
             Category{" "}
             <span className="text-muted-foreground/70">
-              (drives sectioning)
+              (drives sectioning, single-select)
             </span>
           </span>
-          <input
+          <CategoryPicker
             value={category}
-            onChange={(ev) => setCategory(ev.target.value)}
-            list="tool-category-list"
+            onChange={setCategory}
+            suggestions={allKnownCategories}
             placeholder="Outreach, Scheduling, Analytics…"
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
           />
-          <datalist id="tool-category-list">
-            {allKnownCategories.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
         </label>
         <label className="block text-sm">
           <span className="block text-[11px] text-muted-foreground">Tags</span>

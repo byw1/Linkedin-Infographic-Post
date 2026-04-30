@@ -93,13 +93,13 @@ export function TagInput({
   return (
     <div ref={wrapperRef} className="relative">
       <div
-        className="flex flex-wrap items-center gap-1 rounded-md border bg-background px-2 py-1.5 text-xs focus-within:ring-1 focus-within:ring-ring"
+        className="flex flex-wrap items-center gap-1.5 rounded-md border bg-background px-2 py-1.5 text-xs focus-within:ring-1 focus-within:ring-ring"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 rounded-full border bg-secondary/50 pl-2 pr-1 font-mono"
+            className="inline-flex h-6 items-center gap-1 rounded-full border bg-secondary px-2 font-mono text-[11px] text-foreground"
           >
             {tag}
             <button
@@ -109,7 +109,7 @@ export function TagInput({
                 remove(tag);
               }}
               aria-label={`Remove ${tag}`}
-              className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+              className="-mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
             >
               ×
             </button>
@@ -130,7 +130,10 @@ export function TagInput({
       </div>
 
       {open && (filtered.length > 0 || canCreate) && (
-        <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-auto rounded-md border bg-popover p-1 text-xs shadow-lg">
+        // bg-card not bg-popover (the latter isn't a token in this
+        // theme — was rendering transparent). text-card-foreground
+        // pairs so contrast holds in dark mode.
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border bg-card p-1 text-xs text-card-foreground shadow-lg">
           {filtered.map((s) => (
             <button
               key={s}
