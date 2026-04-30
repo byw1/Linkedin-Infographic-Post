@@ -40,17 +40,9 @@
   }
 }
 
-/* Hero number gets a subtle "pulse-in" on first paint. Used on the
- * "1M+" headline. */
-@keyframes welcomePulse {
-  0% { transform: scale(0.85); opacity: 0; }
-  60% { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.welcome-hero-number {
-  animation: welcomePulse 900ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both;
-}
+/* The hero stat used to live here as a pulse-in on a "1M+" string.
+ * It's now a real count-up animation driven by components/welcome/
+ * count-up.tsx so the keyframes + class are gone. */
 
 /* Hero headline + subhead slide in on first paint without waiting
  * for the IO watcher (they're above the fold). */
@@ -82,7 +74,6 @@
   [data-reveal],
   [data-reveal="visible"],
   [data-reveal-stagger][data-reveal="visible"] > *,
-  .welcome-hero-number,
   .welcome-hero-headline,
   .welcome-hero-sub,
   .welcome-hero-cta,

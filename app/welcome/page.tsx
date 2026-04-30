@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { FlickeringFooter } from "@/components/ui/flickering-footer";
+import { CountUp } from "@/components/welcome/count-up";
 import { WelcomeReveal } from "@/components/welcome/welcome-reveal";
 import "./welcome.css";
 
@@ -82,8 +83,8 @@ export default async function WelcomePage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             Last 30 days
           </p>
-          <p className="welcome-hero-number mt-3 text-7xl font-bold tracking-tight sm:text-8xl">
-            1M+
+          <p className="mt-3 text-6xl font-bold tracking-tight tabular-nums sm:text-7xl md:text-8xl">
+            <CountUp target={2_000_000} suffix="+" />
           </p>
           <p className="mt-3 text-lg text-muted-foreground sm:text-xl">
             impressions across the community.
