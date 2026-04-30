@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { refreshUrl } from "@/lib/storage";
 import { NavMenu } from "@/components/nav-menu";
 
 export async function TopNav() {
@@ -9,6 +11,23 @@ export async function TopNav() {
   async function signOutAction() {
     "use server";
     await signOut({ redirectTo: "/auth/signin" });
+  }
+
+  // Pull the latest avatar / name straight from the DB so a
+  // freshly-uploaded avatar shows up in the nav without waiting
+  // for a JWT refresh. Light query — single user lookup, scoped
+  // to the columns we actually display.
+  let avatarUrl: string | null = null;
+  let displayName: string | null = null;
+  if (user?.id) {
+    const me = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { name: true, image: true },
+    });
+    displayName = me?.name ?? null;
+    avatarUrl = me?.image
+      ? ((await refreshUrl(me.image)) ?? me.image)
+      : null;
   }
 
   return (
@@ -52,6 +71,8 @@ export async function TopNav() {
         {user && (
           <NavMenu
             email={user.email}
+            name={displayName}
+            image={avatarUrl}
             isAdmin={user.role === "admin"}
             signOutAction={signOutAction}
           />
