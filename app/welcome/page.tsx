@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { FlickeringFooter } from "@/components/ui/flickering-footer";
 import { WelcomeReveal } from "@/components/welcome/welcome-reveal";
 import "./welcome.css";
 
@@ -188,9 +189,7 @@ export default async function WelcomePage() {
         </div>
       </section>
 
-      <footer className="border-t px-6 py-8 text-center text-xs text-muted-foreground">
-        viral · making our friends famous, one platform at a time
-      </footer>
+      <FlickeringFooter />
     </main>
   );
 }
