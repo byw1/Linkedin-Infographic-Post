@@ -114,6 +114,35 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [scrollTick, setScrollTick] = useState(0);
+  const [focused, setFocused] = useState(false);
+  // Top of the line that contains the caret, in textarea-local
+  // coordinates. Drives the active-line highlight strip so the user
+  // can spot where they're typing — the caret alone is hard to see
+  // against transparent text.
+  const [activeLineTop, setActiveLineTop] = useState<number | null>(null);
+  const [activeLineHeight, setActiveLineHeight] = useState(0);
+
+  // Auto-grow the textarea to its content height so the page owns
+  // the scroll instead of the textarea growing an inner scrollbar
+  // that traps long pages. Re-runs whenever markdown changes.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${ta.scrollHeight}px`;
+  }, [markdown]);
+
+  // Track the caret's current line for the active-line highlight.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta || !focused) {
+      setActiveLineTop(null);
+      return;
+    }
+    const c = caretCoordinates(ta, cursor);
+    setActiveLineTop(c.top);
+    setActiveLineHeight(c.height);
+  }, [cursor, markdown, focused, scrollTick]);
 
   // Fetch the tool + skill catalog once. Same shape as DocsMarkdown's
   // loader — open to any signed-in user.
@@ -438,12 +467,30 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
         for callouts.
       </p>
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="relative w-full rounded-md border bg-background">
+      <div className="grid items-start gap-3 lg:grid-cols-2">
+        <div
+          className={`relative w-full rounded-md border bg-background transition-shadow ${
+            focused ? "ring-2 ring-primary/40" : ""
+          }`}
+        >
+          {activeLineTop !== null && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-0 right-0 z-0 bg-primary/5"
+              style={{
+                // caretCoordinates returns offsets relative to the
+                // textarea's padding edge (which sits inside the
+                // wrapper's 1px border), so this aligns with the
+                // overlay's text rows out of the box.
+                top: activeLineTop,
+                height: activeLineHeight,
+              }}
+            />
+          )}
           <div
             ref={overlayRef}
             aria-hidden
-            className="docs-source-overlay pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words p-3 font-mono text-xs leading-relaxed"
+            className="docs-source-overlay pointer-events-none absolute inset-0 z-10 overflow-hidden whitespace-pre-wrap break-words p-3 font-mono text-xs leading-relaxed"
           >
             {tokenizeSource(markdown)}
           </div>
@@ -458,6 +505,8 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             onSelect={syncCursor}
             onClick={syncCursor}
             onKeyUp={syncCursor}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             onScroll={(e) => {
               if (overlayRef.current) {
                 overlayRef.current.scrollTop = e.currentTarget.scrollTop;
@@ -466,17 +515,19 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
               setScrollTick((n) => n + 1);
             }}
             spellCheck={false}
-            rows={28}
-            // Transparent text + visible caret lets the overlay below
-            // do the rendering. wordBreak matches the overlay so
-            // wrapping behaviour stays in lockstep across both layers.
+            rows={20}
+            // Transparent text + a thicker primary caret lets the
+            // overlay below do the rendering while keeping the caret
+            // obvious. overflow:hidden plus the auto-grow effect
+            // means the page (not the textarea) owns the scroll.
             style={{
               color: "transparent",
-              caretColor: "var(--foreground, #fff)",
+              caretColor: "hsl(var(--primary))",
               background: "transparent",
               wordBreak: "break-word",
+              overflow: "hidden",
             }}
-            className="relative w-full resize-y border-0 bg-transparent p-3 font-mono text-xs leading-relaxed outline-none"
+            className="relative z-20 block w-full resize-none border-0 bg-transparent p-3 font-mono text-xs leading-relaxed outline-none"
             placeholder="# Page heading"
           />
           {showPicker && trigger && caretCoords && (
