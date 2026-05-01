@@ -112,6 +112,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
     flip: boolean;
   } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
   const [scrollTick, setScrollTick] = useState(0);
 
   // Fetch the tool + skill catalog once. Same shape as DocsMarkdown's
@@ -438,7 +439,14 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
       </p>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="relative">
+        <div className="relative w-full rounded-md border bg-background">
+          <div
+            ref={overlayRef}
+            aria-hidden
+            className="docs-source-overlay pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words p-3 font-mono text-xs leading-relaxed"
+          >
+            {tokenizeSource(markdown)}
+          </div>
           <textarea
             ref={textareaRef}
             value={markdown}
@@ -450,10 +458,25 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             onSelect={syncCursor}
             onClick={syncCursor}
             onKeyUp={syncCursor}
-            onScroll={() => setScrollTick((n) => n + 1)}
+            onScroll={(e) => {
+              if (overlayRef.current) {
+                overlayRef.current.scrollTop = e.currentTarget.scrollTop;
+                overlayRef.current.scrollLeft = e.currentTarget.scrollLeft;
+              }
+              setScrollTick((n) => n + 1);
+            }}
             spellCheck={false}
             rows={28}
-            className="w-full rounded-md border bg-background p-3 font-mono text-xs leading-relaxed"
+            // Transparent text + visible caret lets the overlay below
+            // do the rendering. wordBreak matches the overlay so
+            // wrapping behaviour stays in lockstep across both layers.
+            style={{
+              color: "transparent",
+              caretColor: "var(--foreground, #fff)",
+              background: "transparent",
+              wordBreak: "break-word",
+            }}
+            className="relative w-full resize-y border-0 bg-transparent p-3 font-mono text-xs leading-relaxed outline-none"
             placeholder="# Page heading"
           />
           {showPicker && trigger && caretCoords && (
@@ -626,6 +649,42 @@ function prettyHost(url: string): string {
   } catch {
     return "";
   }
+}
+
+// Walk the raw markdown source and return a node list where each
+// `[Name](tool:id)` or `[Name](skill:id)` is wrapped in chip-styled
+// spans. The overlay below the textarea renders this — same font,
+// padding, and wrapping rules as the textarea, so character widths
+// stay aligned and the textarea's caret tracks the visible chars.
+//
+// We don't change any character widths; we only restyle them. The
+// `[Name]` portion gets a colored chip background; the `(tool:id)`
+// portion gets faded down so the long UUID doesn't dominate the
+// editor. Newline at end keeps the overlay's last line height matched
+// when the textarea ends with a newline.
+function tokenizeSource(text: string): React.ReactNode[] {
+  const re = /\[([^\]\n]+)\]\((tool|skill):([^)\s]+)\)/g;
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    if (m.index > last) nodes.push(text.slice(last, m.index));
+    const [whole, label, kind, id] = m;
+    nodes.push(
+      <span key={`tok-${key++}`} className={`docs-source-chip docs-source-${kind}`}>
+        <span className="docs-source-bracket">[</span>
+        <span className="docs-source-name">{label}</span>
+        <span className="docs-source-bracket">]</span>
+        <span className="docs-source-ref">{`(${kind}:${id})`}</span>
+      </span>,
+    );
+    last = m.index + whole.length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  // Trailing newline keeps the overlay scroll height matching the
+  // textarea's, which renders an extra empty line for a trailing \n.
+  nodes.push("\n");
+  return nodes;
 }
 
 // Mirror-div technique for measuring where a given character offset

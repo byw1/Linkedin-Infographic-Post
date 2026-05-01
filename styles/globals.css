@@ -98,6 +98,46 @@
   @apply my-4 max-w-full rounded-md border;
 }
 
+/* Page-editor source overlay. The textarea sits on top with
+ * transparent text + a visible caret; this layer paints the actual
+ * characters so we can highlight tool/skill link tokens without
+ * touching the source. Character widths must stay identical to the
+ * textarea — we only swap colors / backgrounds. */
+.docs-source-overlay {
+  color: hsl(var(--foreground));
+  word-break: break-word;
+}
+.docs-source-overlay::selection,
+.docs-source-overlay *::selection {
+  background: transparent;
+}
+.docs-source-chip {
+  border-radius: 3px;
+}
+.docs-source-tool .docs-source-name {
+  background: hsl(var(--primary) / 0.18);
+  color: hsl(var(--foreground));
+  padding: 0 1px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+.docs-source-skill .docs-source-name {
+  background: rgb(16 185 129 / 0.18);
+  color: hsl(var(--foreground));
+  padding: 0 1px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+.docs-source-bracket {
+  color: hsl(var(--muted-foreground) / 0.55);
+}
+/* The (tool:uuid) portion stays in the source for caret alignment
+ * but is faded almost to invisibility so the editor isn't dominated
+ * by long UUIDs. */
+.docs-source-ref {
+  color: hsl(var(--muted-foreground) / 0.25);
+}
+
 /* Tool catalog tier glows. Used by /docs/tools to mark tools the
  * admin tagged gold / silver / risky / trash. The chip + the card
  * border share the same animation so a tier reads at a glance. */

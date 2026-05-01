@@ -123,10 +123,30 @@ export function DocsMarkdown({ markdown }: { markdown: string }) {
   );
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={components}
+      urlTransform={transformDocUrl}
+    >
       {markdown}
     </ReactMarkdown>
   );
+}
+
+// react-markdown sanitizes URLs with non-http(s) schemes by default,
+// which strips our `tool:` and `skill:` links before the custom <a>
+// renderer ever sees them. Pass them through unchanged; everything
+// else falls back to the library default (relative + http/https/
+// mailto/tel/sms allowed, javascript:/data: blocked).
+const SAFE_PROTOCOL = /^(?:https?|mailto|tel|sms):/i;
+function transformDocUrl(url: string): string {
+  if (url.startsWith("tool:") || url.startsWith("skill:")) return url;
+  if (url.startsWith("#") || url.startsWith("/") || url.startsWith("./")) {
+    return url;
+  }
+  if (SAFE_PROTOCOL.test(url)) return url;
+  // Anything else (including raw `javascript:` / `data:`) — drop it.
+  return "";
 }
 
 // ---------- callouts -------------------------------------------------
