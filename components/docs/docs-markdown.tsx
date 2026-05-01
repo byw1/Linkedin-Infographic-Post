@@ -256,25 +256,44 @@ function ToolInlineCard({
         return null;
       }
     })();
+  // No favicon → first letter of the tool name as a white-text
+  // initial chip on a colored tile so the row still has a visual
+  // anchor.
+  const initial = (tool.name || "?").trim().charAt(0).toUpperCase();
   return (
     <a
       href={tool.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2 py-1 align-middle text-sm font-medium text-card-foreground no-underline shadow-sm transition-colors hover:bg-secondary"
+      title={tool.name}
+      className="docs-tool-link inline-flex items-center gap-2 rounded-lg border-2 border-primary/25 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-primary/70 hover:bg-secondary hover:shadow-md"
     >
-      {logo ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={logo}
-          alt=""
-          className="h-4 w-4 shrink-0 rounded-sm border bg-secondary object-cover"
-        />
-      ) : (
-        <Wrench size={14} aria-hidden className="text-muted-foreground" />
-      )}
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary text-[10px] font-bold uppercase leading-none text-primary-foreground ring-1 ring-primary/30"
+        aria-hidden
+      >
+        {logo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={logo}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              // Hide a broken favicon so the white-text initial
+              // shows through underneath.
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          <span className="text-white">{initial}</span>
+        )}
+      </span>
       <span>{fallbackLabel || tool.name}</span>
-      <ExternalLink size={11} aria-hidden className="text-muted-foreground" />
+      <ExternalLink
+        size={11}
+        aria-hidden
+        className="text-muted-foreground transition-colors group-hover:text-foreground"
+      />
     </a>
   );
 }
@@ -302,11 +321,17 @@ function SkillInlineCard({
   return (
     <a
       href={`/api/skills/${skill.id}/download`}
-      className="inline-flex items-center gap-1.5 rounded-md border bg-card px-2 py-1 align-middle text-sm font-medium text-card-foreground no-underline shadow-sm transition-colors hover:bg-secondary"
+      title={skill.filename}
+      className="inline-flex items-center gap-2 rounded-lg border-2 border-emerald-500/30 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-emerald-500/70 hover:bg-secondary hover:shadow-md"
     >
-      <Download size={14} aria-hidden className="text-muted-foreground" />
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white ring-1 ring-emerald-500/30"
+        aria-hidden
+      >
+        <Download size={11} />
+      </span>
       <span>{fallbackLabel || skill.name}</span>
-      <span className="text-[10px] text-muted-foreground">
+      <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
         .md
       </span>
     </a>
