@@ -2,7 +2,17 @@
 
 import { useState, useTransition } from "react";
 import JSZip from "jszip";
+import { FileArchive, Loader2 } from "lucide-react";
 import type { ResolvedEntity } from "@/types/entity";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export interface CarouselSlide {
   filename: string;
@@ -84,61 +94,85 @@ export function CarouselUploadDropzone({ onParsed }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      <label
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault();
-          const file = e.dataTransfer.files?.[0];
-          if (file) pick(file);
-        }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-12 text-sm transition-all duration-200 ${
-          filename
-            ? "border-foreground/30 bg-accent/50"
-            : "border-input hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-accent/50 hover:shadow-md"
-        }`}
-      >
-        {filename ? (
-          <>
-            <span className="font-medium text-foreground">{filename}</span>
-            <span className="text-xs text-muted-foreground">
-              {((size ?? 0) / 1024).toFixed(1)} KB · click to choose another
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="text-base font-medium text-foreground">
-              Drop a .zip of slide HTMLs
-            </span>
-            <span className="text-muted-foreground">
-              one .html per slide, ordered alphabetically
-            </span>
-          </>
-        )}
-        <input
-          type="file"
-          accept=".zip,application/zip"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
+    <Card>
+      <CardHeader className="border-b">
+        <CardTitle>Drop your slide zip</CardTitle>
+        <CardDescription>
+          One .html per slide, 1080×1080, ordered alphabetically — 01.html,
+          02.html, and so on.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        {/* A zip can't be pasted, so drop stays the primary path here —
+            but it doesn't need to be a 200px void to say so. */}
+        <label
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files?.[0];
             if (file) pick(file);
           }}
-        />
-      </label>
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={pending || !pendingFile}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className={cn(
+            "flex cursor-pointer items-center gap-3 rounded-md border border-dashed p-4 text-sm transition-colors duration-200",
+            filename
+              ? "border-foreground/30 bg-accent/50"
+              : "border-input hover:border-foreground/30 hover:bg-accent/50",
+          )}
         >
-          {pending ? "Reading zip..." : "Upload"}
-        </button>
-      </div>
-    </div>
+          <FileArchive className="size-5 shrink-0 text-muted-foreground" />
+          {filename ? (
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+              <span className="truncate font-medium text-foreground">
+                {filename}
+              </span>
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {((size ?? 0) / 1024).toFixed(1)} KB
+              </span>
+              <span className="text-xs text-muted-foreground">
+                · click to choose another
+              </span>
+            </span>
+          ) : (
+            <span className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-medium text-foreground">
+                Drop a .zip here
+              </span>
+              <span className="text-xs text-muted-foreground">
+                or click to browse
+              </span>
+            </span>
+          )}
+          <input
+            type="file"
+            accept=".zip,application/zip"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) pick(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">
+            Up to {MAX_SLIDES} slides, {MAX_ZIP_BYTES / 1024 / 1024} MB.
+          </p>
+          <Button
+            type="button"
+            className="ml-auto"
+            onClick={submit}
+            disabled={pending || !pendingFile}
+          >
+            {pending && <Loader2 className="animate-spin" />}
+            {pending ? "Reading zip…" : "Continue"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

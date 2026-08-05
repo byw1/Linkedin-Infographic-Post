@@ -15,13 +15,13 @@ const MODE_OPTIONS = [
   { value: "tweet" as const, label: "Tweet" },
 ];
 
-const MODE_COPY: Record<Mode, string> = {
-  infographic:
-    "Drop a single HTML file with data-entity placeholders. Resolve any unknown logos, render, download a PNG.",
-  carousel:
-    "Drop a .zip of 1080×1080 HTML slides — one slide per file. Resolve unknown logos once across the whole set, then export a single PDF (one page per slide) ready to upload as a LinkedIn document.",
-  tweet:
-    "Fake-tweet generator. Configure persona, body, and engagement counts; export a 1080×1350 PNG ready to drop into a LinkedIn post.",
+// What each mode actually produces. Kept to one short line — the
+// step-by-step explanation belongs in the flow's own card header, and
+// repeating it here just pushed the real work below the fold.
+const MODE_META: Record<Mode, string> = {
+  infographic: "Exports a single 1080×1350 PNG",
+  carousel: "Exports a multi-page PDF — one page per slide",
+  tweet: "Exports a 1080×1350 PNG",
 };
 
 export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
@@ -42,14 +42,14 @@ export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <Segmented
           value={mode}
           onValueChange={setMode}
           layoutId="mode-switcher-pill"
           options={MODE_OPTIONS}
         />
-        <p className="max-w-3xl text-sm text-muted-foreground">{MODE_COPY[mode]}</p>
+        <p className="text-xs text-muted-foreground">{MODE_META[mode]}</p>
       </div>
 
       {mode === "infographic" ? (
