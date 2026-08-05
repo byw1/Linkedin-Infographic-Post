@@ -123,6 +123,18 @@ async function main() {
 
   console.log(`Source:      ${src.bucket}`);
   console.log(`Destination: ${dst.bucket}`);
+
+  // Copying a bucket onto itself would report a flawless run — every object
+  // "already copied" at the right size — and that clean bill of health is
+  // exactly what you'd act on when deciding to delete the source.
+  if (
+    process.env.SRC_ENDPOINT === process.env.DST_ENDPOINT &&
+    src.bucket === dst.bucket
+  ) {
+    console.error("\nSource and destination are the same bucket. Check DST_*.");
+    process.exit(1);
+  }
+
   if (DRY_RUN) console.log("DRY_RUN=1 — nothing will be written.\n");
 
   const objects = await listAll(src);
