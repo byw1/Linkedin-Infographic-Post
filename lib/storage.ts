@@ -94,12 +94,20 @@ export async function getServerUrl(key: string): Promise<string> {
   return getSignedUrl(client, command, { expiresIn: SIGNED_URL_TTL_SECONDS });
 }
 
+// Every prefix uploadFile is ever called with. Keep in sync with the call
+// sites — a prefix missing here is a file the tail fallback below can't
+// recover once the bucket address changes.
+const KEY_PREFIXES = ["logos", "renders", "avatars", "tools", "skills"] as const;
+const KEY_TAIL_RE = new RegExp(`((?:${KEY_PREFIXES.join("|")})/[^?#]+)$`);
+
 // Recover the object key from a URL we previously generated. Tries, in order:
 //   1. The /api/files/<key> proxy path (what the browser sends back).
 //   2. An explicit, valid S3_PUBLIC_URL prefix.
 //   3. The endpoint+bucket prefix (current canonical form).
-//   4. A regex fallback for legacy URLs stored when S3_PUBLIC_URL was bogus
-//      — looks for the last "/(logos|renders)/<rest>" tail.
+//   4. A regex fallback for URLs whose prefix we no longer recognise —
+//      legacy rows stored when S3_PUBLIC_URL was bogus, and rows written
+//      against a previous bucket we've since migrated away from. Looks for
+//      the last "/<prefix>/<rest>" tail.
 export function extractKeyFromUrl(url: string, s: StorageSettings): string | null {
   const clean = url.split("?")[0];
 
@@ -115,7 +123,7 @@ export function extractKeyFromUrl(url: string, s: StorageSettings): string | nul
   const endpointPrefix = `${s.endpoint.replace(/\/$/, "")}/${s.bucket}/`;
   if (clean.startsWith(endpointPrefix)) return clean.slice(endpointPrefix.length);
 
-  const tail = clean.match(/((?:logos|renders)\/[^?#]+)$/);
+  const tail = clean.match(KEY_TAIL_RE);
   if (tail) return tail[1];
 
   return null;

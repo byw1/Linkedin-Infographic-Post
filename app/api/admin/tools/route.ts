@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { refreshUrl } from "@/lib/storage";
 
 const Body = z.object({
   name: z.string().trim().min(1).max(120),
@@ -28,9 +29,16 @@ export async function GET() {
   } catch (res) {
     return res as Response;
   }
-  const tools = await prisma.tool.findMany({
+  const rows = await prisma.tool.findMany({
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
   });
+  // Same bucket re-pointing as /api/tools — see the note there.
+  const tools = await Promise.all(
+    rows.map(async (t) => ({
+      ...t,
+      logoUrl: t.logoUrl ? ((await refreshUrl(t.logoUrl)) ?? t.logoUrl) : null,
+    })),
+  );
   return NextResponse.json({ tools });
 }
 
