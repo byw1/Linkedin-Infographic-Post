@@ -5,6 +5,7 @@ import type { ResolvedEntity } from "@/types/entity";
 import { UploadDropzone } from "@/components/upload-dropzone";
 import { VisualEditor } from "@/components/visual-editor";
 import { RenderResult } from "@/components/render-result";
+import { TutorialEmbed } from "@/components/tutorial-embed";
 
 type Stage = "upload" | "edit" | "render";
 
@@ -14,9 +15,16 @@ interface Props {
   // render's source HTML directly into the editor. Set by
   // ModeSwitcher when the URL has `?remix=<id>&format=single`.
   remixId?: string | null;
+  // Whether the walkthrough starts expanded rather than collapsed to
+  // its button. Resolved server-side in the page.
+  showTutorial?: boolean;
 }
 
-export function InfographicFlow({ storageReady, remixId }: Props) {
+export function InfographicFlow({
+  storageReady,
+  remixId,
+  showTutorial = false,
+}: Props) {
   const [stage, setStage] = useState<Stage>(remixId ? "edit" : "upload");
   const [html, setHtml] = useState<string>("");
   const [filename, setFilename] = useState<string | null>(null);
@@ -152,13 +160,16 @@ export function InfographicFlow({ storageReady, remixId }: Props) {
   }
 
   return (
-    <UploadDropzone
-      onParsed={(parsed, parsedHtml, name) => {
-        setHtml(parsedHtml);
-        setFilename(name);
-        setEntities(parsed);
-        setStage("edit");
-      }}
-    />
+    <div className="space-y-4">
+      <TutorialEmbed defaultOpen={showTutorial} />
+      <UploadDropzone
+        onParsed={(parsed, parsedHtml, name) => {
+          setHtml(parsedHtml);
+          setFilename(name);
+          setEntities(parsed);
+          setStage("edit");
+        }}
+      />
+    </div>
   );
 }

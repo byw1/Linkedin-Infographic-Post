@@ -24,7 +24,16 @@ const MODE_META: Record<Mode, string> = {
   tweet: "Exports a 1080×1350 PNG",
 };
 
-export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
+export function ModeSwitcher({
+  storageReady,
+  showTutorial,
+}: {
+  storageReady: boolean;
+  // True only when the viewer has no posts yet and hasn't dismissed the
+  // walkthrough. Infographic mode owns it — the other two flows work
+  // differently enough that this video wouldn't be describing them.
+  showTutorial: boolean;
+}) {
   const [mode, setMode] = useState<Mode>("infographic");
   const searchParams = useSearchParams();
   // ?remix=<id> + ?format=<single|carousel|tweet> arrive when the
@@ -56,6 +65,7 @@ export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
         <InfographicFlow
           storageReady={storageReady}
           remixId={remixFormat === "single" ? remixId : null}
+          showTutorial={showTutorial}
         />
       ) : mode === "carousel" ? (
         <CarouselFlow

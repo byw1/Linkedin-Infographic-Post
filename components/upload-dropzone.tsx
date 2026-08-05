@@ -54,6 +54,14 @@ export function UploadDropzone({ onParsed }: Props) {
   const entities = useMemo(() => findEntities(text), [text]);
   const kb = text.length / 1024;
 
+  // Focus on mount so landing here and hitting paste just works — but
+  // `preventScroll`, because the plain autoFocus attribute scrolls the
+  // textarea into view and takes the page header (and the walkthrough
+  // above it) off the top of the screen.
+  useLayoutEffect(() => {
+    taRef.current?.focus({ preventScroll: true });
+  }, []);
+
   // Grow to fit the pasted source instead of reserving a fixed slab of
   // empty space. Starts at MIN_H so the empty state stays compact, and
   // caps at MAX_H so a 2,000-line file doesn't push the actions off
@@ -159,7 +167,6 @@ export function UploadDropzone({ onParsed }: Props) {
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit();
             }}
-            autoFocus
             spellCheck={false}
             placeholder={'<div data-entity="tesla" style="width:64px;height:64px"></div>'}
             className={cn(
