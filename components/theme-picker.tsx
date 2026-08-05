@@ -108,7 +108,7 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-3 text-xs hover:bg-secondary"
+        className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         title="Pick a theme"
       >
         <span
@@ -141,12 +141,12 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
               </span>
               <span className="flex shrink-0 gap-1">
                 {t.isOfficial && (
-                  <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-primary">
+                  <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-medium text-primary">
                     Official
                   </span>
                 )}
                 {t.isMine && !t.isOfficial && (
-                  <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-secondary-foreground">
+                  <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-secondary-foreground">
                     Mine
                   </span>
                 )}
@@ -159,7 +159,7 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
           <div className="my-1 border-t" />
           <a
             href="/settings/themes"
-            className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+            className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:text-foreground"
           >
             Manage themes →
           </a>
@@ -263,7 +263,7 @@ function DiagnosticsPanel({
   return (
     <>
       <div className="my-1 border-t" />
-      <div className="px-2 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground">
         Currently rendering
       </div>
       <div className="space-y-0.5 px-2 pb-2 text-[11px]">

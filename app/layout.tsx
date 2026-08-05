@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "@/styles/globals.css";
 
 // Prefer the deployed origin if it's known via env so absolute URLs
@@ -44,9 +46,19 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Both Geist axes ship as variable fonts with no `weight` array — the
+  // app picks weights with Tailwind classes and only ever uses 400/500/600.
+  // `dark` is hard-coded (the app is dark-only) so the `dark:` variants in
+  // the component recipes resolve rather than silently no-op.
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-background antialiased">{children}</body>
+    <html
+      lang="en"
+      className={`${GeistSans.variable} ${GeistMono.variable} dark`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-background font-sans antialiased">
+        {children}
+      </body>
     </html>
   );
 }

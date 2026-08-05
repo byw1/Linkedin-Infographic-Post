@@ -94,7 +94,7 @@ export function RenderResult({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           New
         </button>
@@ -136,28 +136,28 @@ export function RenderResult({
         <a
           href={url}
           download
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {meta.download}
         </a>
         <button
           type="button"
           onClick={() => setEditingTrack((v) => !v)}
-          className="inline-flex h-10 items-center rounded-md border px-5 text-sm font-medium hover:bg-secondary"
+          className="inline-flex h-10 items-center rounded-md border px-5 text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           {tracked ? "Edit tracking" : "Track"}
         </button>
         <button
           type="button"
           onClick={() => setConfirmingDelete(true)}
-          className="inline-flex h-10 items-center rounded-md border border-destructive/40 px-5 text-sm font-medium text-destructive hover:bg-destructive/10"
+          className="inline-flex h-10 items-center rounded-md border border-destructive/40 px-5 text-sm font-medium text-destructive hover:bg-destructive/10 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Delete
         </button>
         <button
           type="button"
           onClick={onReset}
-          className="ml-auto inline-flex h-10 items-center rounded-md border px-5 text-sm font-medium hover:bg-secondary"
+          className="ml-auto inline-flex h-10 items-center rounded-md border px-5 text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           New
         </button>
@@ -200,7 +200,7 @@ export function RenderResult({
             <button
               type="button"
               onClick={() => setConfirmingDelete(false)}
-              className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+              className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Cancel
             </button>

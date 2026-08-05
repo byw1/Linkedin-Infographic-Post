@@ -9,11 +9,11 @@ export default async function HomePage() {
   return (
     <main className="container mx-auto max-w-4xl space-y-6 py-10">
       <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">New post</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">New post</h1>
       </header>
 
       {!storageReady && (
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+        <div className="rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm text-warning shadow">
           Storage isn&apos;t configured, so export won&apos;t work yet. Set
           storage credentials in <code>/admin/health</code> first.
         </div>

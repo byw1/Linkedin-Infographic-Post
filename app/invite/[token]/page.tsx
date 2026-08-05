@@ -13,7 +13,7 @@ export default async function InvitePage({ params }: { params: { token: string }
       return (
         <main className="container mx-auto flex max-w-md flex-col py-16">
           <div className="space-y-3 rounded-lg border p-8">
-            <h1 className="text-2xl font-bold">Invite unavailable</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Invite unavailable</h1>
             <p className="text-sm text-muted-foreground">{err.message}</p>
           </div>
         </main>
@@ -26,7 +26,7 @@ export default async function InvitePage({ params }: { params: { token: string }
     <main className="container mx-auto flex max-w-md flex-col py-16">
       <div className="space-y-6 rounded-lg border p-8">
         <div>
-          <h1 className="text-2xl font-bold">You&apos;re invited</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">You&apos;re invited</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {invite.email
               ? `This invite is for ${invite.email}. Set a password to claim it.`

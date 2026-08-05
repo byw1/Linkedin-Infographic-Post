@@ -122,7 +122,7 @@ export function EditorPanel({ entity, onClose, onResolved, onUnresolve }: Props)
       >
         <header className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {entity.resolved ? "Replace" : "Pick a logo for"}
             </div>
             <div className="truncate text-lg font-semibold">{entity.slug}</div>
@@ -160,7 +160,7 @@ export function EditorPanel({ entity, onClose, onResolved, onUnresolve }: Props)
 
         {recents.length > 0 && (
           <section className="space-y-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <h3 className="text-sm font-medium text-muted-foreground">
               Recent logos
             </h3>
             <div className="grid grid-cols-4 gap-2">
@@ -171,7 +171,7 @@ export function EditorPanel({ entity, onClose, onResolved, onUnresolve }: Props)
                   onClick={() => pickExisting(r)}
                   disabled={pending}
                   title={`Use ${r.displayName}`}
-                  className="group flex flex-col items-center gap-1 rounded-md border p-2 hover:bg-secondary disabled:opacity-50"
+                  className="group flex flex-col items-center gap-1 rounded-md border p-2 hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -200,10 +200,10 @@ export function EditorPanel({ entity, onClose, onResolved, onUnresolve }: Props)
         )}
 
         <section className="space-y-2 border-t pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-sm font-medium text-muted-foreground">
             Upload new
           </h3>
-          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-dashed p-4 text-sm hover:bg-secondary/40">
+          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border p-4 text-sm hover:bg-accent/50">
             {pending ? "Uploading..." : "Drop or click to upload an image"}
             <input
               type="file"
@@ -223,7 +223,7 @@ export function EditorPanel({ entity, onClose, onResolved, onUnresolve }: Props)
               onChange={(e) => setUrlInput(e.target.value)}
               placeholder="https://example.com/logo.png"
               disabled={pending}
-              className="h-9 flex-1 rounded-md border bg-background px-3 text-sm"
+              className="h-9 flex-1 rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               onKeyDown={(e) => {
                 if (e.key === "Enter") uploadUrl();
               }}
@@ -232,7 +232,7 @@ export function EditorPanel({ entity, onClose, onResolved, onUnresolve }: Props)
               type="button"
               onClick={uploadUrl}
               disabled={pending || !urlInput.trim()}
-              className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Save URL
             </button>

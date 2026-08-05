@@ -297,7 +297,7 @@ export function FlickeringFooter() {
                 rel="noopener noreferrer"
                 title={label}
                 aria-label={label}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border bg-background text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground hover:text-foreground cursor-pointer active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 <Icon className="h-4 w-4" aria-hidden />
               </a>

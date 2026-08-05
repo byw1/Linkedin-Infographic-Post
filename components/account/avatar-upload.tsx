@@ -104,7 +104,7 @@ export function AvatarUpload({
           </span>
         )}
         <span
-          className="absolute inset-0 flex items-center justify-center bg-black/0 text-[10px] font-medium uppercase tracking-wide text-transparent transition-colors group-hover:bg-black/50 group-hover:text-white"
+          className="absolute inset-0 flex items-center justify-center bg-black/0 text-[10px] font-medium text-transparent transition-colors group-hover:bg-black/50 group-hover:text-white"
         >
           {pending ? "…" : "Change"}
         </span>

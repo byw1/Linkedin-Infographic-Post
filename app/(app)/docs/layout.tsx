@@ -31,7 +31,7 @@ export default async function DocsLayout({
   return (
     <main className="container mx-auto max-w-6xl px-4 py-10">
       <header className="mb-6 space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Docs</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Docs</h1>
         <p className="text-sm text-muted-foreground">
           Team handbook. Each topic is its own page —{" "}
           {session.user.role === "admin"

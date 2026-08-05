@@ -44,7 +44,7 @@ export function HealthStatus() {
           type="button"
           onClick={load}
           disabled={pending}
-          className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary disabled:opacity-50"
+          className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           {pending ? "Checking..." : "Refresh"}
         </button>
@@ -60,7 +60,7 @@ export function HealthStatus() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
                   <span className="font-medium capitalize">{c.name}</span>
-                  <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {c.status}
                   </span>
                 </div>

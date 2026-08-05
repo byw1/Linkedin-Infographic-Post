@@ -147,18 +147,18 @@ export function ProfileEditor({
         </div>
       )}
       <label className="block text-sm">
-        <span className="mb-1 block text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="mb-1 block text-sm font-medium text-muted-foreground">
           Name
         </span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
-          className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+          className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <label className="block text-sm">
-        <span className="mb-1 block text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="mb-1 block text-sm font-medium text-muted-foreground">
           Bio
         </span>
         <textarea
@@ -167,11 +167,11 @@ export function ProfileEditor({
           maxLength={500}
           rows={3}
           placeholder="One line about what you build."
-          className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+          className="w-full rounded-md border bg-background px-2 py-1 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <div className="space-y-1.5">
-        <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="block text-sm font-medium text-muted-foreground">
           Tags
         </span>
         <TagInput
@@ -182,7 +182,7 @@ export function ProfileEditor({
         />
       </div>
       <div className="space-y-2">
-        <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+        <span className="block text-sm font-medium text-muted-foreground">
           Social links
         </span>
         {SOCIAL_KEYS.map((k) => (
@@ -196,7 +196,7 @@ export function ProfileEditor({
                 setSocials((s) => ({ ...s, [k]: e.target.value }))
               }
               placeholder={SOCIAL_PLACEHOLDER[k]}
-              className="h-8 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
+              className="h-8 flex-1 rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           </label>
         ))}
@@ -207,7 +207,7 @@ export function ProfileEditor({
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {pending ? "Saving..." : "Save"}
         </button>

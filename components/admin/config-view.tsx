@@ -54,7 +54,7 @@ export function ConfigView() {
 
       <div className="space-y-2">
         <div className="flex items-baseline gap-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-lg font-semibold">
             Environment variables
           </h3>
           <span className="text-xs text-muted-foreground">

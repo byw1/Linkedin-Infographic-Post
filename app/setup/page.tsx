@@ -10,7 +10,7 @@ export default async function SetupPage() {
     <main className="container mx-auto flex max-w-md flex-col py-16">
       <div className="space-y-6 rounded-lg border p-8">
         <div>
-          <h1 className="text-2xl font-bold">Welcome to viral</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome to viral</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Create the first account. You&apos;ll be the admin.
           </p>

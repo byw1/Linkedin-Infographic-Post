@@ -148,12 +148,12 @@ export function DocsSidebar({ pages, canEdit }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Filter pages…"
-          className="h-8 w-full rounded-md border bg-background pl-7 pr-2 text-xs"
+          className="h-8 w-full rounded-md border bg-background pl-7 pr-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center justify-between px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="flex items-center justify-between px-2 text-[10px] font-medium text-muted-foreground">
           <span>Pages</span>
           {canEdit && !creating && (
             <button
@@ -174,7 +174,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Page title"
               maxLength={120}
-              className="h-8 w-full rounded-md border bg-background px-2 text-xs"
+              className="h-8 w-full rounded-md border bg-background px-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
             <input
               value={newSection}
@@ -182,7 +182,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
               list="docs-section-list"
               placeholder="Section (optional)"
               maxLength={120}
-              className="h-8 w-full rounded-md border bg-background px-2 text-xs"
+              className="h-8 w-full rounded-md border bg-background px-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
             <datalist id="docs-section-list">
               {knownSections.map((s) => (
@@ -193,7 +193,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
               <button
                 type="submit"
                 disabled={pending || !newTitle.trim()}
-                className="inline-flex h-7 items-center rounded-md bg-primary px-2 text-[11px] font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                className="inline-flex h-7 items-center rounded-md bg-primary px-2 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 {pending ? "Creating…" : "Create"}
               </button>
@@ -205,7 +205,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
                   setNewSection("");
                   setError(null);
                 }}
-                className="inline-flex h-7 items-center rounded-md border px-2 text-[11px] hover:bg-secondary"
+                className="inline-flex h-7 items-center rounded-md border px-2 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 Cancel
               </button>
@@ -232,7 +232,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
                   <button
                     type="button"
                     onClick={() => toggleSection(sectionName)}
-                    className="flex w-full items-center gap-1 px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                    className="flex w-full items-center gap-1 px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground"
                   >
                     {isCollapsed ? (
                       <ChevronRight size={12} aria-hidden />
@@ -274,7 +274,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
       </div>
 
       <div className="space-y-1 border-t pt-4">
-        <div className="px-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="px-2 text-[10px] font-medium text-muted-foreground">
           Resources
         </div>
         <ul className="space-y-0.5">

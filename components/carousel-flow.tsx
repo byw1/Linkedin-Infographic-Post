@@ -227,7 +227,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
             setRemixError(null);
             setStage("upload");
           }}
-          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Start a new carousel instead
         </button>
@@ -271,7 +271,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
           />
         ) : alternate ? (
           <div className="rounded-md border bg-muted/30 p-3 text-sm">
-            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="mb-2 text-xs text-muted-foreground">
               Also rendered as {FORMAT_LABEL[alternate.format]}
             </div>
             <p className="mb-2 text-xs text-muted-foreground">
@@ -280,7 +280,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
             <a
               href={alternate.url}
               download
-              className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium hover:bg-secondary"
+              className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Download {FORMAT_LABEL[alternate.format]}
             </a>
@@ -294,7 +294,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
             <button
               type="button"
               onClick={() => void alsoRender(otherFormat)}
-              className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium hover:bg-secondary"
+              className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Also render as {FORMAT_LABEL[otherFormat]}
             </button>

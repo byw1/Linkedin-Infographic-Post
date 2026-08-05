@@ -55,7 +55,7 @@ export function GoogleAuthForm({
             type="button"
             onClick={disable}
             disabled={pending}
-            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary disabled:opacity-50"
+            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Disable
           </button>
@@ -67,7 +67,7 @@ export function GoogleAuthForm({
           <input
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -77,7 +77,7 @@ export function GoogleAuthForm({
             value={clientSecret}
             onChange={(e) => setClientSecret(e.target.value)}
             placeholder={enabled ? "Enter to update" : ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </label>
       </div>
@@ -92,7 +92,7 @@ export function GoogleAuthForm({
           type="button"
           onClick={save}
           disabled={pending || !clientId || !clientSecret}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {pending ? "Saving..." : "Save"}
         </button>

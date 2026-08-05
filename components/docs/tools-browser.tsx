@@ -195,7 +195,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
             value={search}
             onChange={(ev) => setSearch(ev.target.value)}
             placeholder="Search tools, tags, descriptions…"
-            className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm"
+            className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </div>
         {tools && (
@@ -210,7 +210,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
               setAdding((v) => !v);
               setEditingId(null);
             }}
-            className="inline-flex h-10 items-center gap-1 rounded-md border px-3 text-xs hover:bg-secondary"
+            className="inline-flex h-10 items-center gap-1 rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             <Plus size={14} aria-hidden />
             {adding ? "Cancel" : "Add tool"}
@@ -246,7 +246,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
         <p className="text-sm text-muted-foreground">Loading…</p>
       )}
       {visible && visible.length === 0 && (
-        <div className="rounded-md border-2 border-dashed bg-card p-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border bg-card p-6 text-center text-sm text-muted-foreground">
           {search || activeTag
             ? "No tools match that filter. Try a wider search."
             : isAdmin
@@ -269,7 +269,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
           const hidden = section.items.length - visibleItems.length;
           return (
             <section key={section.category} className="space-y-3">
-              <h3 className="flex items-baseline gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              <h3 className="flex items-baseline gap-2 text-lg font-semibold">
                 <span>{section.category}</span>
                 <span className="text-[10px] font-normal lowercase text-muted-foreground/70">
                   {section.items.length}
@@ -416,7 +416,7 @@ function TagFilterStrip({
         <button
           type="button"
           onClick={() => setShowAll(!showAll)}
-          className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+          className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:text-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           {showAll ? "Show less" : `Show ${hidden} more`}
         </button>
@@ -468,7 +468,7 @@ function ToolCard({
         className="absolute inset-0"
         aria-label={tool.name}
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/0 to-primary/0 transition-colors duration-500 group-hover:from-primary/5 group-hover:to-primary/10" />
+      <div className="pointer-events-none absolute inset-0 bg-transparent transition-colors duration-200 group-hover:bg-accent/50" />
 
       <div className="relative flex items-start gap-3">
         <ToolLogo tool={tool} size={44} />
@@ -525,7 +525,7 @@ function ToolCard({
               ev.stopPropagation();
               onEdit();
             }}
-            className="inline-flex h-7 items-center rounded-md border bg-card/80 px-2.5 text-[11px] backdrop-blur hover:bg-secondary"
+            className="inline-flex h-7 items-center rounded-md border bg-card/80 px-2.5 text-[11px] backdrop-blur hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Edit
           </button>
@@ -537,7 +537,7 @@ function ToolCard({
               remove();
             }}
             disabled={pending}
-            className="inline-flex h-7 items-center rounded-md border border-destructive/40 bg-card/80 px-2.5 text-[11px] text-destructive backdrop-blur hover:bg-destructive/10 disabled:opacity-50"
+            className="inline-flex h-7 items-center rounded-md border border-destructive/40 bg-card/80 px-2.5 text-[11px] text-destructive backdrop-blur hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Delete
           </button>
@@ -564,7 +564,7 @@ function ToolLogo({ tool, size = 44 }: { tool: Tool; size?: number }) {
   }
   return (
     <div
-      className="flex shrink-0 items-center justify-center rounded-lg border bg-gradient-to-br from-indigo-500 to-violet-600 font-semibold uppercase text-white"
+      className="flex shrink-0 items-center justify-center rounded-md border bg-muted font-semibold uppercase text-foreground"
       style={{ width: size, height: size, fontSize: size * 0.42 }}
     >
       {tool.name.charAt(0)}
@@ -705,8 +705,8 @@ function ToolForm({
   }
 
   return (
-    <div className="space-y-3 rounded-md border-2 border-dashed bg-card p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="space-y-3 rounded-md border bg-card p-4">
+      <div className="text-xs text-muted-foreground">
         {mode === "create" ? "New tool" : `Editing ${initial?.name}`}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -733,7 +733,7 @@ function ToolForm({
           rows={2}
           maxLength={2000}
           placeholder="What it does, in a sentence or two."
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -783,14 +783,14 @@ function ToolForm({
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {pending ? "Saving..." : mode === "create" ? "Create" : "Save"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary"
+          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Cancel
         </button>
@@ -826,7 +826,7 @@ function LogoField({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs hover:bg-secondary"
+            className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             <Upload size={12} aria-hidden />
             {hasUpload ? "Replace" : "Upload"}
@@ -835,7 +835,7 @@ function LogoField({
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex h-8 items-center gap-1 rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10"
+              className="inline-flex h-8 items-center gap-1 rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               <X size={12} aria-hidden />
               Use favicon
@@ -878,7 +878,7 @@ function Field({
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+        className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       />
     </label>
   );

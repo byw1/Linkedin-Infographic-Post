@@ -35,7 +35,7 @@ export function SkillsSection({ canManage }: { canManage: boolean }) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-lg font-semibold">
             Available skills
           </h3>
           {skills && skills.length > 0 && (
@@ -51,7 +51,7 @@ export function SkillsSection({ canManage }: { canManage: boolean }) {
           </p>
         )}
         {skills && skills.length === 0 && (
-          <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+          <div className="rounded-xl border bg-card p-8 text-center text-card-foreground">
             <p className="text-sm font-medium">No skills yet</p>
             <p className="mt-1 text-xs text-muted-foreground">
               {canManage
@@ -76,7 +76,7 @@ export function SkillsSection({ canManage }: { canManage: boolean }) {
 
       {canManage && (
         <div className="space-y-3 border-t pt-6">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h3 className="text-lg font-semibold">
             Upload a new skill
           </h3>
           <UploadForm onUploaded={() => void load()} />
@@ -88,7 +88,7 @@ export function SkillsSection({ canManage }: { canManage: boolean }) {
 
 function Intro() {
   return (
-    <div className="rounded-lg border bg-card p-5 text-card-foreground">
+    <div className="rounded-xl border bg-card p-5 text-card-foreground">
       <h3 className="text-base font-semibold">What's a skill?</h3>
       <p className="mt-1.5 text-sm text-muted-foreground">
         A skill is a pre-written guide that tells Claude exactly how to make
@@ -161,7 +161,7 @@ function HowToUse() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3 className="text-lg font-semibold">
         How to use a skill
       </h3>
       <ol className="space-y-2.5">
@@ -259,7 +259,7 @@ function SkillCard({
           : "Copy markdown";
 
   return (
-    <div className="rounded-lg border bg-card p-4 text-card-foreground">
+    <div className="rounded-xl border bg-card p-4 text-card-foreground">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
           {editing ? (
@@ -267,7 +267,7 @@ function SkillCard({
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-9 w-full rounded-md border bg-background px-3 text-base font-semibold"
+              className="h-9 w-full rounded-md border bg-background px-3 text-base font-semibold shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           ) : (
             <h4 className="text-base font-semibold leading-tight">{skill.name}</h4>
@@ -279,7 +279,7 @@ function SkillCard({
               rows={3}
               maxLength={2000}
               placeholder="When to use this skill, what it produces, etc."
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           ) : (
             skill.description && (
@@ -302,7 +302,7 @@ function SkillCard({
                 disabled={copyState === "copying"}
                 className={`inline-flex h-9 items-center rounded-md px-3 text-xs font-medium transition-colors disabled:opacity-50 ${
                   copyState === "copied"
-                    ? "border border-primary/40 bg-primary/10 text-primary"
+                    ? "border border-foreground/30 bg-accent text-foreground"
                     : copyState === "error"
                       ? "border border-destructive/40 bg-destructive/10 text-destructive"
                       : "bg-primary text-primary-foreground hover:opacity-90"
@@ -313,7 +313,7 @@ function SkillCard({
               <a
                 href={`/api/skills/${skill.id}/download`}
                 download={skill.filename}
-                className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+                className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 Download
               </a>
@@ -334,7 +334,7 @@ function SkillCard({
                   <button
                     type="button"
                     onClick={() => setEditing(false)}
-                    className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+                    className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
                   >
                     Cancel
                   </button>
@@ -348,7 +348,7 @@ function SkillCard({
                       setDescription(skill.description ?? "");
                       setEditing(true);
                     }}
-                    className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+                    className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
                   >
                     Edit
                   </button>
@@ -356,7 +356,7 @@ function SkillCard({
                     type="button"
                     onClick={remove}
                     disabled={pending}
-                    className="inline-flex h-9 items-center rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                    className="inline-flex h-9 items-center rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
                   >
                     Delete
                   </button>
@@ -390,7 +390,7 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
   }
 
   return (
-    <div className="space-y-2 rounded-lg border-2 border-dashed bg-card p-4 text-card-foreground">
+    <div className="space-y-2 rounded-xl border bg-card p-4 text-card-foreground">
       <label
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -398,7 +398,7 @@ function UploadForm({ onUploaded }: { onUploaded: () => void }) {
           const file = e.dataTransfer.files?.[0];
           if (file) upload(file);
         }}
-        className="flex cursor-pointer flex-col items-center justify-center gap-1 py-6 text-sm text-muted-foreground hover:bg-secondary/40"
+        className="flex cursor-pointer flex-col items-center justify-center gap-1 py-6 text-sm text-muted-foreground hover:bg-accent/50"
       >
         <span className="font-medium text-foreground">
           Drop a .md skill file here

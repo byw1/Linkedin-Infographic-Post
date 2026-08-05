@@ -56,11 +56,11 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
   const title = post.filename;
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-card text-card-foreground">
+    <div className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="aspect-[4/5] bg-muted">
         {isExternal ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-4 text-center text-muted-foreground">
-            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium uppercase tracking-wide">
+            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium">
               External · LinkedIn
             </span>
             {title && (
@@ -78,7 +78,7 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
           />
         ) : isPdf ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-primary">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
               Carousel · PDF
             </span>
             {post.url && (
@@ -143,7 +143,7 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
             href={post.postUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
+            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Open on LinkedIn ↗
           </a>
@@ -157,7 +157,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-1">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono tabular-nums">{value}</span>
+      <span className="tabular-nums">{value}</span>
     </div>
   );
 }

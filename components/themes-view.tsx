@@ -65,7 +65,7 @@ export function ThemesView({ mode }: Props) {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           New theme
         </button>
@@ -172,23 +172,23 @@ function ThemeCard({ theme, mode, isEditing, onEdit, onCancelEdit, onChanged }: 
   }
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <div className="rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold">{theme.name}</h3>
             {theme.isOfficial && (
-              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
                 Official
               </span>
             )}
             {theme.isSystem && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                 System
               </span>
             )}
             {theme.isMine === true && !theme.isSystem && (
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-secondary-foreground">
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
                 Mine
               </span>
             )}
@@ -215,7 +215,7 @@ function ThemeCard({ theme, mode, isEditing, onEdit, onCancelEdit, onChanged }: 
               type="button"
               onClick={togglePublish}
               disabled={busy}
-              className="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               {theme.isOfficial ? "Unpublish" : "Publish"}
             </button>
@@ -225,7 +225,7 @@ function ThemeCard({ theme, mode, isEditing, onEdit, onCancelEdit, onChanged }: 
               type="button"
               onClick={onEdit}
               disabled={busy}
-              className="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-secondary disabled:opacity-50"
+              className="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Edit
             </button>
@@ -235,7 +235,7 @@ function ThemeCard({ theme, mode, isEditing, onEdit, onCancelEdit, onChanged }: 
               type="button"
               onClick={deleteTheme}
               disabled={busy}
-              className="inline-flex h-8 items-center rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              className="inline-flex h-8 items-center rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Delete
             </button>

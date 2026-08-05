@@ -2,27 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* The chrome is achromatic on purpose. Every neutral below is hue 0 /
+   sat 0% — adding a blue or warm cast to the grays is the single
+   fastest way to make this read like a template again. Chromatic
+   color is reserved for four semantic roles: warning, success,
+   destructive, and the fixed status-dot palette. Nothing else.
+   The app is dark-only; `html` carries `.dark` so `dark:` variants
+   in component recipes still resolve. */
 @layer base {
-  :root {
+  :root,
+  .dark {
     color-scheme: dark;
-    --background: 0 0% 7%;
+    --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 11%;
+    --card: 0 0% 9%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 11%;
+    --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 17%;
+    /* Near-white, not a brand hue. The primary button is a white pill
+       on near-black — this is the strongest identity call in the set. */
+    --primary: 0 0% 90%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 17%;
-    --muted-foreground: 0 0% 65%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 22%;
-    --input: 0 0% 17%;
-    --ring: 239 84% 67%;
-    --radius: 0.5rem;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 359 100% 70%;
+    --destructive-foreground: 0 0% 9%;
+    --success: 156 72% 67%;
+    --success-bg: 166 91% 9%;
+    --warning: 46 97% 65%;
+    --warning-bg: 28 92% 14%;
+    --border: 0 0% 18%;
+    --input: 0 0% 23%;
+    --ring: 0 0% 45%;
+    --radius: 0.625rem;
   }
 }
 
@@ -31,8 +47,38 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground antialiased;
   }
+
+  /* Selection is primary at 15% — never a solid accent block. */
+  ::selection {
+    @apply bg-primary/15;
+  }
+
+  /* 8px scrollbars, transparent track, border-colored thumb. */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+/* The auth / marketing backdrop — the only gradient in the app, and
+   it's achromatic at 6%/8%, so it reads as an uneven light source
+   rather than as a "gradient". Static: it never animates. */
+.auth-backdrop {
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 0%, hsl(var(--primary) / 0.06), transparent),
+    radial-gradient(ellipse 50% 40% at 90% 100%, hsl(var(--primary) / 0.08), transparent),
+    hsl(var(--background));
 }
 
 /* Plain-text-style markdown rendering for the /docs page. We don't
@@ -138,19 +184,20 @@
   color: hsl(var(--muted-foreground) / 0.25);
 }
 
-/* Tool catalog tier glows. Used by /docs/tools to mark tools the
+/* Tool catalog tier marks. Used by /docs/tools to mark tools the
  * admin tagged gold / silver / risky / trash. The chip + the card
- * border share the same animation so a tier reads at a glance. */
-@keyframes tierGlowPulse {
-  0%, 100% { box-shadow: 0 0 6px var(--tier-glow), 0 0 0 1px var(--tier-edge); }
-  50%      { box-shadow: 0 0 14px var(--tier-glow), 0 0 0 1px var(--tier-edge); }
-}
-
+ * border share the same edge color so a tier reads at a glance.
+ *
+ * These used to pulse on a 2.6s loop. Ambient motion is the one thing
+ * this design language rules out flatly — motion here means "work is
+ * happening right now", never atmosphere — so the tier now reads as a
+ * static 1px colored ring. All four tiers stay fully distinguishable;
+ * only the loop is gone. */
 .tier-card-gold,
 .tier-card-silver,
 .tier-card-risky,
 .tier-card-trash {
-  animation: tierGlowPulse 2.6s ease-in-out infinite;
+  box-shadow: 0 0 0 1px var(--tier-edge);
 }
 
 .tier-card-gold   { --tier-glow: rgba(245, 158, 11, 0.55); --tier-edge: rgba(245, 158, 11, 0.85); }
@@ -162,7 +209,7 @@
 .tier-chip-silver,
 .tier-chip-risky,
 .tier-chip-trash {
-  animation: tierGlowPulse 2.6s ease-in-out infinite;
+  box-shadow: 0 0 0 1px var(--tier-edge);
 }
 
 .tier-chip-gold   { --tier-glow: rgba(245, 158, 11, 0.6);  --tier-edge: rgba(245, 158, 11, 0.7);
@@ -175,15 +222,12 @@
   background-color: rgba(239, 68, 68, 0.12);  color: #fca5a5; border-color: rgba(239, 68, 68, 0.45); }
 
 @media (prefers-reduced-motion: reduce) {
-  .tier-card-gold,
-  .tier-card-silver,
-  .tier-card-risky,
-  .tier-card-trash,
-  .tier-chip-gold,
-  .tier-chip-silver,
-  .tier-chip-risky,
-  .tier-chip-trash {
-    animation: none;
-    box-shadow: 0 0 0 1px var(--tier-edge);
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

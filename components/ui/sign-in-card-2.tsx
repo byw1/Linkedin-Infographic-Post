@@ -22,7 +22,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       type={type}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-sm transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className,
@@ -130,7 +130,7 @@ export function SignInCard2({ googleEnabled = false }: Props) {
         * z-index than the card glow but below any modal would be. */}
       <Link
         href="/welcome"
-        className="absolute left-6 top-6 z-20 inline-flex h-9 items-center rounded-md border border-white/15 bg-black/30 px-3 text-xs text-white/80 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/50 hover:text-white"
+        className="absolute left-6 top-6 z-20 inline-flex h-9 items-center rounded-md border border-white/15 bg-black/30 px-3 text-xs text-white/80 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-black/50 hover:text-white cursor-pointer active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
       >
         ← Back to home
       </Link>

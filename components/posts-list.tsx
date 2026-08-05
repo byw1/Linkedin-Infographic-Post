@@ -65,7 +65,7 @@ export function PostsList() {
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex rounded-md border p-0.5 text-sm">
+      <div className="inline-flex h-9 items-center rounded-lg bg-muted p-[3px] text-sm">
         <TabButton
           active={tab === "mine"}
           onClick={() => setQuery({ tab: null, view: null, period: null, sort: null })}
@@ -122,10 +122,10 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-sm px-3 py-1.5 font-medium transition-colors ${
+      className={`cursor-pointer rounded-md px-3 py-1 font-medium outline-none ring-offset-0 transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
         active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:text-foreground"
+          ? "bg-background text-foreground shadow-sm"
+          : "text-foreground/60 hover:text-foreground"
       }`}
     >
       {children}
@@ -175,7 +175,7 @@ function MinePosts() {
         <button
           type="button"
           onClick={() => setAddingExternal((v) => !v)}
-          className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+          className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           {addingExternal ? "Cancel" : "+ Add external post"}
         </button>
@@ -194,7 +194,7 @@ function MinePosts() {
       {renders === null ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : renders.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+        <div className="rounded-xl border bg-card p-8 text-center text-card-foreground">
           <p className="text-sm font-medium">No posts yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
             Generate one from <Link href="/" className="underline">New post</Link>{" "}
@@ -215,7 +215,7 @@ function MinePosts() {
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary disabled:opacity-50"
+                className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 {loadingMore ? "Loading…" : "Load more"}
               </button>
@@ -284,8 +284,8 @@ function ExternalPostForm({
   }
 
   return (
-    <div className="space-y-3 rounded-md border-2 border-dashed bg-card p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="space-y-3 rounded-md border bg-card p-4">
+      <div className="text-xs text-muted-foreground">
         Add external post
       </div>
       <p className="text-xs text-muted-foreground">
@@ -300,7 +300,7 @@ function ExternalPostForm({
           onChange={(e) => setTitle(e.target.value)}
           maxLength={120}
           placeholder="e.g. 'Why I left FAANG' carousel"
-          className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+          className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <button
@@ -333,7 +333,7 @@ function ExternalPostForm({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary"
+            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Cancel
           </button>
@@ -459,7 +459,7 @@ function CommunityFeed({
         <p className="text-sm text-muted-foreground">Loading…</p>
       )}
       {posts && posts.length === 0 && (
-        <div className="space-y-2 rounded-lg border-2 border-dashed bg-card p-8 text-center text-card-foreground">
+        <div className="space-y-2 rounded-xl border bg-card p-8 text-center text-card-foreground">
           <p className="text-sm font-medium">
             {view === "recent" ? "Nothing in the feed yet" : "No wins to show yet"}
           </p>
@@ -499,7 +499,7 @@ function CommunityFeed({
             type="button"
             onClick={loadMoreRecent}
             disabled={loadingMore}
-            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             {loadingMore ? "Loading…" : "Load more"}
           </button>
@@ -521,16 +521,16 @@ function Pills<T extends string>({
   onChange: (next: T) => void;
 }) {
   return (
-    <div className="inline-flex rounded-md border p-0.5 text-xs">
+    <div className="inline-flex h-8 items-center rounded-lg bg-muted p-[3px] text-xs">
       {values.map((v) => (
         <button
           key={v}
           type="button"
           onClick={() => onChange(v)}
-          className={`rounded-sm px-3 py-1.5 font-medium transition-colors ${
+          className={`cursor-pointer rounded-md px-3 py-1 font-medium outline-none ring-offset-0 transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
             active === v
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-foreground/60 hover:text-foreground"
           }`}
         >
           {labels[v]}
@@ -615,11 +615,11 @@ function PostCard({
     : null;
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-card text-card-foreground">
+    <div className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="aspect-[4/5] bg-muted">
         {isExternal ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium uppercase tracking-wide">
+            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium">
               External · LinkedIn
             </span>
             {t.post_url && (
@@ -642,7 +642,7 @@ function PostCard({
           />
         ) : isPdf ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-primary">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
               Carousel · PDF
             </span>
             {r.url && (
@@ -732,7 +732,7 @@ function PostCard({
           {remixHref && (
             <Link
               href={remixHref}
-              className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Remix
             </Link>
@@ -742,7 +742,7 @@ function PostCard({
               href={r.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+              className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Open
             </a>
@@ -750,7 +750,7 @@ function PostCard({
           <button
             type="button"
             onClick={() => setEditingTrack((v) => !v)}
-            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             {tracked ? "Update stats" : "Track"}
           </button>
@@ -758,7 +758,7 @@ function PostCard({
             type="button"
             onClick={deleteRender}
             disabled={pending}
-            className="ml-auto inline-flex h-8 items-center rounded-md border border-destructive/40 px-2.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            className="ml-auto inline-flex h-8 items-center rounded-md border border-destructive/40 px-2.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Delete
           </button>

@@ -3,6 +3,7 @@ import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { refreshUrl } from "@/lib/storage";
 import { NavMenu } from "@/components/nav-menu";
+import { NavLinks } from "@/components/nav-links";
 
 export async function TopNav() {
   const session = await auth();
@@ -31,42 +32,19 @@ export async function TopNav() {
   }
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur sticky top-0 z-30">
+    // Opaque, not translucent — this design has no backdrop-blur anywhere,
+    // and a sticky header is the place the temptation is strongest.
+    <header className="sticky top-0 z-40 border-b bg-background">
       <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between gap-4">
         <div className="flex items-center gap-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-base font-semibold tracking-tight"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="" aria-hidden="true" className="h-5 w-5" />
+          <Link href="/" className="group flex items-center gap-2 text-sm font-semibold">
+            <span className="flex size-7 shrink-0 items-center justify-center transition-transform duration-300 group-hover:rotate-6">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.svg" alt="" aria-hidden="true" className="size-5" />
+            </span>
             viral
           </Link>
-          {user && (
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground">
-                New
-              </Link>
-              <Link
-                href="/posts"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Posts
-              </Link>
-              <Link
-                href="/members"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Members
-              </Link>
-              <Link
-                href="/docs"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Docs
-              </Link>
-            </nav>
-          )}
+          {user && <NavLinks />}
         </div>
         {user && (
           <NavMenu

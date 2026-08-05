@@ -109,7 +109,7 @@ export function TagInput({
                 remove(tag);
               }}
               aria-label={`Remove ${tag}`}
-              className="-mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+              className="-mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               ×
             </button>
@@ -140,7 +140,7 @@ export function TagInput({
               type="button"
               onMouseDown={(ev) => ev.preventDefault()}
               onClick={() => commit(s)}
-              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-secondary"
+              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
             >
               <span className="font-mono">{s}</span>
               <span className="text-[10px] text-muted-foreground">existing</span>
@@ -151,7 +151,7 @@ export function TagInput({
               type="button"
               onMouseDown={(ev) => ev.preventDefault()}
               onClick={() => commit(draft)}
-              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-secondary"
+              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
             >
               <span>
                 Create <span className="font-mono">{normalized}</span>

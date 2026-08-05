@@ -92,10 +92,10 @@ export function CarouselUploadDropzone({ onParsed }: Props) {
           const file = e.dataTransfer.files?.[0];
           if (file) pick(file);
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-12 text-sm transition-colors ${
+        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-12 text-sm transition-all duration-200 ${
           filename
-            ? "border-primary/40 bg-primary/5"
-            : "border-input hover:border-primary/40 hover:bg-secondary/40"
+            ? "border-foreground/30 bg-accent/50"
+            : "border-input hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-accent/50 hover:shadow-md"
         }`}
       >
         {filename ? (
@@ -133,7 +133,7 @@ export function CarouselUploadDropzone({ onParsed }: Props) {
           type="button"
           onClick={submit}
           disabled={pending || !pendingFile}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {pending ? "Reading zip..." : "Upload"}
         </button>

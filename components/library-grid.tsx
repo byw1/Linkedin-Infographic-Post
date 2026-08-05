@@ -73,7 +73,7 @@ export function LibraryGrid() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or slug..."
-          className="h-9 w-full max-w-sm rounded-md border bg-background px-3 text-sm"
+          className="h-9 w-full max-w-sm rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
         {entities && (
           <span className="text-xs text-muted-foreground">
@@ -113,7 +113,7 @@ export function LibraryGrid() {
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="inline-flex h-9 items-center rounded-md border px-4 text-sm hover:bg-secondary disabled:opacity-50"
+                className="inline-flex h-9 items-center rounded-md border px-4 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 {loadingMore ? "Loading..." : "Load more"}
               </button>
@@ -256,7 +256,7 @@ function LibraryCard({
   }
 
   return (
-    <div className="space-y-2 rounded-md border p-3">
+    <div className="space-y-2 rounded-xl border bg-card p-3 shadow transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start gap-3">
         {imgError !== null ? (
           <div
@@ -289,7 +289,7 @@ function LibraryCard({
           {editing ? (
             <>
               <label className="block">
-                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span className="block text-sm font-medium text-muted-foreground">
                   Display name
                 </span>
                 <input
@@ -300,11 +300,11 @@ function LibraryCard({
                     if (ev.key === "Enter") save();
                     if (ev.key === "Escape") onDone();
                   }}
-                  className="h-7 w-full rounded-md border bg-background px-2 text-sm"
+                  className="h-7 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 />
               </label>
               <label className="block">
-                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span className="block text-sm font-medium text-muted-foreground">
                   Slug
                 </span>
                 <input
@@ -314,12 +314,12 @@ function LibraryCard({
                     if (ev.key === "Enter") save();
                     if (ev.key === "Escape") onDone();
                   }}
-                  className="h-7 w-full rounded-md border bg-background px-2 font-mono text-xs"
+                  className="h-7 w-full rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   placeholder="canonical-slug"
                 />
               </label>
               <label className="block">
-                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">
+                <span className="block text-sm font-medium text-muted-foreground">
                   Aliases
                   <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">
                     (comma-separated, also resolve to this logo)
@@ -332,7 +332,7 @@ function LibraryCard({
                     if (ev.key === "Enter") save();
                     if (ev.key === "Escape") onDone();
                   }}
-                  className="h-7 w-full rounded-md border bg-background px-2 font-mono text-xs"
+                  className="h-7 w-full rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   placeholder="sama, samaltman"
                 />
               </label>
@@ -360,7 +360,7 @@ function LibraryCard({
                 {entity.isMine && (
                   <>
                     <span>·</span>
-                    <span className="text-[10px] uppercase tracking-wide text-primary">
+                    <span className="text-[10px] text-primary">
                       mine
                     </span>
                   </>
@@ -392,11 +392,11 @@ function LibraryCard({
             <button
               type="button"
               onClick={onDone}
-              className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+              className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Cancel
             </button>
-            <label className="inline-flex h-7 cursor-pointer items-center rounded-md border px-3 text-xs hover:bg-secondary">
+            <label className="inline-flex h-7 cursor-pointer items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm">
               Replace logo
               <input
                 type="file"
@@ -413,7 +413,7 @@ function LibraryCard({
               type="button"
               onClick={remove}
               disabled={pending}
-              className="ml-auto inline-flex h-7 items-center rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              className="ml-auto inline-flex h-7 items-center rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Delete
             </button>
@@ -424,7 +424,7 @@ function LibraryCard({
           <button
             type="button"
             onClick={onEdit}
-            className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+            className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Edit
           </button>
@@ -437,7 +437,7 @@ function LibraryCard({
             type="button"
             onClick={hide}
             disabled={pending}
-            className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-secondary disabled:opacity-50"
+            className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             title="Remove from your library view (others still see it)"
           >
             {pending ? "Hiding…" : "Hide from my view"}

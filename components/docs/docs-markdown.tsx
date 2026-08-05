@@ -189,7 +189,7 @@ function Callout({
   const meta = CALLOUT_META[kind];
   return (
     <div className={`docs-callout my-4 rounded-md border ${meta.cls} px-4 py-3`}>
-      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
+      <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold">
         {meta.icon}
         {meta.label}
       </div>
@@ -286,10 +286,10 @@ function ToolInlineCard({
       target="_blank"
       rel="noopener noreferrer"
       title={tool.name}
-      className="docs-tool-link inline-flex items-center gap-2 rounded-lg border-2 border-primary/25 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-primary/70 hover:bg-secondary hover:shadow-md"
+      className="docs-tool-link inline-flex items-center gap-2 rounded-xl border-2 border-primary/25 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-primary/70 hover:bg-accent hover:text-accent-foreground hover:shadow-md"
     >
       <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary text-[10px] font-bold uppercase leading-none text-primary-foreground ring-1 ring-primary/30"
+        className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary text-[10px] font-semibold uppercase leading-none text-primary-foreground"
         aria-hidden
       >
         {logo ? (
@@ -342,7 +342,7 @@ function SkillInlineCard({
     <a
       href={`/api/skills/${skill.id}/download`}
       title={skill.filename}
-      className="inline-flex items-center gap-2 rounded-lg border-2 border-emerald-500/30 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-emerald-500/70 hover:bg-secondary hover:shadow-md"
+      className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-500/30 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-emerald-500/70 hover:bg-accent hover:text-accent-foreground hover:shadow-md"
     >
       <span
         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white ring-1 ring-emerald-500/30"
@@ -351,7 +351,7 @@ function SkillInlineCard({
         <Download size={11} />
       </span>
       <span>{fallbackLabel || skill.name}</span>
-      <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+      <span className="font-mono text-sm font-medium text-muted-foreground">
         .md
       </span>
     </a>

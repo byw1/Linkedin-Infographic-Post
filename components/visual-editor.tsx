@@ -102,7 +102,7 @@ export function VisualEditor({
             type="button"
             onClick={startRenderClick}
             disabled={!allResolved || rendering || !storageReady}
-            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {rendering ? "Queueing..." : "Render PNG"}
           </button>

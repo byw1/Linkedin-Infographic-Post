@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, isFirstRun } from "@/lib/auth";
 import { TopNav } from "@/components/top-nav";
+import { PageTransition } from "@/components/ui/page";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // for returning members and "Request access" for prospective ones.
   if (!session?.user) redirect("/welcome");
 
+  // PageTransition is keyed on the pathname, so it remounts and replays
+  // the 500ms fade+rise on every navigation even though this layout
+  // itself persists. Entrance only — there is no exit animation.
   return (
     <>
       <TopNav />
-      {children}
+      <PageTransition>{children}</PageTransition>
     </>
   );
 }

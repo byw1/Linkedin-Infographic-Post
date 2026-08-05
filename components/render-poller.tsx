@@ -107,7 +107,7 @@ export function RenderPoller({
           <span className="font-medium text-foreground">
             {status === "pending" ? "Queued — waiting for the worker…" : "Rendering…"}
           </span>
-          <span className="font-mono text-xs text-muted-foreground tabular-nums">
+          <span className="text-xs text-muted-foreground tabular-nums">
             {seconds}s
           </span>
         </div>
@@ -119,7 +119,7 @@ export function RenderPoller({
       <button
         type="button"
         onClick={onCancel}
-        className="inline-flex h-9 items-center rounded-md border px-4 text-sm hover:bg-secondary"
+        className="inline-flex h-9 items-center rounded-md border px-4 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
       >
         Cancel
       </button>

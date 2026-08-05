@@ -5,8 +5,15 @@ import { useSearchParams } from "next/navigation";
 import { InfographicFlow } from "@/components/infographic-flow";
 import { CarouselFlow } from "@/components/carousel-flow";
 import { TweetFlow } from "@/components/tweet-flow";
+import { Segmented } from "@/components/ui/segmented";
 
 type Mode = "infographic" | "carousel" | "tweet";
+
+const MODE_OPTIONS = [
+  { value: "infographic" as const, label: "Infographic" },
+  { value: "carousel" as const, label: "Carousel" },
+  { value: "tweet" as const, label: "Tweet" },
+];
 
 const MODE_COPY: Record<Mode, string> = {
   infographic:
@@ -36,18 +43,13 @@ export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <div className="inline-flex rounded-md border p-1">
-          <ModeTab active={mode === "infographic"} onClick={() => setMode("infographic")}>
-            Infographic
-          </ModeTab>
-          <ModeTab active={mode === "carousel"} onClick={() => setMode("carousel")}>
-            Carousel
-          </ModeTab>
-          <ModeTab active={mode === "tweet"} onClick={() => setMode("tweet")}>
-            Tweet
-          </ModeTab>
-        </div>
-        <p className="text-sm text-muted-foreground">{MODE_COPY[mode]}</p>
+        <Segmented
+          value={mode}
+          onValueChange={setMode}
+          layoutId="mode-switcher-pill"
+          options={MODE_OPTIONS}
+        />
+        <p className="max-w-3xl text-sm text-muted-foreground">{MODE_COPY[mode]}</p>
       </div>
 
       {mode === "infographic" ? (
@@ -67,26 +69,3 @@ export function ModeSwitcher({ storageReady }: { storageReady: boolean }) {
   );
 }
 
-function ModeTab({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-sm px-4 py-1.5 text-sm font-medium transition-colors ${
-        active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}

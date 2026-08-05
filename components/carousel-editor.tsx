@@ -127,7 +127,7 @@ export function CarouselEditor({
             type="button"
             onClick={startRenderClick}
             disabled={!allResolved || submitting || !storageReady}
-            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             title={
               format === "png-zip"
                 ? "One PNG per slide, zipped — for Instagram or anywhere that doesn't take PDFs."
@@ -177,7 +177,7 @@ export function CarouselEditor({
               type="button"
               onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
               disabled={activeIndex === 0}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-accent hover:text-accent-foreground disabled:opacity-40 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               aria-label="Previous slide"
             >
               ←
@@ -194,7 +194,7 @@ export function CarouselEditor({
                 setActiveIndex((i) => Math.min(slides.length - 1, i + 1))
               }
               disabled={activeIndex === slides.length - 1}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-secondary disabled:opacity-40"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-accent hover:text-accent-foreground disabled:opacity-40 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               aria-label="Next slide"
             >
               →
@@ -204,8 +204,8 @@ export function CarouselEditor({
       </div>
 
       {!allResolved && unresolved.length > 0 && (
-        <div className="rounded-md border bg-amber-500/5 p-3 text-sm">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-amber-300">
+        <div className="rounded-xl border border-warning/30 bg-warning-bg/60 p-3 text-sm shadow">
+          <div className="mb-2 text-xs font-medium text-warning">
             Unresolved across the carousel
           </div>
           <div className="flex flex-wrap gap-2">

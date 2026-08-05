@@ -11,7 +11,7 @@ export default async function PostsPage() {
   return (
     <main className="container mx-auto max-w-5xl space-y-6 py-10">
       <header className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Posts</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Posts</h1>
         <p className="text-sm text-muted-foreground">
           <strong>My posts</strong> = everything you&apos;ve rendered, with
           a <strong>Remix</strong> button that re-opens any post in the

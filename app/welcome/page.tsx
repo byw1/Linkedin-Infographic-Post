@@ -53,7 +53,7 @@ export default async function WelcomePage() {
             {signedIn ? (
               <Link
                 href="/"
-                className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 Open the app →
               </Link>
@@ -61,13 +61,13 @@ export default async function WelcomePage() {
               <>
                 <Link
                   href="/welcome/request"
-                  className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                  className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Request access
                 </Link>
                 <Link
                   href="/auth/signin"
-                  className="inline-flex h-11 items-center rounded-md border px-6 text-sm font-semibold hover:bg-secondary"
+                  className="inline-flex h-11 items-center rounded-md border px-6 text-sm font-semibold hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
                 >
                   Sign in
                 </Link>
@@ -175,14 +175,14 @@ export default async function WelcomePage() {
           {signedIn ? (
             <Link
               href="/"
-              className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Open the app →
             </Link>
           ) : (
             <Link
               href="/welcome/request"
-              className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Request access →
             </Link>
@@ -203,7 +203,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border bg-card p-5 text-card-foreground">
+    <div className="rounded-xl border bg-card p-5 text-card-foreground">
       <div className="mb-1 text-sm font-semibold">{title}</div>
       <p className="text-sm text-muted-foreground">{children}</p>
     </div>

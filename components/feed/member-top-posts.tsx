@@ -34,7 +34,7 @@ export function MemberTopPosts({ memberId }: Props) {
   return (
     <div className="space-y-1.5 border-t pt-3">
       <div className="flex items-baseline justify-between">
-        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-[10px] font-medium text-muted-foreground">
           Top posts
         </span>
         <span className="text-[10px] text-muted-foreground">
@@ -76,7 +76,7 @@ function PostThumb({ post }: { post: FeedPost }) {
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-[9px] uppercase tracking-wide text-muted-foreground">
+          <div className="flex h-full items-center justify-center text-[9px] text-muted-foreground">
             {isPdf ? "PDF" : "—"}
           </div>
         )}

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { SectionNav } from "@/components/section-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,8 @@ const NAV: { slug: string; label: string; description: string }[] = [
 
 // Vertical-nav shell shared across /admin/*. Each section renders
 // in its own route file so the page only loads what it needs and
-// deep-links survive bookmarks. The active item is computed from
-// the URL via a relative <Link>; route group params would require
-// a client component just to read the segment, which is not worth
-// the JS for a static nav.
+// deep-links survive bookmarks. The nav itself is the one client
+// island here — it reads the pathname to mark the active section.
 export default async function AdminLayout({
   children,
 }: {
@@ -30,50 +29,22 @@ export default async function AdminLayout({
   return (
     <div className="container mx-auto max-w-6xl py-10">
       <header className="mb-8 space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Admin</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
         <p className="text-sm text-muted-foreground">
           App-wide settings. For your own account, see{" "}
           <Link href="/settings" className="underline">Settings</Link>.
         </p>
       </header>
       <div className="grid gap-8 md:grid-cols-[200px_1fr]">
-        <nav className="space-y-1 text-sm md:sticky md:top-20 md:self-start">
-          {NAV.map((item) => (
-            <AdminNavLink
-              key={item.slug}
-              href={`/admin/${item.slug}`}
-              label={item.label}
-              description={item.description}
-            />
-          ))}
-        </nav>
+        <SectionNav
+          items={NAV.map((item) => ({
+            href: `/admin/${item.slug}`,
+            label: item.label,
+            description: item.description,
+          }))}
+        />
         <div className="min-w-0">{children}</div>
       </div>
     </div>
-  );
-}
-
-// Server component rendering of the nav item. Active state isn't
-// applied here (it'd require knowing the current URL); we render a
-// neutral state and rely on hover + the section heading on each
-// page to orient the admin. Keeping this server-rendered avoids
-// shipping a 'use client' boundary for the whole shell.
-function AdminNavLink({
-  href,
-  label,
-  description,
-}: {
-  href: string;
-  label: string;
-  description: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="block rounded-md px-3 py-2 hover:bg-secondary"
-    >
-      <div className="font-medium">{label}</div>
-      <div className="text-[11px] text-muted-foreground">{description}</div>
-    </Link>
   );
 }

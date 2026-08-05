@@ -75,7 +75,7 @@ export function TrackForm({
 
   return (
     <div className="space-y-3 rounded-md border p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         Tracking
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -87,7 +87,7 @@ export function TrackForm({
             type="datetime-local"
             value={publishedAt}
             onChange={(e) => setPublishedAt(e.target.value)}
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
           <span className="mt-1 block text-[10px] text-muted-foreground/80">
             When you actually posted on LinkedIn. Required for the post to
@@ -101,7 +101,7 @@ export function TrackForm({
             value={postUrl}
             onChange={(e) => setPostUrl(e.target.value)}
             placeholder="https://www.linkedin.com/posts/..."
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+            className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </label>
       </div>
@@ -116,7 +116,7 @@ export function TrackForm({
           rows={4}
           maxLength={3000}
           placeholder="Paste the LinkedIn post body here. Hooks, body, CTA — whatever shipped. The text usually carries more than the visual."
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <div className="grid gap-2 sm:grid-cols-2">
@@ -144,7 +144,7 @@ export function TrackForm({
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary"
+          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Cancel
         </button>
@@ -182,7 +182,7 @@ export function TrackingSummary({ tracking }: { tracking: Tracking }) {
   return (
     <div className="space-y-2 rounded-md border p-4 text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           Tracking
         </span>
         <div className="flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
@@ -215,7 +215,7 @@ export function TrackingSummary({ tracking }: { tracking: Tracking }) {
 function Metric({ label, value }: { label: string; value: number | null }) {
   return (
     <div className="rounded-md border bg-muted/40 px-2 py-1.5">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="text-sm font-medium text-muted-foreground">
         {label}
       </div>
       <div className="text-base font-semibold tabular-nums">
@@ -243,7 +243,7 @@ function NumberField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="0"
-        className="h-9 w-full rounded-md border bg-background px-2 text-sm tabular-nums"
+        className="h-9 w-full rounded-md border bg-background px-2 text-sm tabular-nums shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       />
     </label>
   );

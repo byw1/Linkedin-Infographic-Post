@@ -95,7 +95,7 @@ export function InfographicFlow({ storageReady, remixId }: Props) {
             setRemixError(null);
             setStage("upload");
           }}
-          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Start a new post instead
         </button>

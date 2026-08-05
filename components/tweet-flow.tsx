@@ -690,7 +690,7 @@ function Form({
   const e = data.engagement;
   return (
     <div className="space-y-3 rounded-md border bg-card p-4 text-card-foreground">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         Tweet · slide {slideCount > 1 ? "(thread)" : ""}
       </div>
 
@@ -793,7 +793,7 @@ function Form({
             <select
               value={data.checkmark}
               onChange={(ev) => patch({ checkmark: ev.target.value as CheckMark })}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <option value="none">None</option>
               <option value="blue">Blue · individual</option>
@@ -827,7 +827,7 @@ function Form({
           <button
             type="button"
             onClick={saveStyle}
-            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
+            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             title="Save persona + every visual setting + element-visibility toggles (excludes body text + engagement counts + time + reposted-by)"
           >
             + Save current style
@@ -851,7 +851,7 @@ function Form({
                 type="button"
                 onClick={() => deleteStyle(p.id)}
                 aria-label={`Delete style ${p.label}`}
-                className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+                className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 ×
               </button>
@@ -867,7 +867,7 @@ function Form({
             <select
               value={data.background}
               onChange={(ev) => patch({ background: ev.target.value as Background })}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <option value="gradient">Gradient (brand)</option>
               <option value="black">Solid black</option>
@@ -888,7 +888,7 @@ function Form({
                   value={data.backgroundColor}
                   onChange={(ev) => patch({ backgroundColor: ev.target.value })}
                   placeholder="#0a0a0f"
-                  className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
+                  className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 />
               </div>
             )}
@@ -898,7 +898,7 @@ function Form({
             <select
               value={data.fontScale}
               onChange={(ev) => patch({ fontScale: ev.target.value as FontScale })}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+              className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <option value="sm">Small</option>
               <option value="md">Default</option>
@@ -920,7 +920,7 @@ function Form({
         * the primary writing surface rather than buried in form
         * fields. No collapsing here on purpose. */}
       <fieldset className="space-y-2">
-        <legend className="text-[11px] uppercase tracking-wide text-muted-foreground">
+        <legend className="text-[11px] text-muted-foreground">
           Body
         </legend>
         <textarea
@@ -929,7 +929,7 @@ function Form({
           rows={5}
           maxLength={4000}
           placeholder="Type the tweet text. Multi-line + line breaks work."
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </fieldset>
 
@@ -955,7 +955,7 @@ function Form({
           type="button"
           onClick={onGenerate}
           disabled={pending}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {pending
             ? "Rendering..."
@@ -1073,7 +1073,7 @@ function PerTweetInputs({
       {showMetricsBlock && (
         <div className="space-y-1.5">
           <div className="flex items-baseline justify-between">
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+            <span className="text-[11px] text-muted-foreground">
               Engagement
             </span>
             <button
@@ -1127,7 +1127,7 @@ function MetricValueInput({
           if (Number.isFinite(n) && n >= 0) onChange(Math.floor(n));
         }}
         placeholder="0"
-        className="h-8 flex-1 rounded-md border bg-background px-2 text-xs tabular-nums"
+        className="h-8 flex-1 rounded-md border bg-background px-2 text-xs tabular-nums shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       />
     </label>
   );
@@ -1154,7 +1154,7 @@ function Section({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground"
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground"
         >
           {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           {title}
@@ -1189,7 +1189,7 @@ function GearPopover({ children }: { children: React.ReactNode }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] hover:bg-secondary"
+        className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         title="Show / hide UI elements"
       >
         <Settings2 size={12} />
@@ -1197,7 +1197,7 @@ function GearPopover({ children }: { children: React.ReactNode }) {
       </button>
       {open && (
         <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-md border bg-card p-3 text-card-foreground shadow-lg">
-          <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="mb-2 text-sm font-medium text-muted-foreground">
             Show / hide
           </div>
           <div className="flex flex-col gap-1.5">{children}</div>
@@ -1252,7 +1252,7 @@ function BodySizeOverride({
             const n = Number(ev.target.value);
             if (Number.isFinite(n)) onChange(Math.max(12, Math.min(300, n)));
           }}
-          className="h-8 w-16 rounded-md border bg-background px-2 text-xs tabular-nums disabled:opacity-50"
+          className="h-8 w-16 rounded-md border bg-background px-2 text-xs tabular-nums disabled:opacity-50 shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
         <span className="text-[10px] text-muted-foreground">px</span>
       </div>
@@ -1278,7 +1278,7 @@ function Field({
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+        className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       />
     </label>
   );
@@ -1360,7 +1360,7 @@ function PreviewSurface({
 
   return (
     <div className="space-y-2">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         Preview · {TWEET_CANVAS.width}×{TWEET_CANVAS.height}
       </div>
       <div
@@ -1399,7 +1399,7 @@ function SlidesStrip({
 }) {
   return (
     <div className="space-y-1">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+      <div className="text-[11px] text-muted-foreground">
         Slides {slides.length > 1 && `(thread of ${slides.length})`}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -1455,7 +1455,7 @@ function SlidesStrip({
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex h-8 items-center rounded-md border border-dashed px-3 text-xs hover:bg-secondary"
+          className="inline-flex h-8 items-center rounded-md border border-dashed px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           + Add slide
         </button>
@@ -1500,9 +1500,9 @@ function BatchResultView({
       </div>
 
       {isPdfBundle ? (
-        <div className="rounded-lg border bg-card p-6 text-card-foreground">
+        <div className="rounded-xl border bg-card p-6 text-card-foreground">
           <div className="flex flex-col items-center gap-3 text-center">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-primary">
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
               {slides.length}-slide PDF · LinkedIn carousel
             </span>
             <a
@@ -1516,7 +1516,7 @@ function BatchResultView({
             <a
               href={results[0].pngUrl}
               download
-              className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Download
             </a>
@@ -1527,7 +1527,7 @@ function BatchResultView({
           {results.map((r) => (
             <div
               key={r.slideId}
-              className="overflow-hidden rounded-lg border bg-card text-card-foreground"
+              className="overflow-hidden rounded-xl border bg-card text-card-foreground"
             >
               <div className="bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1545,7 +1545,7 @@ function BatchResultView({
                   <a
                     href={r.pngUrl}
                     download
-                    className="inline-flex h-7 items-center rounded-md bg-primary px-2.5 text-[11px] font-medium text-primary-foreground hover:opacity-90"
+                    className="inline-flex h-7 items-center rounded-md bg-primary px-2.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   >
                     Download
                   </a>
@@ -1553,7 +1553,7 @@ function BatchResultView({
                     href={r.pngUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-secondary"
+                    className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
                   >
                     Open
                   </a>
@@ -1568,13 +1568,13 @@ function BatchResultView({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:opacity-90"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           Edit again
         </button>
         <Link
           href="/posts"
-          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary"
+          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Open posts archive
         </Link>

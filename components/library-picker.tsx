@@ -72,7 +72,7 @@ export function LibraryPicker({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search..."
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+          className="h-9 w-full rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
         <div className="max-h-80 space-y-1 overflow-y-auto">
           {entities === null && (
@@ -88,7 +88,7 @@ export function LibraryPicker({
               key={e.id}
               type="button"
               onClick={() => onPick(e)}
-              className="flex w-full items-center gap-3 rounded-md border p-2 text-left hover:bg-secondary"
+              className="flex w-full items-center gap-3 rounded-md border p-2 text-left hover:bg-accent hover:text-accent-foreground"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img

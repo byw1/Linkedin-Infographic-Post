@@ -376,7 +376,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             onChange={(e) => setTitleAndMaybeSlug(e.target.value)}
             placeholder="Page title"
             maxLength={120}
-            className="h-9 w-full max-w-md rounded-md border bg-background px-3 text-base font-semibold"
+            className="h-9 w-full max-w-md rounded-md border bg-background px-3 text-base font-semibold shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -384,7 +384,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             type="button"
             onClick={deletePage}
             disabled={pending || deleting}
-            className="inline-flex h-9 items-center rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             {deleting ? "Deleting…" : "Delete"}
           </button>
@@ -392,7 +392,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             type="button"
             onClick={onCancel}
             disabled={pending || deleting}
-            className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-secondary disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Cancel
           </button>
@@ -400,7 +400,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             type="button"
             onClick={save}
             disabled={pending || deleting}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {pending ? "Saving…" : "Save"}
           </button>
@@ -418,7 +418,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             }}
             placeholder="slug"
             maxLength={120}
-            className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs"
+            className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </label>
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -429,7 +429,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             list="page-section-list"
             placeholder="(none — appears under Other)"
             maxLength={120}
-            className="h-7 flex-1 rounded-md border bg-background px-2 text-xs"
+            className="h-7 flex-1 rounded-md border bg-background px-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
           <datalist id="page-section-list">
             {knownSections.map((s) => (
@@ -546,7 +546,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
           )}
         </div>
         <div className="rounded-md border bg-card p-4">
-          <div className="mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="mb-2 text-sm font-medium text-muted-foreground">
             Live preview
           </div>
           <div className="docs-prose">
@@ -619,7 +619,7 @@ function SlashPicker({
       style={positionStyle}
       className="pointer-events-auto absolute z-30 w-72 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-xl"
     >
-      <div className="flex items-center justify-between gap-2 border-b px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-center justify-between gap-2 border-b px-2 py-1 text-sm font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5">
           {kind === "tool" ? (
             <Wrench size={11} aria-hidden />

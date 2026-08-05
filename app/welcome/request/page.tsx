@@ -17,7 +17,7 @@ export default function RequestAccessPage() {
         >
           ← Back
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight">Request access</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Request access</h1>
         <p className="text-sm text-muted-foreground">
           We keep this group small on purpose. If a friend pointed you here,
           tell us a little about yourself and who sent you. We&apos;ll get

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { SectionNav } from "@/components/section-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function SettingsLayout({
   return (
     <div className="container mx-auto max-w-6xl py-10">
       <header className="mb-8 space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">
           Your account. App-wide settings (invites, sign-in, health){" "}
           {isAdmin ? (
@@ -38,20 +39,13 @@ export default async function SettingsLayout({
         </p>
       </header>
       <div className="grid gap-8 md:grid-cols-[200px_1fr]">
-        <nav className="space-y-1 text-sm md:sticky md:top-20 md:self-start">
-          {NAV.map((item) => (
-            <Link
-              key={item.slug}
-              href={`/settings/${item.slug}`}
-              className="block rounded-md px-3 py-2 hover:bg-secondary"
-            >
-              <div className="font-medium">{item.label}</div>
-              <div className="text-[11px] text-muted-foreground">
-                {item.description}
-              </div>
-            </Link>
-          ))}
-        </nav>
+        <SectionNav
+          items={NAV.map((item) => ({
+            href: `/settings/${item.slug}`,
+            label: item.label,
+            description: item.description,
+          }))}
+        />
         <div className="min-w-0">{children}</div>
       </div>
     </div>

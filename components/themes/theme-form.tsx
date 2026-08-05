@@ -132,14 +132,14 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+      <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
         Loading theme…
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-lg border bg-card p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">
@@ -163,14 +163,14 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-secondary"
+            className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting || !name.trim()}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {submitting ? "Saving..." : "Save"}
           </button>
@@ -178,14 +178,14 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
       </div>
 
       <label className="block space-y-1">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           Name
         </span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm"
+          className="h-9 w-full rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           placeholder="e.g. Acme — Dark"
           required
         />
@@ -212,7 +212,7 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
           )}
         </div>
         <div className="space-y-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             Live preview
           </span>
           <SampleSlide css={tab === "visual" ? composeCss(values, fontUrlsFor(values)) : rawCss} />
@@ -238,7 +238,7 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
 function PresetRow({ onPick }: { onPick: (values: ThemeFormValues) => void }) {
   return (
     <div className="space-y-1.5">
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         Start from a preset
       </span>
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -464,7 +464,7 @@ function VisualBuilder({ values, onChange }: VisualProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         {title}
       </div>
       <div className="space-y-1.5 rounded-md border bg-background p-3">{children}</div>
@@ -587,14 +587,14 @@ function CssEditor({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <span className="text-xs text-muted-foreground">
         CSS tokens
       </span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={28}
-        className="w-full rounded-md border bg-background p-3 font-mono text-xs"
+        className="w-full rounded-md border bg-background p-3 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         spellCheck={false}
         required
       />

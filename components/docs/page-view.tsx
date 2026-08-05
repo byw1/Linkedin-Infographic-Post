@@ -56,7 +56,7 @@ export function PageView({ page, canEdit, prev, next }: Props) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           {page.section && (
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-[11px] font-medium text-muted-foreground">
               {page.section}
             </p>
           )}
@@ -66,7 +66,7 @@ export function PageView({ page, canEdit, prev, next }: Props) {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="inline-flex h-8 shrink-0 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+            className="inline-flex h-8 shrink-0 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Edit
           </button>
@@ -84,9 +84,9 @@ export function PageView({ page, canEdit, prev, next }: Props) {
           {prev ? (
             <Link
               href={`/docs/${prev.slug}`}
-              className="group flex flex-col gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-secondary/50"
+              className="group flex flex-col gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-accent/50"
             >
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="text-sm font-medium text-muted-foreground">
                 ← Previous
               </span>
               <span className="text-sm font-medium group-hover:text-foreground">
@@ -99,9 +99,9 @@ export function PageView({ page, canEdit, prev, next }: Props) {
           {next ? (
             <Link
               href={`/docs/${next.slug}`}
-              className="group flex flex-col items-end gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-secondary/50 sm:text-right"
+              className="group flex flex-col items-end gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-accent/50 sm:text-right"
             >
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="text-sm font-medium text-muted-foreground">
                 Next →
               </span>
               <span className="text-sm font-medium group-hover:text-foreground">

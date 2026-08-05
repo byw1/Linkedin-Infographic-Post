@@ -142,23 +142,23 @@ export function MemberProfileView({
         </div>
       )}
 
-      <header className="flex flex-wrap items-start gap-5 rounded-lg border bg-card p-6 text-card-foreground">
+      <header className="flex flex-wrap items-start gap-5 rounded-xl border bg-card p-6 text-card-foreground">
         <Avatar member={member} size={80} />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-baseline gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{displayName}</h1>
             {member.role === "admin" && (
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                 admin
               </span>
             )}
             {member.isSelf && (
-              <span className="text-[10px] font-medium uppercase tracking-wide text-primary">
+              <span className="text-[10px] font-medium text-primary">
                 you
               </span>
             )}
             {member.banned && (
-              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-destructive">
+              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
                 banned
               </span>
             )}
@@ -194,7 +194,7 @@ export function MemberProfileView({
             <div className="pt-2">
               <a
                 href="/settings/profile"
-                className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-secondary"
+                className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 Edit your profile in settings →
               </a>
@@ -209,13 +209,13 @@ export function MemberProfileView({
           className="space-y-3 rounded-md border border-primary/30 bg-primary/5 p-4"
         >
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+            <span className="text-[10px] font-semibold text-primary">
               Admin actions
             </span>
             <button
               type="button"
               onClick={() => setShowAdminEdit((v) => !v)}
-              className="inline-flex h-7 items-center rounded-md border px-2 text-xs hover:bg-background"
+              className="inline-flex h-7 items-center rounded-md border px-2 text-xs hover:bg-background cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               {showAdminEdit ? "Hide editor" : "Edit profile"}
             </button>
@@ -223,7 +223,7 @@ export function MemberProfileView({
               type="button"
               onClick={() => ban(!member.banned)}
               disabled={pending}
-              className="inline-flex h-7 items-center rounded-md border px-2 text-xs hover:bg-background disabled:opacity-50"
+              className="inline-flex h-7 items-center rounded-md border px-2 text-xs hover:bg-background disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               {member.banned ? "Unban" : "Ban"}
             </button>
@@ -231,7 +231,7 @@ export function MemberProfileView({
               type="button"
               onClick={remove}
               disabled={pending}
-              className="inline-flex h-7 items-center rounded-md border border-destructive/40 px-2 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              className="inline-flex h-7 items-center rounded-md border border-destructive/40 px-2 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Remove permanently
             </button>
@@ -299,7 +299,7 @@ export function MemberProfileView({
       {showPosts && (
         <section className="space-y-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            <h2 className="text-lg font-semibold">
               Tracked posts
             </h2>
           </div>
@@ -324,7 +324,7 @@ export function MemberProfileView({
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-secondary disabled:opacity-50"
+                className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 {loadingMore ? "Loading…" : "Load more"}
               </button>
@@ -338,13 +338,12 @@ export function MemberProfileView({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border bg-card p-3 text-card-foreground">
-      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 font-mono text-lg font-semibold tabular-nums">
-        {value}
-      </div>
+    // Stat card: muted description over a large tabular-nums value.
+    // `uppercase` is reserved for command-palette group labels, so the
+    // label runs as ordinary muted text.
+    <div className="rounded-xl border bg-card p-4 text-card-foreground shadow">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
     </div>
   );
 }

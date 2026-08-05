@@ -51,7 +51,7 @@ export function NavMenu({
           <button
             type="button"
             aria-label="Account menu"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border bg-background text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border bg-background text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {image ? (
               /* eslint-disable-next-line @next/next/no-img-element */
@@ -108,7 +108,7 @@ export function NavMenu({
             <button
               type="button"
               onClick={() => signOutFormRef.current?.requestSubmit()}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-transparent text-sm font-medium hover:bg-secondary"
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-transparent text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sign out
@@ -132,7 +132,7 @@ function MenuLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-secondary"
+      className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
     >
       {icon}
       {children}
