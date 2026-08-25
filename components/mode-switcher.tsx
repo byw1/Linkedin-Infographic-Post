@@ -55,6 +55,7 @@ export function ModeSwitcher({
         <Segmented
           value={mode}
           onValueChange={setMode}
+          layoutId="mode-switcher-pill"
           options={MODE_OPTIONS}
         />
         <p className="text-xs text-muted-foreground">{MODE_META[mode]}</p>
@@ -77,3 +78,4 @@ export function ModeSwitcher({
     </div>
   );
 }
+

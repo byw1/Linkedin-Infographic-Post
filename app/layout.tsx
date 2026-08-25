@@ -1,20 +1,7 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "@/styles/globals.css";
-
-// Display and text are one face at different weights. Mono is reserved
-// for numerals, stats and metadata — never body copy, never headings.
-const instrumentSans = Instrument_Sans({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-instrument-sans",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-jetbrains-mono",
-});
 
 // Prefer the deployed origin if it's known via env so absolute URLs
 // in og:image / twitter:image resolve correctly when the URL is
@@ -26,7 +13,7 @@ const SITE_URL =
 
 const TITLE = "Viral";
 const DESCRIPTION =
-  "Write it. Render it. Track what it did. 2,000,000+ impressions in the last 30 days. Invite-only.";
+  "We figured out how to hack virality. 2,000,000+ impressions in the last 30 days. Invite-only.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -49,11 +36,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   // Both Geist axes ship as variable fonts with no `weight` array — the
   // app picks weights with Tailwind classes and only ever uses 400/500/600.
   // `dark` is hard-coded (the app is dark-only) so the `dark:` variants in
@@ -61,10 +44,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${instrumentSans.variable} ${jetbrainsMono.variable} dark`}
+      className={`${GeistSans.variable} ${GeistMono.variable} dark`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-off-black font-sans text-chalk antialiased">
+      <body className="min-h-screen bg-background font-sans antialiased">
         {children}
       </body>
     </html>

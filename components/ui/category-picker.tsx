@@ -29,10 +29,7 @@ export function CategoryPicker({
   useEffect(() => {
     if (!open) return;
     function onDown(ev: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(ev.target as Node)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(ev.target as Node)) {
         setOpen(false);
       }
     }
@@ -86,11 +83,11 @@ export function CategoryPicker({
   return (
     <div ref={wrapperRef} className="relative">
       <div
-        className="flex flex-wrap items-center gap-1.5 border bg-background px-2 py-1.5 text-xs"
+        className="flex flex-wrap items-center gap-1.5 rounded-md border bg-background px-2 py-1.5 text-xs focus-within:ring-1 focus-within:ring-ring"
         onClick={() => inputRef.current?.focus()}
       >
         {value && (
-          <span className="inline-flex h-6 items-center gap-1 border bg-primary/10 px-2 text-[11px] text-foreground">
+          <span className="inline-flex h-6 items-center gap-1 rounded-full border bg-primary/10 px-2 text-[11px] text-foreground">
             {value}
             <button
               type="button"
@@ -99,7 +96,7 @@ export function CategoryPicker({
                 clear();
               }}
               aria-label={`Clear category ${value}`}
-              className="-mr-1 inline-flex h-4 w-4 items-center justify-center text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer outline-none focus-visible:border-ring"
+              className="-mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               ×
             </button>
@@ -122,19 +119,17 @@ export function CategoryPicker({
       </div>
 
       {open && !value && (filtered.length > 0 || canCreate) && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto border bg-card p-1 text-xs text-card-foreground">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border bg-card p-1 text-xs text-card-foreground shadow-lg">
           {filtered.map((s) => (
             <button
               key={s}
               type="button"
               onMouseDown={(ev) => ev.preventDefault()}
               onClick={() => commit(s)}
-              className="flex w-full items-center justify-between px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
             >
               <span>{s}</span>
-              <span className="text-[10px] text-muted-foreground">
-                existing
-              </span>
+              <span className="text-[10px] text-muted-foreground">existing</span>
             </button>
           ))}
           {canCreate && (
@@ -142,7 +137,7 @@ export function CategoryPicker({
               type="button"
               onMouseDown={(ev) => ev.preventDefault()}
               onClick={() => commit(draft)}
-              className="flex w-full items-center justify-between px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
             >
               <span>
                 Create <span className="font-medium">{cleaned}</span>

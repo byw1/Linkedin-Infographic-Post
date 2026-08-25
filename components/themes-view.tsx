@@ -26,26 +26,14 @@ interface Props {
 // the legacy `--bg-*` / `--fg-*` / `--accent` names so a theme pasted
 // in either convention still renders chips correctly.
 const SWATCH_KEYS: { label: string; keys: string[] }[] = [
-  {
-    label: "background-primary",
-    keys: ["--color-background-primary", "--bg-canvas"],
-  },
-  {
-    label: "background-secondary",
-    keys: ["--color-background-secondary", "--bg-panel"],
-  },
+  { label: "background-primary", keys: ["--color-background-primary", "--bg-canvas"] },
+  { label: "background-secondary", keys: ["--color-background-secondary", "--bg-panel"] },
   { label: "accent-primary", keys: ["--color-accent-primary", "--accent"] },
-  {
-    label: "accent-secondary",
-    keys: ["--color-accent-secondary", "--accent-hover"],
-  },
+  { label: "accent-secondary", keys: ["--color-accent-secondary", "--accent-hover"] },
   { label: "text-primary", keys: ["--color-text-primary", "--fg-primary"] },
 ];
 
-function readToken(
-  tokens: Record<string, string>,
-  keys: string[],
-): string | undefined {
+function readToken(tokens: Record<string, string>, keys: string[]): string | undefined {
   for (const k of keys) if (tokens[k]) return tokens[k];
   return undefined;
 }
@@ -77,7 +65,7 @@ export function ThemesView({ mode }: Props) {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex h-9 items-center bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer outline-none focus-visible:border-ring"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           New theme
         </button>
@@ -127,14 +115,7 @@ interface CardProps {
   onChanged: () => Promise<void> | void;
 }
 
-function ThemeCard({
-  theme,
-  mode,
-  isEditing,
-  onEdit,
-  onCancelEdit,
-  onChanged,
-}: CardProps) {
+function ThemeCard({ theme, mode, isEditing, onEdit, onCancelEdit, onChanged }: CardProps) {
   const [busy, startBusy] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -170,9 +151,7 @@ function ThemeCard({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(
-          typeof body.error === "string" ? body.error : "Toggle failed.",
-        );
+        setError(typeof body.error === "string" ? body.error : "Toggle failed.");
         return;
       }
       await onChanged();
@@ -193,30 +172,35 @@ function ThemeCard({
   }
 
   return (
-    <div className="border bg-card p-4">
+    <div className="rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h3 className="text-base font-semibold">{theme.name}</h3>
             {theme.isOfficial && (
-              <span className="bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-medium text-primary">
                 Official
               </span>
             )}
             {theme.isSystem && (
-              <span className="bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                 System
               </span>
             )}
             {theme.isMine === true && !theme.isSystem && (
-              <span className="bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-secondary-foreground">
                 Mine
               </span>
             )}
           </div>
           <div className="text-xs text-muted-foreground">
             {theme.fontFamily ?? "—"}
-            {mode === "admin" && theme.owner && <> · {theme.owner.email}</>}
+            {mode === "admin" && theme.owner && (
+              <>
+                {" "}
+                · {theme.owner.email}
+              </>
+            )}
             {mode === "admin" && typeof theme.renderCount === "number" && (
               <>
                 {" "}
@@ -231,7 +215,7 @@ function ThemeCard({
               type="button"
               onClick={togglePublish}
               disabled={busy}
-              className="inline-flex h-8 items-center border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               {theme.isOfficial ? "Unpublish" : "Publish"}
             </button>
@@ -241,7 +225,7 @@ function ThemeCard({
               type="button"
               onClick={onEdit}
               disabled={busy}
-              className="inline-flex h-8 items-center border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Edit
             </button>
@@ -251,7 +235,7 @@ function ThemeCard({
               type="button"
               onClick={deleteTheme}
               disabled={busy}
-              className="inline-flex h-8 items-center border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-8 items-center rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Delete
             </button>
@@ -266,7 +250,7 @@ function ThemeCard({
           return (
             <div key={sw.label} className="flex items-center gap-1.5">
               <span
-                className="h-5 w-5 border"
+                className="h-5 w-5 rounded border"
                 style={{ background: v }}
                 title={`${sw.keys[0]}: ${v}`}
               />
@@ -282,3 +266,4 @@ function ThemeCard({
     </div>
   );
 }
+

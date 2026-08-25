@@ -195,9 +195,8 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
         name: t.name,
         hint: prettyHost(t.url),
       }));
-      return (
-        q ? pool.filter((p) => p.name.toLowerCase().includes(q)) : pool
-      ).slice(0, SLASH_LIMIT);
+      return (q ? pool.filter((p) => p.name.toLowerCase().includes(q)) : pool)
+        .slice(0, SLASH_LIMIT);
     }
     const pool = skills.map<SlashMatch>((s) => ({
       kind: "skill",
@@ -205,9 +204,8 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
       name: s.name,
       hint: s.filename,
     }));
-    return (
-      q ? pool.filter((p) => p.name.toLowerCase().includes(q)) : pool
-    ).slice(0, SLASH_LIMIT);
+    return (q ? pool.filter((p) => p.name.toLowerCase().includes(q)) : pool)
+      .slice(0, SLASH_LIMIT);
   }, [trigger, tools, skills]);
 
   // Reset highlight + un-dismiss whenever a fresh trigger appears.
@@ -222,7 +220,9 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
   }, [trigger, dismissedStart]);
 
   const showPicker =
-    trigger !== null && matches.length > 0 && dismissedStart !== trigger.start;
+    trigger !== null &&
+    matches.length > 0 &&
+    dismissedStart !== trigger.start;
 
   // Measure where the slash sits inside the textarea so the picker
   // can dock right under it. Re-runs on value/trigger changes and on
@@ -357,9 +357,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(
-          typeof data.error === "string" ? data.error : "Delete failed.",
-        );
+        setError(typeof data.error === "string" ? data.error : "Delete failed.");
         return;
       }
       // Send the user back to the docs index — it'll redirect to
@@ -378,7 +376,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             onChange={(e) => setTitleAndMaybeSlug(e.target.value)}
             placeholder="Page title"
             maxLength={120}
-            className="h-9 w-full max-w-md border bg-background px-3 text-base font-semibold outline-none focus-visible:border-ring"
+            className="h-9 w-full max-w-md rounded-md border bg-background px-3 text-base font-semibold shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -386,7 +384,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             type="button"
             onClick={deletePage}
             disabled={pending || deleting}
-            className="inline-flex h-9 items-center border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-9 items-center rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             {deleting ? "Deleting…" : "Delete"}
           </button>
@@ -394,7 +392,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             type="button"
             onClick={onCancel}
             disabled={pending || deleting}
-            className="inline-flex h-9 items-center border px-3 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Cancel
           </button>
@@ -402,7 +400,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             type="button"
             onClick={save}
             disabled={pending || deleting}
-            className="inline-flex h-9 items-center bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {pending ? "Saving…" : "Save"}
           </button>
@@ -420,7 +418,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             }}
             placeholder="slug"
             maxLength={120}
-            className="h-7 flex-1 border bg-background px-2 font-mono text-xs outline-none focus-visible:border-ring"
+            className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </label>
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -431,7 +429,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             list="page-section-list"
             placeholder="(none — appears under Other)"
             maxLength={120}
-            className="h-7 flex-1 border bg-background px-2 text-xs outline-none focus-visible:border-ring"
+            className="h-7 flex-1 rounded-md border bg-background px-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
           <datalist id="page-section-list">
             {knownSections.map((s) => (
@@ -443,20 +441,27 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
 
       <p className="text-[11px] text-muted-foreground">
         Tip: type{" "}
-        <code className="bg-secondary px-1 font-mono text-[10px]">/tool</code>{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          /tool
+        </code>{" "}
         or{" "}
-        <code className="bg-secondary px-1 font-mono text-[10px]">/skill</code>{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          /skill
+        </code>{" "}
         to insert a linked card. Use{" "}
-        <code className="bg-secondary px-1 font-mono text-[10px]">
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
           &gt; [!note]
         </code>
         ,{" "}
-        <code className="bg-secondary px-1 font-mono text-[10px]">[!tip]</code>,{" "}
-        <code className="bg-secondary px-1 font-mono text-[10px]">
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
+          [!tip]
+        </code>
+        ,{" "}
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
           [!warning]
         </code>
         , or{" "}
-        <code className="bg-secondary px-1 font-mono text-[10px]">
+        <code className="rounded bg-secondary px-1 font-mono text-[10px]">
           [!important]
         </code>{" "}
         for callouts.
@@ -464,8 +469,8 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
 
       <div className="grid items-start gap-3 lg:grid-cols-2">
         <div
-          className={`relative w-full border bg-background ${
-            focused ? "" : ""
+          className={`relative w-full rounded-md border bg-background transition-shadow ${
+            focused ? "ring-2 ring-primary/40" : ""
           }`}
         >
           {activeLineTop !== null && (
@@ -540,7 +545,7 @@ export function PageEditor({ initial, onCancel, onSaved }: Props) {
             />
           )}
         </div>
-        <div className="border bg-card p-4">
+        <div className="rounded-md border bg-card p-4">
           <div className="mb-2 text-sm font-medium text-muted-foreground">
             Live preview
           </div>
@@ -612,7 +617,7 @@ function SlashPicker({
       role="listbox"
       aria-label={kind === "tool" ? "Insert tool" : "Insert skill"}
       style={positionStyle}
-      className="pointer-events-auto absolute z-30 w-72 overflow-hidden border bg-popover text-popover-foreground"
+      className="pointer-events-auto absolute z-30 w-72 overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-xl"
     >
       <div className="flex items-center justify-between gap-2 border-b px-2 py-1 text-sm font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5">
@@ -717,10 +722,7 @@ function tokenizeSource(text: string): React.ReactNode[] {
     if (m.index > last) nodes.push(text.slice(last, m.index));
     const [whole, label, kind, id] = m;
     nodes.push(
-      <span
-        key={`tok-${key++}`}
-        className={`docs-source-chip docs-source-${kind}`}
-      >
+      <span key={`tok-${key++}`} className={`docs-source-chip docs-source-${kind}`}>
         <span className="docs-source-bracket">[</span>
         <span className="docs-source-name">{label}</span>
         <span className="docs-source-bracket">]</span>
@@ -801,7 +803,8 @@ function caretCoordinates(
   div.appendChild(span);
 
   const lineHeight =
-    parseFloat(computed.lineHeight) || parseFloat(computed.fontSize) * 1.2;
+    parseFloat(computed.lineHeight) ||
+    parseFloat(computed.fontSize) * 1.2;
   const result = {
     top: span.offsetTop,
     left: span.offsetLeft,

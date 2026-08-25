@@ -2,57 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Shifu Labs brand system.
+/* Shifu Labs palette on the existing surface structure.
  *
- * Four inks and nothing else. Off-Black is the ground, Chalk is the
- * text, Concrete is secondary text and every hairline, Signal is the
- * accent — accent meaning borders, marks, and focus, never a region
- * fill and never body text. Signal on Off-Black does not clear WCAG AA
- * at body sizes, which is why it is restricted rather than lightened.
+ * Four inks:
+ *   Off-Black  #101010  hsl(0 0% 6.3%)    ground
+ *   Chalk      #F1EFEA  hsl(42 20% 93%)   text, reversed ground
+ *   Concrete   #55534E  hsl(42 4% 32%)    hairlines, secondary text
+ *   Signal     #FF4D00  hsl(18 100% 50%)  accent only
  *
- * There are no radii, no shadows, no gradients, and no ambient motion.
- * Separation is structural: a 1px Concrete hairline does the work
- * elevation used to do. The radius and shadow scales are emptied in
- * tailwind.config.ts, so `rounded-*` and `shadow-*` no longer compile
- * at all — this file must not reintroduce them via @apply.
- */
+ * The four inks alone give one ground, and this UI reads depth from
+ * three stacked surfaces. So `card` and `muted` are Off-Black lifted
+ * along the same warm axis Chalk and Concrete sit on — the same ink at
+ * a different lightness, not a fifth colour. `muted-foreground` is
+ * likewise Concrete lightened: Concrete itself measures ~2.5:1 on
+ * Off-Black, which fails AA for body text.
+ *
+ * Signal is accent only: focus rings, destructive, warning, and the
+ * active-nav rail. Never a region fill, never body copy. */
 @layer base {
   :root,
   .dark {
     color-scheme: dark;
-
-    --off-black: #101010;
-    --chalk: #f1efea;
-    --concrete: #55534e;
-    --signal: #ff4d00;
+    --background: 0 0% 6.3%; /*      Off-Black, exact */
+    --foreground: 42 20% 93%; /*     Chalk, exact */
+    --card: 42 4% 11%;
+    --card-foreground: 42 20% 93%;
+    --popover: 42 4% 11%;
+    --popover-foreground: 42 20% 93%;
+    /* Primary is Chalk — a cream pill on near-black. */
+    --primary: 42 20% 93%;
+    --primary-foreground: 0 0% 6.3%;
+    --secondary: 42 4% 16%;
+    --secondary-foreground: 42 20% 93%;
+    --muted: 42 4% 16%;
+    --muted-foreground: 42 5% 62%; /* Concrete lightened for AA */
+    --accent: 42 4% 16%;
+    --accent-foreground: 42 20% 93%;
+    --destructive: 18 100% 50%; /*   Signal */
+    --destructive-foreground: 0 0% 6.3%;
+    --success: 42 20% 93%; /*        Chalk — no green in the palette */
+    --success-bg: 42 4% 16%;
+    --warning: 18 100% 50%; /*       Signal */
+    --warning-bg: 42 4% 16%;
+    --border: 42 4% 32%; /*          Concrete, exact */
+    --input: 42 4% 38%;
+    --ring: 18 100% 50%; /*          Signal */
+    --radius: 0.625rem;
   }
 }
 
 @layer base {
   * {
-    border-color: var(--concrete);
+    @apply border-border;
   }
-
   body {
-    background-color: var(--off-black);
-    color: var(--chalk);
-    @apply font-sans antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
   }
 
+  /* Selection is primary at 15% — never a solid accent block. */
   ::selection {
-    background-color: var(--signal);
-    color: var(--off-black);
+    @apply bg-primary/15;
   }
 
-  /* A focus ring is functional, not decoration. Square, Signal, always
-   * visible — this is the one place Signal is allowed near every
-   * interactive element on the page. */
-  :focus-visible {
-    outline: 2px solid var(--signal);
-    outline-offset: 2px;
-  }
-
-  /* 8px scrollbars. Square, hairline-coloured, no track. */
+  /* 8px scrollbars, transparent track, border-colored thumb. */
   *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -61,33 +73,38 @@
     background: transparent;
   }
   *::-webkit-scrollbar-thumb {
-    background-color: var(--concrete);
+    @apply rounded-full bg-border;
   }
-
-  /* Mono is reserved: numerals, stats, metadata, identifiers. Never
-   * body copy, never headings. */
-  code,
-  kbd,
-  samp,
-  pre {
-    @apply font-mono;
+  *::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
   }
 }
 
-/* Markdown rendering for /docs. Editorial: hairline rules between
- * sections, no rounded anything, no filled code blocks. */
+/* The auth / marketing backdrop — the only gradient in the app, and
+   it's achromatic at 6%/8%, so it reads as an uneven light source
+   rather than as a "gradient". Static: it never animates. */
+.auth-backdrop {
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 0%, hsl(var(--primary) / 0.06), transparent),
+    radial-gradient(ellipse 50% 40% at 90% 100%, hsl(var(--primary) / 0.08), transparent),
+    hsl(var(--background));
+}
+
+/* Plain-text-style markdown rendering for the /docs page. We don't
+   pull in @tailwindcss/typography to keep the dep set lean — these
+   targeted rules cover everything react-markdown + remark-gfm emit
+   (headings, paragraphs, lists, code, tables, links, blockquotes). */
 .docs-prose {
-  @apply text-sm leading-relaxed;
-  color: var(--chalk);
+  @apply text-sm leading-relaxed text-foreground;
 }
 .docs-prose h1 {
-  @apply mb-3 mt-8 text-2xl font-bold tracking-tight first:mt-0;
+  @apply mt-8 mb-3 text-2xl font-bold tracking-tight first:mt-0;
 }
 .docs-prose h2 {
-  @apply mb-2 mt-7 text-xl font-bold tracking-tight;
+  @apply mt-7 mb-2 text-xl font-semibold tracking-tight;
 }
 .docs-prose h3 {
-  @apply mb-2 mt-6 text-base font-bold tracking-tight;
+  @apply mt-6 mb-2 text-base font-semibold tracking-tight;
 }
 .docs-prose p {
   @apply my-3;
@@ -102,101 +119,119 @@
   @apply my-0;
 }
 .docs-prose strong {
-  @apply font-bold;
-  color: var(--chalk);
+  @apply font-semibold text-foreground;
 }
 .docs-prose a {
-  @apply underline underline-offset-2;
-  color: var(--chalk);
-  text-decoration-color: var(--signal);
-}
-.docs-prose a:hover {
-  color: var(--signal);
+  @apply text-primary underline underline-offset-2 hover:opacity-80;
 }
 .docs-prose code {
-  @apply px-1 py-0.5 font-mono text-[0.85em];
-  border: 1px solid var(--concrete);
+  @apply rounded bg-muted px-1 py-0.5 font-mono text-[0.85em];
 }
 .docs-prose pre {
-  @apply my-4 overflow-x-auto p-3 font-mono text-xs;
-  border: 1px solid var(--concrete);
+  @apply my-4 overflow-x-auto rounded-md border bg-muted p-3 font-mono text-xs;
 }
 .docs-prose pre code {
-  @apply border-0 p-0 text-xs;
+  @apply bg-transparent p-0 text-xs;
 }
 .docs-prose blockquote {
-  @apply my-4 pl-3;
-  border-left: 1px solid var(--signal);
-  color: var(--concrete);
+  @apply my-4 border-l-2 border-primary/40 pl-3 text-muted-foreground;
 }
 .docs-prose hr {
-  @apply my-6;
-  border-color: var(--concrete);
+  @apply my-6 border-border;
 }
 .docs-prose table {
   @apply my-4 w-full text-left text-xs;
 }
 .docs-prose th,
 .docs-prose td {
-  @apply px-2 py-1.5;
-  border: 1px solid var(--concrete);
+  @apply border border-border px-2 py-1.5;
 }
 .docs-prose th {
-  @apply font-bold;
+  @apply bg-muted font-medium;
 }
 .docs-prose img {
-  @apply my-4 max-w-full;
-  border: 1px solid var(--concrete);
+  @apply my-4 max-w-full rounded-md border;
 }
 
 /* Page-editor source overlay. The textarea sits on top with
  * transparent text + a visible caret; this layer paints the actual
  * characters so we can highlight tool/skill link tokens without
  * touching the source. Character widths must stay identical to the
- * textarea — we only swap colors. */
+ * textarea — we only swap colors / backgrounds. */
 .docs-source-overlay {
-  color: var(--chalk);
+  color: hsl(var(--foreground));
   word-break: break-word;
 }
 .docs-source-overlay::selection,
 .docs-source-overlay *::selection {
   background: transparent;
 }
-.docs-source-tool .docs-source-name,
-.docs-source-skill .docs-source-name {
-  color: var(--signal);
+.docs-source-chip {
+  border-radius: 3px;
+}
+.docs-source-tool .docs-source-name {
+  background: hsl(var(--primary) / 0.18);
+  color: hsl(var(--foreground));
   padding: 0 1px;
-  font-weight: 700;
+  border-radius: 2px;
+  font-weight: 600;
+}
+.docs-source-skill .docs-source-name {
+  background: hsl(18 100% 50% / 0.18);
+  color: hsl(var(--foreground));
+  padding: 0 1px;
+  border-radius: 2px;
+  font-weight: 600;
 }
 .docs-source-bracket {
-  color: var(--concrete);
+  color: hsl(var(--muted-foreground) / 0.55);
 }
-/* The (tool:uuid) portion stays in the source for caret alignment but
- * is faded so the editor isn't dominated by long UUIDs. */
+/* The (tool:uuid) portion stays in the source for caret alignment
+ * but is faded almost to invisibility so the editor isn't dominated
+ * by long UUIDs. */
 .docs-source-ref {
-  color: var(--concrete);
-  opacity: 0.5;
+  color: hsl(var(--muted-foreground) / 0.25);
 }
 
-/* Tool catalog tiers. These used to be four coloured glows. The palette
- * has four inks and none of them are "amber" or "red", so the tier now
- * reads from its label plus a hairline — Signal marks the top tier
- * only, which is the one case worth an accent. The chip text carries
- * the meaning; the colour never did the work alone. */
+/* Tool catalog tier marks. Used by /docs/tools to mark tools the
+ * admin tagged gold / silver / risky / trash. The chip + the card
+ * border share the same edge color so a tier reads at a glance.
+ *
+ * These used to pulse on a 2.6s loop. Ambient motion is the one thing
+ * this design language rules out flatly — motion here means "work is
+ * happening right now", never atmosphere — so the tier now reads as a
+ * static 1px colored ring. All four tiers stay fully distinguishable;
+ * only the loop is gone. */
 .tier-card-gold,
-.tier-chip-gold {
-  border-color: var(--signal);
-  color: var(--signal);
-}
 .tier-card-silver,
 .tier-card-risky,
-.tier-card-trash,
+.tier-card-trash {
+  box-shadow: 0 0 0 1px var(--tier-edge);
+}
+
+/* Four inks can't encode four tiers by hue, so the top tier takes
+ * Signal and the rest sit in Concrete. The chip label already names the
+ * tier — the colour was never carrying it alone. */
+.tier-card-gold   { --tier-edge: hsl(18 100% 50%); }
+.tier-card-silver { --tier-edge: hsl(42 4% 45%); }
+.tier-card-risky  { --tier-edge: hsl(18 100% 50% / 0.5); }
+.tier-card-trash  { --tier-edge: hsl(42 4% 32%); }
+
+.tier-chip-gold,
 .tier-chip-silver,
 .tier-chip-risky,
 .tier-chip-trash {
-  border-color: var(--concrete);
-  color: var(--concrete);
+  box-shadow: 0 0 0 1px var(--tier-edge);
 }
+
+.tier-chip-gold   { --tier-edge: hsl(18 100% 50%);
+  background-color: hsl(18 100% 50% / 0.12); color: hsl(18 100% 62%); border-color: hsl(18 100% 50% / 0.4); }
+.tier-chip-silver { --tier-edge: hsl(42 4% 45%);
+  background-color: hsl(42 4% 45% / 0.14); color: hsl(42 20% 93%); border-color: hsl(42 4% 45% / 0.5); }
+.tier-chip-risky  { --tier-edge: hsl(18 100% 50% / 0.5);
+  background-color: hsl(18 100% 50% / 0.08); color: hsl(18 60% 70%); border-color: hsl(18 100% 50% / 0.3); }
+.tier-chip-trash  { --tier-edge: hsl(42 4% 32%);
+  background-color: hsl(42 4% 32% / 0.2); color: hsl(42 5% 62%); border-color: hsl(42 4% 32%); }
 
 @media (prefers-reduced-motion: reduce) {
   *,

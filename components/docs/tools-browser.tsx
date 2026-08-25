@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalLink, Plus, Search, Upload, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { CategoryPicker } from "@/components/ui/category-picker";
 import { TagInput } from "@/components/ui/tag-input";
@@ -128,8 +129,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
         if (t.description?.toLowerCase().includes(q)) return true;
         if (t.url.toLowerCase().includes(q)) return true;
         if (t.category?.toLowerCase().includes(q)) return true;
-        for (const tag of t.tags)
-          if (tag.toLowerCase().includes(q)) return true;
+        for (const tag of t.tags) if (tag.toLowerCase().includes(q)) return true;
         return false;
       });
     }
@@ -188,14 +188,14 @@ export function ToolsBrowser({ isAdmin }: Props) {
           <Search
             size={14}
             aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
           />
           <input
             type="search"
             value={search}
             onChange={(ev) => setSearch(ev.target.value)}
             placeholder="Search tools, tags, descriptions…"
-            className="h-10 w-full border bg-background pl-9 pr-3 text-sm outline-none focus-visible:border-ring"
+            className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           />
         </div>
         {tools && (
@@ -210,7 +210,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
               setAdding((v) => !v);
               setEditingId(null);
             }}
-            className="inline-flex h-10 items-center gap-1 border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-10 items-center gap-1 rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             <Plus size={14} aria-hidden />
             {adding ? "Cancel" : "Add tool"}
@@ -246,7 +246,7 @@ export function ToolsBrowser({ isAdmin }: Props) {
         <p className="text-sm text-muted-foreground">Loading…</p>
       )}
       {visible && visible.length === 0 && (
-        <div className="border bg-card p-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border bg-card p-6 text-center text-sm text-muted-foreground">
           {search || activeTag
             ? "No tools match that filter. Try a wider search."
             : isAdmin
@@ -275,33 +275,45 @@ export function ToolsBrowser({ isAdmin }: Props) {
                   {section.items.length}
                 </span>
               </h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {visibleItems.map((t) =>
-                  editingId === t.id ? (
-                    <div key={t.id} className="sm:col-span-2 lg:col-span-3">
-                      <ToolForm
-                        mode="edit"
-                        initial={t}
-                        allKnownTags={allKnownTags}
-                        allKnownCategories={allKnownCategories}
-                        onSaved={() => {
-                          setEditingId(null);
-                          void load();
-                        }}
-                        onCancel={() => setEditingId(null)}
+              <motion.div
+                layout
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                <AnimatePresence mode="popLayout">
+                  {visibleItems.map((t) =>
+                    editingId === t.id ? (
+                      <motion.div
+                        key={t.id}
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="sm:col-span-2 lg:col-span-3"
+                      >
+                        <ToolForm
+                          mode="edit"
+                          initial={t}
+                          allKnownTags={allKnownTags}
+                          allKnownCategories={allKnownCategories}
+                          onSaved={() => {
+                            setEditingId(null);
+                            void load();
+                          }}
+                          onCancel={() => setEditingId(null)}
+                        />
+                      </motion.div>
+                    ) : (
+                      <ToolCard
+                        key={t.id}
+                        tool={t}
+                        isAdmin={isAdmin}
+                        onEdit={() => setEditingId(t.id)}
+                        onDeleted={() => void load()}
                       />
-                    </div>
-                  ) : (
-                    <ToolCard
-                      key={t.id}
-                      tool={t}
-                      isAdmin={isAdmin}
-                      onEdit={() => setEditingId(t.id)}
-                      onDeleted={() => void load()}
-                    />
-                  ),
-                )}
-              </div>
+                    ),
+                  )}
+                </AnimatePresence>
+              </motion.div>
               {(hidden > 0 || expanded) &&
                 section.items.length > CARDS_PER_SECTION_DEFAULT && (
                   <button
@@ -309,7 +321,9 @@ export function ToolsBrowser({ isAdmin }: Props) {
                     onClick={() => toggleCategory(section.category)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {expanded ? "Show less" : `Show ${hidden} more →`}
+                    {expanded
+                      ? "Show less"
+                      : `Show ${hidden} more →`}
                   </button>
                 )}
             </section>
@@ -365,7 +379,7 @@ function TagFilterStrip({
       <button
         type="button"
         onClick={onClear}
-        className={`inline-flex h-7 items-center border px-3 text-xs ${
+        className={`inline-flex h-7 items-center rounded-full border px-3 text-xs ${
           activeTag === null
             ? "border-primary bg-primary/10"
             : "hover:bg-secondary"
@@ -389,7 +403,7 @@ function TagFilterStrip({
             key={tag}
             type="button"
             onClick={() => onTagClick(tag)}
-            className={`inline-flex h-7 items-center gap-1 border px-3 font-mono text-xs ${
+            className={`inline-flex h-7 items-center gap-1 rounded-full border px-3 font-mono text-xs ${
               tagTier ? tierCls : activeCls
             }`}
           >
@@ -402,7 +416,7 @@ function TagFilterStrip({
         <button
           type="button"
           onClick={() => setShowAll(!showAll)}
-          className="inline-flex h-7 items-center border border-dashed px-3 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:text-foreground cursor-pointer outline-none focus-visible:border-ring"
+          className="inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:text-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           {showAll ? "Show less" : `Show ${hidden} more`}
         </button>
@@ -438,8 +452,14 @@ function ToolCard({
   const tierClass = tier ? `tier-card-${tier}` : "";
 
   return (
-    <div
-      className={`group relative flex flex-col gap-3 overflow-hidden border border-concrete bg-off-black p-5 text-chalk ${tierClass}`}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -4, transition: { duration: 0.18 } }}
+      className={`group relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-5 text-card-foreground shadow-sm transition-shadow duration-300 hover:shadow-lg ${tierClass}`}
     >
       <a
         href={tool.url}
@@ -448,7 +468,7 @@ function ToolCard({
         className="absolute inset-0"
         aria-label={tool.name}
       />
-      <div className="pointer-events-none absolute inset-0 bg-transparent group-hover:bg-accent/50" />
+      <div className="pointer-events-none absolute inset-0 bg-transparent transition-colors duration-200 group-hover:bg-accent/50" />
 
       <div className="relative flex items-start gap-3">
         <ToolLogo tool={tool} size={44} />
@@ -458,12 +478,12 @@ function ToolCard({
             <ExternalLink
               size={12}
               aria-hidden
-              className="shrink-0 text-muted-foreground"
+              className="shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
             />
           </div>
           {/* URL hidden on cards by design — clicking the card
-           * goes to it, but admins want to swap in affiliate
-           * links without showing the bare destination. */}
+            * goes to it, but admins want to swap in affiliate
+            * links without showing the bare destination. */}
         </div>
       </div>
 
@@ -481,11 +501,13 @@ function ToolCard({
             )
               ? (tag.toLowerCase() as (typeof TIER_NAMES)[number])
               : null;
-            const cls = tagTier ? `tier-chip-${tagTier}` : "bg-secondary/50";
+            const cls = tagTier
+              ? `tier-chip-${tagTier}`
+              : "bg-secondary/50";
             return (
               <span
                 key={tag}
-                className={`inline-flex h-5 items-center border px-2 font-mono text-[10px] ${cls}`}
+                className={`inline-flex h-5 items-center rounded-full border px-2 font-mono text-[10px] ${cls}`}
               >
                 {tag}
               </span>
@@ -503,7 +525,7 @@ function ToolCard({
               ev.stopPropagation();
               onEdit();
             }}
-            className="inline-flex h-7 items-center border bg-card/80 px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-7 items-center rounded-md border bg-card/80 px-2.5 text-[11px] backdrop-blur hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Edit
           </button>
@@ -515,13 +537,13 @@ function ToolCard({
               remove();
             }}
             disabled={pending}
-            className="inline-flex h-7 items-center border border-destructive/40 bg-card/80 px-2.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-7 items-center rounded-md border border-destructive/40 bg-card/80 px-2.5 text-[11px] text-destructive backdrop-blur hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Delete
           </button>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -535,14 +557,14 @@ function ToolLogo({ tool, size = 44 }: { tool: Tool; size?: number }) {
         alt=""
         width={size}
         height={size}
-        className="shrink-0 border bg-secondary object-cover"
+        className="shrink-0 rounded-lg border bg-secondary object-cover"
         style={{ width: size, height: size }}
       />
     );
   }
   return (
     <div
-      className="flex shrink-0 items-center justify-center border bg-muted font-semibold uppercase text-foreground"
+      className="flex shrink-0 items-center justify-center rounded-md border bg-muted font-semibold uppercase text-foreground"
       style={{ width: size, height: size, fontSize: size * 0.42 }}
     >
       {tool.name.charAt(0)}
@@ -579,9 +601,7 @@ function ToolForm({
   const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   // Local logo state so the preview reflects upload-in-progress
   // before the parent re-fetches. Seeded from the initial row.
-  const [logoUrl, setLogoUrl] = useState<string | null>(
-    initial?.logoUrl ?? null,
-  );
+  const [logoUrl, setLogoUrl] = useState<string | null>(initial?.logoUrl ?? null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -685,7 +705,7 @@ function ToolForm({
   }
 
   return (
-    <div className="space-y-3 border bg-card p-4">
+    <div className="space-y-3 rounded-md border bg-card p-4">
       <div className="text-xs text-muted-foreground">
         {mode === "create" ? "New tool" : `Editing ${initial?.name}`}
       </div>
@@ -713,7 +733,7 @@ function ToolForm({
           rows={2}
           maxLength={2000}
           placeholder="What it does, in a sentence or two."
-          className="w-full border bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring"
+          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -763,14 +783,14 @@ function ToolForm({
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex h-9 items-center bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {pending ? "Saving..." : mode === "create" ? "Create" : "Save"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex h-9 items-center border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Cancel
         </button>
@@ -800,13 +820,13 @@ function LogoField({
           (defaults to the site&apos;s favicon — upload to override)
         </span>
       </span>
-      <div className="flex items-center gap-3 border bg-background px-3 py-2">
+      <div className="flex items-center gap-3 rounded-md border bg-background px-3 py-2">
         <ToolLogo tool={tool} size={48} />
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="inline-flex h-8 items-center gap-1 border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             <Upload size={12} aria-hidden />
             {hasUpload ? "Replace" : "Upload"}
@@ -815,7 +835,7 @@ function LogoField({
             <button
               type="button"
               onClick={onClear}
-              className="inline-flex h-8 items-center gap-1 border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-8 items-center gap-1 rounded-md border border-destructive/40 px-3 text-xs text-destructive hover:bg-destructive/10 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               <X size={12} aria-hidden />
               Use favicon
@@ -858,7 +878,7 @@ function Field({
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full border bg-background px-2 text-sm outline-none focus-visible:border-ring"
+        className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       />
     </label>
   );

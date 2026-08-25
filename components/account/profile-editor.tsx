@@ -130,7 +130,7 @@ export function ProfileEditor({
   }
 
   return (
-    <div className="space-y-4 border p-4">
+    <div className="space-y-4 rounded-md border p-4">
       {editAvatar && (
         <div className="flex items-start gap-4">
           <AvatarUpload
@@ -142,8 +142,7 @@ export function ProfileEditor({
             removeConfirm={removeAvatarConfirm}
           />
           <p className="text-xs text-muted-foreground">
-            Click the avatar to upload a new picture. JPG/PNG/WebP/GIF, up to
-            5MB.
+            Click the avatar to upload a new picture. JPG/PNG/WebP/GIF, up to 5MB.
           </p>
         </div>
       )}
@@ -155,7 +154,7 @@ export function ProfileEditor({
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
-          className="h-9 w-full border bg-background px-2 text-sm outline-none focus-visible:border-ring"
+          className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <label className="block text-sm">
@@ -168,7 +167,7 @@ export function ProfileEditor({
           maxLength={500}
           rows={3}
           placeholder="One line about what you build."
-          className="w-full border bg-background px-2 py-1 text-sm outline-none focus-visible:border-ring"
+          className="w-full rounded-md border bg-background px-2 py-1 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </label>
       <div className="space-y-1.5">
@@ -197,7 +196,7 @@ export function ProfileEditor({
                 setSocials((s) => ({ ...s, [k]: e.target.value }))
               }
               placeholder={SOCIAL_PLACEHOLDER[k]}
-              className="h-8 flex-1 border bg-background px-2 font-mono text-xs outline-none focus-visible:border-ring"
+              className="h-8 flex-1 rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           </label>
         ))}
@@ -208,7 +207,7 @@ export function ProfileEditor({
           type="button"
           onClick={save}
           disabled={pending}
-          className="inline-flex h-9 items-center bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {pending ? "Saving..." : "Save"}
         </button>

@@ -30,11 +30,7 @@ export function PasswordForm() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(
-          typeof data.error === "string"
-            ? data.error
-            : "Couldn't change password.",
-        );
+        setError(typeof data.error === "string" ? data.error : "Couldn't change password.");
         return;
       }
       setSuccess("Password changed.");
@@ -45,7 +41,7 @@ export function PasswordForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 border p-4">
+    <form onSubmit={submit} className="space-y-3 rounded-md border p-4">
       <Field
         label="Current password"
         type="password"
@@ -71,11 +67,11 @@ export function PasswordForm() {
         required
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
-      {success && <p className="text-sm text-chalk">{success}</p>}
+      {success && <p className="text-sm text-success">{success}</p>}
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-9 items-center bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+        className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         {pending ? "Saving..." : "Change password"}
       </button>
@@ -107,7 +103,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
         required={required}
-        className="h-9 border bg-background px-3 text-sm outline-none focus-visible:border-ring"
+        className="h-9 rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       />
     </label>
   );

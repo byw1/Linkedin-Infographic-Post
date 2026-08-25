@@ -20,7 +20,7 @@ export default async function DocsIndexPage() {
   if (first) redirect(`/docs/${first.slug}`);
 
   return (
-    <div className="border bg-card p-8 text-center text-card-foreground">
+    <div className="rounded-xl border bg-card p-8 text-center text-card-foreground">
       <h2 className="text-lg font-semibold">No pages yet</h2>
       <p className="mt-2 text-sm text-muted-foreground">
         {isAdmin

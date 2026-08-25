@@ -5,20 +5,19 @@ import { cn } from "@/lib/utils";
 // never nests inside another card — the inner one becomes level 2
 // (`bg-muted/50 border`). Resting shadow stays one rung below hover so
 // the lift has somewhere to go.
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-slot="card"
-    className={cn(
-      "flex flex-col gap-6 border bg-card py-6 text-card-foreground",
-      className,
-    )}
-    {...props}
-  />
-));
+const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      data-slot="card"
+      className={cn(
+        "flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow",
+        className,
+      )}
+      {...props}
+    />
+  ),
+);
 Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<
@@ -71,10 +70,7 @@ const CardAction = React.forwardRef<
   <div
     ref={ref}
     data-slot="card-action"
-    className={cn(
-      "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-      className,
-    )}
+    className={cn("col-start-2 row-span-2 row-start-1 self-start justify-self-end", className)}
     {...props}
   />
 ));
@@ -84,12 +80,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-slot="card-content"
-    className={cn("px-6", className)}
-    {...props}
-  />
+  <div ref={ref} data-slot="card-content" className={cn("px-6", className)} {...props} />
 ));
 CardContent.displayName = "CardContent";
 

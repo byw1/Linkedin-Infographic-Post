@@ -1,0 +1,86 @@
+/* Landing-page entrance animations. Kept here (not in tailwind config)
+ * so they're scoped to /welcome and don't bloat the global utility set
+ * for the auth'd app. Each section gets `data-reveal` and the IO
+ * watcher in welcome-reveal.tsx flips it to `data-reveal="visible"`
+ * when it crosses ~15% into the viewport, triggering the transition. */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-reveal="visible"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger child reveals when the parent is marked. Each direct child
+ * inherits the same hidden state but gets a delay matching its DOM
+ * order, so cards fan in instead of all at once. */
+[data-reveal-stagger][data-reveal="visible"] > * {
+  animation: welcomeFadeUp 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-reveal-stagger][data-reveal="visible"] > *:nth-child(1) { animation-delay: 0ms; }
+[data-reveal-stagger][data-reveal="visible"] > *:nth-child(2) { animation-delay: 120ms; }
+[data-reveal-stagger][data-reveal="visible"] > *:nth-child(3) { animation-delay: 240ms; }
+[data-reveal-stagger][data-reveal="visible"] > *:nth-child(4) { animation-delay: 360ms; }
+
+@keyframes welcomeFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The hero stat used to live here as a pulse-in on a "1M+" string.
+ * It's now a real count-up animation driven by components/welcome/
+ * count-up.tsx so the keyframes + class are gone. */
+
+/* Hero headline + subhead slide in on first paint without waiting
+ * for the IO watcher (they're above the fold). */
+.welcome-hero-headline {
+  animation: welcomeFadeUp 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.welcome-hero-sub {
+  animation: welcomeFadeUp 800ms cubic-bezier(0.22, 1, 0.36, 1) 150ms both;
+}
+
+.welcome-hero-cta {
+  animation: welcomeFadeUp 800ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both;
+}
+
+/* Background "aurora" glow behind the hero. Slow, ambient — adds
+ * energy without demanding attention. */
+@keyframes welcomeAurora {
+  0%, 100% { transform: translate(-10%, -10%) scale(1); opacity: 0.6; }
+  50% { transform: translate(10%, 10%) scale(1.15); opacity: 0.85; }
+}
+
+.welcome-aurora {
+  animation: welcomeAurora 18s ease-in-out infinite;
+}
+
+/* Respect reduced-motion: drop everything to instant fade. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal],
+  [data-reveal="visible"],
+  [data-reveal-stagger][data-reveal="visible"] > *,
+  .welcome-hero-headline,
+  .welcome-hero-sub,
+  .welcome-hero-cta,
+  .welcome-aurora {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

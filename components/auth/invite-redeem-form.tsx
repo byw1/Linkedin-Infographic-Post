@@ -29,18 +29,10 @@ export function InviteRedeemForm({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(
-          typeof data.error === "string"
-            ? data.error
-            : "Could not redeem invite.",
-        );
+        setError(typeof data.error === "string" ? data.error : "Could not redeem invite.");
         return;
       }
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+      const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) {
         router.push("/auth/signin");
         return;
@@ -52,12 +44,7 @@ export function InviteRedeemForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Field
-        label="Name (optional)"
-        value={name}
-        onChange={setName}
-        autoComplete="name"
-      />
+      <Field label="Name (optional)" value={name} onChange={setName} autoComplete="name" />
       <Field
         label="Email"
         type="email"
@@ -79,7 +66,7 @@ export function InviteRedeemForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-10 w-full items-center justify-center bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+        className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         {pending ? "Creating..." : "Claim invite"}
       </button>
@@ -114,7 +101,7 @@ function Field({
         autoComplete={autoComplete}
         required={required}
         readOnly={readOnly}
-        className="h-10 border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring read-only:bg-muted"
+        className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 read-only:bg-muted shadow-sm transition-[color,box-shadow]"
       />
     </label>
   );

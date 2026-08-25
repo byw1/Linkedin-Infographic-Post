@@ -62,8 +62,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
         const res = await fetch(`/api/render/${remixId}?include=source`);
         if (!res.ok) throw new Error(`Couldn't fetch render (${res.status}).`);
         const data = await res.json();
-        const sourceSlides = (data.source_html?.slides ??
-          []) as CarouselSlide[];
+        const sourceSlides = (data.source_html?.slides ?? []) as CarouselSlide[];
         if (sourceSlides.length === 0) {
           throw new Error("This render has no source slides to remix.");
         }
@@ -136,10 +135,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
     return mapping;
   }
 
-  async function postRender(
-    format: Format,
-    themeId: string | null,
-  ): Promise<string> {
+  async function postRender(format: Format, themeId: string | null): Promise<string> {
     const baseName = zipName?.replace(/\.zip$/i, "") ?? "carousel";
     const res = await fetch("/api/render-carousel", {
       method: "POST",
@@ -162,8 +158,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
       } catch {
         // raw kept
       }
-      const summary =
-        detail.trim().slice(0, 500) || res.statusText || "no response body";
+      const summary = detail.trim().slice(0, 500) || res.statusText || "no response body";
       throw new Error(`Render request failed (${res.status}): ${summary}`);
     }
     const data = await res.json();
@@ -217,14 +212,14 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
 
   if (remixLoading) {
     return (
-      <p className="border bg-card p-6 text-sm text-muted-foreground">
+      <p className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
         Loading remix…
       </p>
     );
   }
   if (remixError) {
     return (
-      <div className="space-y-3 border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+      <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
         <p>{remixError}</p>
         <button
           type="button"
@@ -232,7 +227,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
             setRemixError(null);
             setStage("upload");
           }}
-          className="inline-flex h-9 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
         >
           Start a new carousel instead
         </button>
@@ -252,7 +247,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
         />
 
         {renderError && (
-          <p className="border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
             {renderError}
           </p>
         )}
@@ -275,7 +270,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
             }}
           />
         ) : alternate ? (
-          <div className="border bg-muted/30 p-3 text-sm">
+          <div className="rounded-md border bg-muted/30 p-3 text-sm">
             <div className="mb-2 text-xs text-muted-foreground">
               Also rendered as {FORMAT_LABEL[alternate.format]}
             </div>
@@ -285,13 +280,13 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
             <a
               href={alternate.url}
               download
-              className="inline-flex h-9 items-center border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Download {FORMAT_LABEL[alternate.format]}
             </a>
           </div>
         ) : (
-          <div className="border bg-muted/30 p-3 text-sm">
+          <div className="rounded-md border bg-muted/30 p-3 text-sm">
             <p className="mb-2 text-xs text-muted-foreground">
               Cross-posting? Generate a {FORMAT_LABEL[otherFormat]} of the same
               slides {FORMAT_HINT[otherFormat]}.
@@ -299,7 +294,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
             <button
               type="button"
               onClick={() => void alsoRender(otherFormat)}
-              className="inline-flex h-9 items-center border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-9 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Also render as {FORMAT_LABEL[otherFormat]}
             </button>
@@ -344,7 +339,7 @@ export function CarouselFlow({ storageReady, remixId }: Props) {
     return (
       <div className="space-y-3">
         {renderError && (
-          <div className="border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
             {renderError}
           </div>
         )}

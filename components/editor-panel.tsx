@@ -19,12 +19,7 @@ interface Props {
   onUnresolve: () => void;
 }
 
-export function EditorPanel({
-  entity,
-  onClose,
-  onResolved,
-  onUnresolve,
-}: Props) {
+export function EditorPanel({ entity, onClose, onResolved, onUnresolve }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [recents, setRecents] = useState<RecentLogo[]>([]);
   const [urlInput, setUrlInput] = useState("");
@@ -55,9 +50,7 @@ export function EditorPanel({
       const res = await fetch("/api/entities", { method: "POST", body: form });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(
-          typeof data.error === "string" ? data.error : "Upload failed.",
-        );
+        setError(typeof data.error === "string" ? data.error : "Upload failed.");
         return;
       }
       const data = await res.json();
@@ -82,9 +75,7 @@ export function EditorPanel({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(
-          typeof data.error === "string" ? data.error : "Upload failed.",
-        );
+        setError(typeof data.error === "string" ? data.error : "Upload failed.");
         return;
       }
       const data = await res.json();
@@ -107,9 +98,7 @@ export function EditorPanel({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(
-          typeof data.error === "string" ? data.error : "Couldn't link logo.",
-        );
+        setError(typeof data.error === "string" ? data.error : "Couldn't link logo.");
         return;
       }
       const data = await res.json();
@@ -123,13 +112,13 @@ export function EditorPanel({
       <div
         aria-hidden
         onClick={onClose}
-        className="fixed inset-0 z-30 bg-off-black/30"
+        className="fixed inset-0 z-30 bg-black/30"
       />
 
       <aside
         role="dialog"
         aria-modal="true"
-        className="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col gap-4 overflow-y-auto border-l bg-background p-5 sm:max-w-md"
+        className="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col gap-4 overflow-y-auto border-l bg-background p-5 shadow-2xl sm:max-w-md"
       >
         <header className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -154,20 +143,18 @@ export function EditorPanel({
         </header>
 
         {entity.resolved && entity.logo_url && (
-          <div className="flex items-center gap-3 border bg-muted/40 p-3">
+          <div className="flex items-center gap-3 rounded-md border bg-muted/40 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={entity.logo_url}
               alt={entity.slug}
               className={
                 entity.shape_hint === "circle"
-                  ? "h-12 w-12 object-cover"
-                  : "h-12 w-12 object-cover"
+                  ? "h-12 w-12 rounded-full object-cover"
+                  : "h-12 w-12 rounded-md object-cover"
               }
             />
-            <span className="text-xs text-muted-foreground">
-              Currently using this
-            </span>
+            <span className="text-xs text-muted-foreground">Currently using this</span>
           </div>
         )}
 
@@ -184,7 +171,7 @@ export function EditorPanel({
                   onClick={() => pickExisting(r)}
                   disabled={pending}
                   title={`Use ${r.displayName}`}
-                  className="group flex flex-col items-center gap-1 border p-2 hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                  className="group flex flex-col items-center gap-1 rounded-md border p-2 hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -192,8 +179,8 @@ export function EditorPanel({
                     alt={r.slug}
                     className={
                       r.shapePreference === "circle"
-                        ? "h-10 w-10 object-cover"
-                        : "h-10 w-10 object-cover"
+                        ? "h-10 w-10 rounded-full object-cover"
+                        : "h-10 w-10 rounded-md object-cover"
                     }
                   />
                   <span className="w-full truncate text-[10px] text-muted-foreground group-hover:text-foreground">
@@ -216,7 +203,7 @@ export function EditorPanel({
           <h3 className="text-sm font-medium text-muted-foreground">
             Upload new
           </h3>
-          <label className="flex cursor-pointer items-center justify-center gap-2 border p-4 text-sm hover:bg-accent/50">
+          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border p-4 text-sm hover:bg-accent/50">
             {pending ? "Uploading..." : "Drop or click to upload an image"}
             <input
               type="file"
@@ -236,7 +223,7 @@ export function EditorPanel({
               onChange={(e) => setUrlInput(e.target.value)}
               placeholder="https://example.com/logo.png"
               disabled={pending}
-              className="h-9 flex-1 border bg-background px-3 text-sm outline-none focus-visible:border-ring"
+              className="h-9 flex-1 rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               onKeyDown={(e) => {
                 if (e.key === "Enter") uploadUrl();
               }}
@@ -245,7 +232,7 @@ export function EditorPanel({
               type="button"
               onClick={uploadUrl}
               disabled={pending || !urlInput.trim()}
-              className="inline-flex h-9 items-center border px-3 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               Save URL
             </button>
@@ -253,7 +240,7 @@ export function EditorPanel({
         </section>
 
         {error && (
-          <p className="break-words border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+          <p className="break-words rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
             {error}
           </p>
         )}

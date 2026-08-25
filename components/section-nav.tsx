@@ -26,23 +26,22 @@ export function SectionNav({ items }: { items: readonly SectionNavItem[] }) {
   return (
     <nav className="space-y-1 text-sm md:sticky md:top-20 md:self-start">
       {items.map((item) => {
-        const active =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <Link
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "group relative block px-3 py-2",
+              "group relative block rounded-md px-3 py-2 transition-all duration-200",
               active
-                ? "bg-accent text-accent-foreground"
-                : "hover:bg-accent/60 hover:text-accent-foreground",
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "hover:translate-x-0.5 hover:bg-accent/60 hover:text-accent-foreground",
             )}
           >
             <span
               className={cn(
-                "absolute left-0 top-1/2 h-4 w-0.5 bg-primary",
+                "absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-primary transition-all duration-200",
                 active ? "opacity-100" : "opacity-0 group-hover:opacity-40",
               )}
             />

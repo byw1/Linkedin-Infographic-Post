@@ -43,21 +43,18 @@ export function LibraryPicker({
   const filtered = (entities ?? []).filter((e) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (
-      e.slug.toLowerCase().includes(q) ||
-      e.displayName.toLowerCase().includes(q)
-    );
+    return e.slug.toLowerCase().includes(q) || e.displayName.toLowerCase().includes(q);
   });
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-start justify-center bg-off-black/40 p-6"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-6"
       onClick={onClose}
     >
       <div
-        className="mt-16 w-full max-w-lg space-y-3 border bg-background p-4"
+        className="mt-16 w-full max-w-lg space-y-3 rounded-lg border bg-background p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
@@ -75,7 +72,7 @@ export function LibraryPicker({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search..."
-          className="h-9 w-full border bg-background px-3 text-sm outline-none focus-visible:border-ring"
+          className="h-9 w-full rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
         <div className="max-h-80 space-y-1 overflow-y-auto">
           {entities === null && (
@@ -91,25 +88,19 @@ export function LibraryPicker({
               key={e.id}
               type="button"
               onClick={() => onPick(e)}
-              className="flex w-full items-center gap-3 border p-2 text-left hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center gap-3 rounded-md border p-2 text-left hover:bg-accent hover:text-accent-foreground"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={e.logoUrl}
                 alt={e.slug}
-                className={`h-10 w-10 ${e.shapePreference === "circle" ? "" : ""} object-cover`}
+                className={`h-10 w-10 ${e.shapePreference === "circle" ? "rounded-full" : "rounded-sm"} object-cover`}
               />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">
-                  {e.displayName}
-                </div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {e.slug}
-                </div>
+                <div className="truncate text-sm font-medium">{e.displayName}</div>
+                <div className="truncate text-xs text-muted-foreground">{e.slug}</div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                ×{e.usageCount}
-              </div>
+              <div className="text-xs text-muted-foreground">×{e.usageCount}</div>
             </button>
           ))}
         </div>

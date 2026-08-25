@@ -37,7 +37,9 @@ export function MemberTopPosts({ memberId }: Props) {
         <span className="text-[10px] font-medium text-muted-foreground">
           Top posts
         </span>
-        <span className="text-[10px] text-muted-foreground">by engagement</span>
+        <span className="text-[10px] text-muted-foreground">
+          by engagement
+        </span>
       </div>
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {posts.map((p) => (
@@ -65,13 +67,13 @@ function PostThumb({ post }: { post: FeedPost }) {
       className="group flex w-24 shrink-0 flex-col gap-1"
       title={post.filename ?? "post"}
     >
-      <div className="aspect-[4/5] overflow-hidden border bg-muted">
+      <div className="aspect-[4/5] overflow-hidden rounded-md border bg-muted">
         {post.url && !isPdf ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={post.url}
             alt={post.filename ?? "post"}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-[9px] text-muted-foreground">
@@ -80,9 +82,7 @@ function PostThumb({ post }: { post: FeedPost }) {
         )}
       </div>
       <div className="flex items-baseline justify-between text-[10px] font-mono">
-        <span className="text-muted-foreground">
-          {fmtCount(post.impressions)}
-        </span>
+        <span className="text-muted-foreground">{fmtCount(post.impressions)}</span>
         <span className="text-foreground">{rateStr ?? "—"}</span>
       </div>
     </a>

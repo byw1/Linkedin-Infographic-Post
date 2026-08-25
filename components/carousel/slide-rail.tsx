@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { buildAliasBridge, ensureFontImports } from "@/lib/theme-fonts";
+import {
+  buildAliasBridge,
+  ensureFontImports,
+} from "@/lib/theme-fonts";
 import { parseCssTokens } from "@/lib/accent-rewrite";
 import type { ResolvedEntity } from "@/types/entity";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
@@ -113,7 +116,9 @@ function SlideThumb({
     if (!doc) return;
 
     // Clear any prior viral-injected nodes so re-runs stay clean.
-    doc.querySelectorAll("[data-viral-thumb]").forEach((el) => el.remove());
+    doc
+      .querySelectorAll("[data-viral-thumb]")
+      .forEach((el) => el.remove());
 
     const head = doc.head ?? doc.documentElement;
     const clamp = doc.createElement("style");
@@ -163,10 +168,10 @@ function SlideThumb({
       type="button"
       onClick={onClick}
       aria-label={`Slide ${index + 1}: ${filename}`}
-      className={`group block w-full text-left`}
+      className={`group block w-full text-left transition-colors`}
     >
       <div
-        className={`relative overflow-hidden border-2 bg-white ${
+        className={`relative overflow-hidden rounded-md border-2 bg-white ${
           isActive
             ? "border-primary"
             : "border-transparent group-hover:border-border"
@@ -197,12 +202,12 @@ function SlideThumb({
             pointerEvents: "none",
           }}
         />
-        <span className="absolute left-1 top-1 bg-off-black/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-chalk">
+        <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white">
           {index + 1}
         </span>
         {unresolvedCount > 0 && (
           <span
-            className="absolute right-1 top-1 inline-flex h-5 min-w-[20px] items-center justify-center bg-off-black px-1.5 text-[10px] font-medium text-chalk"
+            className="absolute right-1 top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-medium text-white"
             title={`${unresolvedCount} unresolved logo${unresolvedCount === 1 ? "" : "s"} on this slide`}
           >
             {unresolvedCount}

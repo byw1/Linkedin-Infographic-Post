@@ -6,7 +6,7 @@ import { ImageResponse } from "next/og";
 // (app/icon.svg) covers browsers tabs but not all messengers, so
 // this raster fills the gap.
 //
-// Kept deliberately simple — just three indigo bars on a pad of
+// Kept deliberately simple — just three brand bars on a pad of
 // background color. No multi-child <div>s without display:flex,
 // no <span>+text mixes; satori is strict about both and broke our
 // previous OG generator with similar shapes.

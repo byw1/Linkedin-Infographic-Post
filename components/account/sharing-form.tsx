@@ -38,7 +38,7 @@ export function SharingForm({ initialShareTracked }: Props) {
   }
 
   return (
-    <div className="space-y-3 border p-4">
+    <div className="space-y-3 rounded-md border p-4">
       <label className="flex items-start gap-3">
         <input
           type="checkbox"
@@ -52,12 +52,12 @@ export function SharingForm({ initialShareTracked }: Props) {
             Share my tracked posts with the community
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Posts you&apos;ve clicked <strong>Track</strong> on (filled in real
-            LinkedIn impressions / reactions) appear on the{" "}
-            <strong>Community</strong> tab on Posts (both Recent and Top), and
-            on the rail on your <strong>Members</strong> card. Untracked drafts
-            are never shared. Your own <em>My posts</em> tab always shows
-            everything regardless of this setting.
+            Posts you&apos;ve clicked <strong>Track</strong> on (filled in
+            real LinkedIn impressions / reactions) appear on the{" "}
+            <strong>Community</strong> tab on Posts (both Recent and Top),
+            and on the rail on your <strong>Members</strong> card.
+            Untracked drafts are never shared. Your own <em>My posts</em>{" "}
+            tab always shows everything regardless of this setting.
           </p>
         </div>
       </label>

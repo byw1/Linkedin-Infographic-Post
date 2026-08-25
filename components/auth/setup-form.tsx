@@ -26,11 +26,7 @@ export function SetupForm() {
         setError(typeof data.error === "string" ? data.error : "Setup failed.");
         return;
       }
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+      const result = await signIn("credentials", { email, password, redirect: false });
       if (result?.error) {
         setError("Account created but sign-in failed. Try the sign-in page.");
         router.push("/auth/signin");
@@ -43,12 +39,7 @@ export function SetupForm() {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Field
-        label="Name (optional)"
-        value={name}
-        onChange={setName}
-        autoComplete="name"
-      />
+      <Field label="Name (optional)" value={name} onChange={setName} autoComplete="name" />
       <Field
         label="Email"
         type="email"
@@ -69,7 +60,7 @@ export function SetupForm() {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-10 w-full items-center justify-center bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+        className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         {pending ? "Creating..." : "Create admin account"}
       </button>
@@ -101,7 +92,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
         required={required}
-        className="h-10 border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring"
+        className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm transition-[color,box-shadow]"
       />
     </label>
   );

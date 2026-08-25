@@ -72,9 +72,7 @@ export function MembersGrid() {
     for (const m of members) {
       for (const t of m.tags) set.set(t, (set.get(t) ?? 0) + 1);
     }
-    return Array.from(set.entries()).sort(
-      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-    );
+    return Array.from(set.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [members]);
 
   // Filter + sort happen client-side. Search matches name, email
@@ -149,12 +147,12 @@ export function MembersGrid() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search name, bio, tag…"
-          className="h-9 w-full max-w-xs border bg-background px-3 text-sm outline-none focus-visible:border-ring"
+          className="h-9 w-full max-w-xs rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as Sort)}
-          className="h-9 border bg-background px-2 text-sm outline-none focus-visible:border-ring"
+          className="h-9 rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           aria-label="Sort members"
         >
           {(Object.keys(SORT_LABEL) as Sort[]).map((s) => (
@@ -176,7 +174,7 @@ export function MembersGrid() {
         <button
           type="button"
           onClick={() => setActiveTag(null)}
-          className={`inline-flex h-7 items-center border px-3 text-xs ${
+          className={`inline-flex h-7 items-center rounded-full border px-3 text-xs ${
             activeTag === null
               ? "border-foreground/30 bg-accent text-foreground"
               : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -189,7 +187,7 @@ export function MembersGrid() {
             key={t}
             type="button"
             onClick={() => setActiveTag(t === activeTag ? null : t)}
-            className={`inline-flex h-7 items-center gap-1 border px-3 font-mono text-xs ${
+            className={`inline-flex h-7 items-center gap-1 rounded-full border px-3 font-mono text-xs ${
               t === activeTag
                 ? "border-foreground/30 bg-accent text-foreground"
                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -201,9 +199,7 @@ export function MembersGrid() {
         ))}
       </div>
 
-      {visible === null && (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      )}
+      {visible === null && <p className="text-sm text-muted-foreground">Loading...</p>}
       {visible && visible.length === 0 && (
         <p className="text-sm text-muted-foreground">
           {search.trim()
@@ -288,7 +284,7 @@ function MemberCard({
 
   return (
     <div
-      className={`space-y-3 border bg-card p-4 ${
+      className={`space-y-3 rounded-xl border bg-card p-4 shadow transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
         member.banned ? "border-destructive/40 bg-destructive/5" : ""
       }`}
     >
@@ -305,15 +301,17 @@ function MemberCard({
               {member.name ?? member.email.split("@")[0]}
             </a>
             {member.role === "admin" && (
-              <span className="bg-secondary px-1.5 py-0.5 text-sm font-medium text-muted-foreground">
+              <span className="rounded bg-secondary px-1.5 py-0.5 text-sm font-medium text-muted-foreground">
                 admin
               </span>
             )}
             {member.isSelf && (
-              <span className="text-[10px] text-primary">you</span>
+              <span className="text-[10px] text-primary">
+                you
+              </span>
             )}
             {member.banned && (
-              <span className="bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
+              <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
                 banned
               </span>
             )}
@@ -331,7 +329,7 @@ function MemberCard({
         {member.isSelf && (
           <a
             href="/settings/profile"
-            className="inline-flex h-7 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-7 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Edit
           </a>
@@ -353,7 +351,7 @@ function MemberCard({
               key={t}
               type="button"
               onClick={() => onTagClick(t)}
-              className="inline-flex h-6 items-center border bg-secondary/50 px-2 font-mono text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-6 items-center rounded-full border bg-secondary/50 px-2 font-mono text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               {t}
             </button>
@@ -374,7 +372,7 @@ function MemberCard({
           </span>
           <a
             href={`/members/${member.id}#admin-edit`}
-            className="inline-flex h-7 items-center border px-2 hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-7 items-center rounded-md border px-2 hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Edit profile
           </a>
@@ -382,7 +380,7 @@ function MemberCard({
             type="button"
             onClick={() => ban(!member.banned)}
             disabled={pending}
-            className="inline-flex h-7 items-center border px-2 hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-7 items-center rounded-md border px-2 hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             {member.banned ? "Unban" : "Ban"}
           </button>
@@ -390,7 +388,7 @@ function MemberCard({
             type="button"
             onClick={remove}
             disabled={pending}
-            className="inline-flex h-7 items-center border border-destructive/40 px-2 text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-7 items-center rounded-md border border-destructive/40 px-2 text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
           >
             Remove
           </button>
@@ -420,12 +418,12 @@ function Avatar({ member }: { member: Member }) {
       <img
         src={member.image}
         alt={member.name ?? member.email}
-        className="h-12 w-12 border object-cover"
+        className="h-12 w-12 rounded-full border object-cover"
       />
     );
   }
   return (
-    <div className="flex h-12 w-12 items-center justify-center border bg-secondary text-sm font-medium text-muted-foreground">
+    <div className="flex h-12 w-12 items-center justify-center rounded-full border bg-secondary text-sm font-medium text-muted-foreground">
       {initials || "?"}
     </div>
   );

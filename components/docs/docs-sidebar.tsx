@@ -95,7 +95,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
   const activeSection = useMemo(() => {
     const activePage = pages.find((p) => activeMatch(p.slug));
     return activePage?.section?.trim() || (activePage ? UNCATEGORIZED : null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pages, pathname]);
 
   // Collect existing section names for the create-page form's
@@ -141,14 +141,14 @@ export function DocsSidebar({ pages, canEdit }: Props) {
         <Search
           size={13}
           aria-hidden
-          className="pointer-events-none absolute left-2.5 top-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
         />
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Filter pages…"
-          className="h-8 w-full border bg-background pl-7 pr-2 text-xs outline-none focus-visible:border-ring"
+          className="h-8 w-full rounded-md border bg-background pl-7 pr-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
       </div>
 
@@ -174,7 +174,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Page title"
               maxLength={120}
-              className="h-8 w-full border bg-background px-2 text-xs outline-none focus-visible:border-ring"
+              className="h-8 w-full rounded-md border bg-background px-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
             <input
               value={newSection}
@@ -182,7 +182,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
               list="docs-section-list"
               placeholder="Section (optional)"
               maxLength={120}
-              className="h-8 w-full border bg-background px-2 text-xs outline-none focus-visible:border-ring"
+              className="h-8 w-full rounded-md border bg-background px-2 text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
             <datalist id="docs-section-list">
               {knownSections.map((s) => (
@@ -193,7 +193,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
               <button
                 type="submit"
                 disabled={pending || !newTitle.trim()}
-                className="inline-flex h-7 items-center bg-primary px-2 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+                className="inline-flex h-7 items-center rounded-md bg-primary px-2 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 {pending ? "Creating…" : "Create"}
               </button>
@@ -205,7 +205,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
                   setNewSection("");
                   setError(null);
                 }}
-                className="inline-flex h-7 items-center border px-2 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+                className="inline-flex h-7 items-center rounded-md border px-2 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
               >
                 Cancel
               </button>
@@ -240,7 +240,9 @@ export function DocsSidebar({ pages, canEdit }: Props) {
                       <ChevronDown size={12} aria-hidden />
                     )}
                     <span className="truncate">
-                      {sectionName === UNCATEGORIZED ? "Other" : sectionName}
+                      {sectionName === UNCATEGORIZED
+                        ? "Other"
+                        : sectionName}
                     </span>
                     <span className="ml-auto text-[10px] font-normal lowercase text-muted-foreground/70">
                       {sectionPages.length}
@@ -252,7 +254,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
                         <li key={p.id}>
                           <Link
                             href={`/docs/${p.slug}`}
-                            className={`block border-l px-2 py-1.5 text-[13px] ${
+                            className={`block rounded-md border-l px-2 py-1.5 text-[13px] transition-colors ${
                               activeMatch(p.slug)
                                 ? "border-primary bg-secondary font-medium text-foreground"
                                 : "border-transparent text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -279,7 +281,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
           <li>
             <Link
               href="/docs/skills"
-              className={`block px-2 py-1.5 text-sm ${
+              className={`block rounded-md px-2 py-1.5 text-sm transition-colors ${
                 pathname === "/docs/skills"
                   ? "bg-secondary font-medium text-foreground"
                   : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -291,7 +293,7 @@ export function DocsSidebar({ pages, canEdit }: Props) {
           <li>
             <Link
               href="/docs/tools"
-              className={`block px-2 py-1.5 text-sm ${
+              className={`block rounded-md px-2 py-1.5 text-sm transition-colors ${
                 pathname === "/docs/tools"
                   ? "bg-secondary font-medium text-foreground"
                   : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"

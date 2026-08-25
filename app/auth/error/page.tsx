@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Endorsement } from "@/components/ui/endorsement";
 
 export default function AuthErrorPage({
   searchParams,
@@ -11,7 +10,7 @@ export default function AuthErrorPage({
 
   return (
     <main className="container mx-auto flex max-w-md flex-col items-center justify-center py-24">
-      <div className="w-full space-y-4 border p-8">
+      <div className="w-full space-y-4 rounded-lg border p-8">
         <h1 className="text-2xl font-semibold tracking-tight">
           {isAccessDenied ? "Access denied" : "Sign-in error"}
         </h1>
@@ -24,7 +23,6 @@ export default function AuthErrorPage({
           Back home
         </Link>
       </div>
-      <Endorsement className="mt-16" />
     </main>
   );
 }

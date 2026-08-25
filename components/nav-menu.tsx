@@ -29,7 +29,13 @@ interface Props {
 // who's signed in plus quick links to Settings, Admin (if the
 // viewer is one), and Sign out. Cleaner than the gear since it
 // doubles as a "you're signed in as X" affordance.
-export function NavMenu({ email, name, image, isAdmin, signOutAction }: Props) {
+export function NavMenu({
+  email,
+  name,
+  image,
+  isAdmin,
+  signOutAction,
+}: Props) {
   // Hidden form lets us submit the server action without unmounting
   // the popover at the wrong moment — same pattern the old menu
   // used. Sign-out submit fires on form, popover closes naturally.
@@ -45,11 +51,15 @@ export function NavMenu({ email, name, image, isAdmin, signOutAction }: Props) {
           <button
             type="button"
             aria-label="Account menu"
-            className="inline-flex h-9 w-9 items-center justify-center border bg-background text-xs font-medium text-muted-foreground hover:border-foreground/30 hover:text-foreground outline-none focus-visible:border-ring"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border bg-background text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {image ? (
               /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={image} alt="" className="h-full w-full object-cover" />
+              <img
+                src={image}
+                alt=""
+                className="h-full w-full rounded-full object-cover"
+              />
             ) : (
               <span className="uppercase">{initials}</span>
             )}
@@ -58,7 +68,7 @@ export function NavMenu({ email, name, image, isAdmin, signOutAction }: Props) {
         <PopoverContent align="end" sideOffset={6} className="w-60 p-0">
           <PopoverHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden border bg-secondary text-sm font-medium uppercase text-muted-foreground">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-secondary text-sm font-medium uppercase text-muted-foreground">
                 {image ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
@@ -84,17 +94,11 @@ export function NavMenu({ email, name, image, isAdmin, signOutAction }: Props) {
           </PopoverHeader>
 
           <PopoverBody className="space-y-0.5 px-2 py-2">
-            <MenuLink
-              href="/settings"
-              icon={<SettingsIcon className="h-3.5 w-3.5" />}
-            >
+            <MenuLink href="/settings" icon={<SettingsIcon className="h-3.5 w-3.5" />}>
               Settings
             </MenuLink>
             {isAdmin && (
-              <MenuLink
-                href="/admin"
-                icon={<ShieldCheck className="h-3.5 w-3.5" />}
-              >
+              <MenuLink href="/admin" icon={<ShieldCheck className="h-3.5 w-3.5" />}>
                 Admin
               </MenuLink>
             )}
@@ -104,7 +108,7 @@ export function NavMenu({ email, name, image, isAdmin, signOutAction }: Props) {
             <button
               type="button"
               onClick={() => signOutFormRef.current?.requestSubmit()}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 border bg-transparent text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-transparent text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
             >
               <LogOut className="h-3.5 w-3.5" />
               Sign out
@@ -128,7 +132,7 @@ function MenuLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+      className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
     >
       {icon}
       {children}

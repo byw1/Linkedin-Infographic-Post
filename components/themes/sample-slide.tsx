@@ -98,7 +98,7 @@ export function SampleSlide({ css }: Props) {
       title="theme preview"
       srcDoc={html}
       sandbox="allow-same-origin"
-      className="block h-[440px] w-full border bg-chalk"
+      className="block h-[440px] w-full rounded-md border bg-white"
     />
   );
 }

@@ -51,14 +51,10 @@ export function VisualEditor({
   const total = entities.length;
   const resolvedCount = entities.filter((e) => e.resolved).length;
   const allResolved = total > 0 && resolvedCount === total;
-  const activeEntity = activeSlug
-    ? entities.find((e) => e.slug === activeSlug)
-    : null;
+  const activeEntity = activeSlug ? entities.find((e) => e.slug === activeSlug) : null;
 
   function update(slug: string, patch: Partial<ResolvedEntity>) {
-    const next = entities.map((e) =>
-      e.slug === slug ? { ...e, ...patch } : e,
-    );
+    const next = entities.map((e) => (e.slug === slug ? { ...e, ...patch } : e));
     onEntitiesChange(next);
   }
 
@@ -95,7 +91,7 @@ export function VisualEditor({
             {!allResolved && (
               <>
                 {" "}
-                · <span className="text-signal">click any dashed box</span>
+                · <span className="text-destructive">click any dashed box</span>
               </>
             )}
           </span>
@@ -106,7 +102,7 @@ export function VisualEditor({
             type="button"
             onClick={startRenderClick}
             disabled={!allResolved || rendering || !storageReady}
-            className="inline-flex h-10 items-center bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
+            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {rendering ? "Queueing..." : "Render PNG"}
           </button>
