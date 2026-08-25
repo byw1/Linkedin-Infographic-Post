@@ -42,7 +42,7 @@ export function GoogleAuthForm({
   }
 
   return (
-    <div className="space-y-3 rounded-md border p-4">
+    <div className="space-y-3 border p-4">
       <div className="flex items-center justify-between">
         <div>
           <div className="font-medium">Google OAuth</div>
@@ -55,7 +55,7 @@ export function GoogleAuthForm({
             type="button"
             onClick={disable}
             disabled={pending}
-            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-8 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
           >
             Disable
           </button>
@@ -67,7 +67,7 @@ export function GoogleAuthForm({
           <input
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="h-9 border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
@@ -77,13 +77,13 @@ export function GoogleAuthForm({
             value={clientSecret}
             onChange={(e) => setClientSecret(e.target.value)}
             placeholder={enabled ? "Enter to update" : ""}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="h-9 border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring"
           />
         </label>
       </div>
       <p className="text-xs text-muted-foreground">
         Add your callback URL in Google Cloud Console:{" "}
-        <code className="rounded bg-muted px-1">
+        <code className="bg-muted px-1">
           {"<your-domain>"}/api/auth/callback/google
         </code>
       </p>
@@ -92,11 +92,13 @@ export function GoogleAuthForm({
           type="button"
           onClick={save}
           disabled={pending || !clientId || !clientSecret}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="inline-flex h-9 items-center bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
         >
           {pending ? "Saving..." : "Save"}
         </button>
-        {message && <span className="text-sm text-muted-foreground">{message}</span>}
+        {message && (
+          <span className="text-sm text-muted-foreground">{message}</span>
+        )}
       </div>
     </div>
   );

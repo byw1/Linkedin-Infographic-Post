@@ -60,13 +60,15 @@ export function PageView({ page, canEdit, prev, next }: Props) {
               {page.section}
             </p>
           )}
-          <h2 className="text-2xl font-semibold tracking-tight">{page.title}</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {page.title}
+          </h2>
         </div>
         {canEdit && (
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="inline-flex h-8 shrink-0 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-8 shrink-0 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
           >
             Edit
           </button>
@@ -84,7 +86,7 @@ export function PageView({ page, canEdit, prev, next }: Props) {
           {prev ? (
             <Link
               href={`/docs/${prev.slug}`}
-              className="group flex flex-col gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-accent/50"
+              className="group flex flex-col gap-0.5 border bg-card p-3 text-card-foreground hover:bg-accent/50"
             >
               <span className="text-sm font-medium text-muted-foreground">
                 ← Previous
@@ -99,7 +101,7 @@ export function PageView({ page, canEdit, prev, next }: Props) {
           {next ? (
             <Link
               href={`/docs/${next.slug}`}
-              className="group flex flex-col items-end gap-0.5 rounded-md border bg-card p-3 text-card-foreground hover:bg-accent/50 sm:text-right"
+              className="group flex flex-col items-end gap-0.5 border bg-card p-3 text-card-foreground hover:bg-accent/50 sm:text-right"
             >
               <span className="text-sm font-medium text-muted-foreground">
                 Next →

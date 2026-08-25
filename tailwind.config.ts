@@ -1,13 +1,23 @@
 import type { Config } from "tailwindcss";
-import defaultTheme from "tailwindcss/defaultTheme";
 
+// Shifu Labs brand system.
+//
+// `borderRadius` and `boxShadow` are set at the THEME level, not under
+// `extend` — that replaces Tailwind's scales outright, so `rounded-lg`
+// and `shadow-md` stop compiling entirely. The no-radius / no-shadow
+// rules are structural rather than a convention someone forgets.
+//
+// One exception is deliberate and load-bearing: components/tweet-preview.tsx
+// pins its geometry with inline styles. It is the html-to-image capture
+// target, so anything it took from this file would be baked into users'
+// exported PNGs. Do not "tidy" those inline styles back into classes.
 const config: Config = {
   darkMode: ["class"],
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-  ],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
+    // Removing the scales removes the utilities. Intentional.
+    borderRadius: {},
+    boxShadow: {},
     container: {
       center: true,
       padding: "1.5rem",
@@ -15,84 +25,60 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-geist-sans)", ...defaultTheme.fontFamily.sans],
-        mono: ["var(--font-geist-mono)", ...defaultTheme.fontFamily.mono],
+        // Display and text are the same face at different weights.
+        sans: ["var(--font-instrument-sans)", "Helvetica", "Arial", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "Menlo", "monospace"],
       },
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // The whole palette. Four inks, no others.
+        "off-black": "#101010",
+        chalk: "#F1EFEA",
+        concrete: "#55534E",
+        signal: "#FF4D00",
+
+        // Semantic aliases so existing markup keeps resolving, each
+        // mapping onto one of the four. Nothing here introduces a
+        // fifth colour — they are names for the same inks.
+        background: "#101010",
+        foreground: "#F1EFEA",
+        card: "#101010",
+        "card-foreground": "#F1EFEA",
+        popover: "#101010",
+        "popover-foreground": "#F1EFEA",
+        muted: "#101010",
+        "muted-foreground": "#55534E",
+        border: "#55534E",
+        input: "#55534E",
+        ring: "#FF4D00",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "#F1EFEA",
+          foreground: "#101010",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "#101010",
+          foreground: "#F1EFEA",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "#101010",
+          foreground: "#F1EFEA",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "#FF4D00",
+          foreground: "#101010",
         },
-        // Semantic status pairs — `success`/`warning` are the text+icon
-        // color, `*-bg` the fill they sit on. These four roles plus the
-        // status-dot palette are the only chromatic color in the chrome.
         success: {
-          DEFAULT: "hsl(var(--success))",
-          bg: "hsl(var(--success-bg))",
+          DEFAULT: "#F1EFEA",
+          bg: "#101010",
         },
         warning: {
-          DEFAULT: "hsl(var(--warning))",
-          bg: "hsl(var(--warning-bg))",
+          DEFAULT: "#FF4D00",
+          bg: "#101010",
         },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-      },
-      borderRadius: {
-        // `xl` is deliberately NOT Tailwind's default 12px. Cards are the
-        // most frequent surface in the app and 14px vs 12px is visible.
-        xl: "calc(var(--radius) + 4px)", // 14px
-        lg: "var(--radius)", //             10px
-        md: "calc(var(--radius) - 2px)", //  8px
-        sm: "calc(var(--radius) - 4px)", //  6px
-      },
-      // Tailwind's stock ladder is authored against a theme that also
-      // ships light mode; `rgb(0 0 0 / 0.05)` over a 3.9% canvas is ~0
-      // contrast. Same five contiguous steps, re-weighted so the
-      // one-rung hover lift actually reads on near-black.
-      boxShadow: {
-        sm: "0 1px 2px 0 rgb(0 0 0 / 0.30)",
-        DEFAULT: "0 1px 3px 0 rgb(0 0 0 / 0.40), 0 1px 2px -1px rgb(0 0 0 / 0.40)",
-        md: "0 4px 6px -1px rgb(0 0 0 / 0.45), 0 2px 4px -2px rgb(0 0 0 / 0.45)",
-        lg: "0 10px 15px -3px rgb(0 0 0 / 0.55), 0 4px 6px -4px rgb(0 0 0 / 0.55)",
-        xl: "0 20px 25px -5px rgb(0 0 0 / 0.65), 0 8px 10px -6px rgb(0 0 0 / 0.65)",
-        rim: "inset 0 1px 0 0 hsl(0 0% 100% / 0.04)",
-      },
-      keyframes: {
-        shimmer: { "100%": { transform: "translateX(100%)" } },
-      },
-      animation: {
-        shimmer: "shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  // tailwindcss-animate is gone with the motion it provided.
+  plugins: [],
 };
 
 export default config;

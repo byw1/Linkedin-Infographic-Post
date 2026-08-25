@@ -1,16 +1,12 @@
-"use client";
-
 import * as React from "react";
-import { motion } from "framer-motion";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { duration, ease } from "@/lib/motion";
 
 /**
- * Page entrance: 500ms fade + 8px rise, keyed on the pathname so it
- * replays on every navigation. Deliberately no exit — pages leave
- * instantly. Wrapping this in `AnimatePresence mode="wait"` would double
- * the perceived latency of every click in the app.
+ * Page wrapper. This used to run a 500ms fade-and-rise on every
+ * navigation. Motion in this brand is near zero — functional state
+ * changes only, nothing decorative — so pages now simply appear.
+ * Kept as a component so the layout doesn't need restructuring, and so
+ * there is one obvious place to look if page-level behaviour returns.
  */
 export function PageTransition({
   children,
@@ -19,23 +15,12 @@ export function PageTransition({
   children: React.ReactNode;
   className?: string;
 }) {
-  const pathname = usePathname();
-  return (
-    <motion.div
-      key={pathname}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: duration.page, ease: ease.out }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className={className}>{children}</div>;
 }
 
 /**
- * The page header pair: 24px semibold title with the only `tracking-tight`
- * in the app chrome, over a 14px muted description.
+ * The page header pair: title over a Concrete description, separated
+ * from the content below by a hairline rather than by spacing alone.
  */
 export function PageHeader({
   title,
@@ -50,15 +35,22 @@ export function PageHeader({
 }) {
   return (
     <header
-      className={cn("mb-6 flex items-start justify-between gap-4", className)}
+      className={cn(
+        "mb-8 flex items-start justify-between gap-4 border-b border-concrete pb-6",
+        className,
+      )}
     >
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
         {description && (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-concrete">
+            {description}
+          </p>
         )}
       </div>
-      {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
+      {action && (
+        <div className="flex shrink-0 items-center gap-2">{action}</div>
+      )}
     </header>
   );
 }

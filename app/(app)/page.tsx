@@ -37,15 +37,12 @@ export default async function HomePage() {
       />
 
       {!storageReady && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-warning/30 bg-warning-bg p-4 text-sm shadow">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
-          <p className="text-warning">
+        <div className="mb-6 flex items-start gap-3 border-l-2 border-signal py-3 pl-4 text-sm">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-signal" />
+          <p className="text-chalk">
             Storage isn&apos;t configured, so export won&apos;t work yet. Set
             storage credentials in{" "}
-            <code className="rounded bg-warning/10 px-1 py-0.5 font-mono">
-              /admin/health
-            </code>{" "}
-            first.
+            <code className="font-mono text-signal">/admin/health</code> first.
           </p>
         </div>
       )}

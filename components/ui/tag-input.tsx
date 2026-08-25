@@ -35,7 +35,10 @@ export function TagInput({
   useEffect(() => {
     if (!open) return;
     function onDown(ev: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(ev.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(ev.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -93,13 +96,13 @@ export function TagInput({
   return (
     <div ref={wrapperRef} className="relative">
       <div
-        className="flex flex-wrap items-center gap-1.5 rounded-md border bg-background px-2 py-1.5 text-xs focus-within:ring-1 focus-within:ring-ring"
+        className="flex flex-wrap items-center gap-1.5 border bg-background px-2 py-1.5 text-xs"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((tag) => (
           <span
             key={tag}
-            className="inline-flex h-6 items-center gap-1 rounded-full border bg-secondary px-2 font-mono text-[11px] text-foreground"
+            className="inline-flex h-6 items-center gap-1 border bg-secondary px-2 font-mono text-[11px] text-foreground"
           >
             {tag}
             <button
@@ -109,7 +112,7 @@ export function TagInput({
                 remove(tag);
               }}
               aria-label={`Remove ${tag}`}
-              className="-mr-1 inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="-mr-1 inline-flex h-4 w-4 items-center justify-center text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer outline-none focus-visible:border-ring"
             >
               ×
             </button>
@@ -133,17 +136,19 @@ export function TagInput({
         // bg-card not bg-popover (the latter isn't a token in this
         // theme — was rendering transparent). text-card-foreground
         // pairs so contrast holds in dark mode.
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-md border bg-card p-1 text-xs text-card-foreground shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto border bg-card p-1 text-xs text-card-foreground">
           {filtered.map((s) => (
             <button
               key={s}
               type="button"
               onMouseDown={(ev) => ev.preventDefault()}
               onClick={() => commit(s)}
-              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center justify-between px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
             >
               <span className="font-mono">{s}</span>
-              <span className="text-[10px] text-muted-foreground">existing</span>
+              <span className="text-[10px] text-muted-foreground">
+                existing
+              </span>
             </button>
           ))}
           {canCreate && (
@@ -151,7 +156,7 @@ export function TagInput({
               type="button"
               onMouseDown={(ev) => ev.preventDefault()}
               onClick={() => commit(draft)}
-              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center justify-between px-2 py-1.5 text-left hover:bg-accent hover:text-accent-foreground"
             >
               <span>
                 Create <span className="font-mono">{normalized}</span>

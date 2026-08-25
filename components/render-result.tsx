@@ -58,7 +58,9 @@ export function RenderResult({
       const res = await fetch(`/api/render/${renderId}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(typeof data.error === "string" ? data.error : "Delete failed.");
+        setError(
+          typeof data.error === "string" ? data.error : "Delete failed.",
+        );
         return;
       }
       setDeleted(true);
@@ -80,7 +82,9 @@ export function RenderResult({
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(typeof data.error === "string" ? data.error : "Save failed.");
+      throw new Error(
+        typeof data.error === "string" ? data.error : "Save failed.",
+      );
     }
     const data = await res.json();
     setTracking(data.tracking);
@@ -90,11 +94,11 @@ export function RenderResult({
   if (deleted) {
     return (
       <div className="space-y-4">
-        <div className="rounded-md border p-4 text-sm">Deleted.</div>
+        <div className="border p-4 text-sm">Deleted.</div>
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="inline-flex h-10 items-center bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer outline-none focus-visible:border-ring"
         >
           New
         </button>
@@ -104,31 +108,40 @@ export function RenderResult({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border p-4 text-sm">Done.</div>
+      <div className="border p-4 text-sm">Done.</div>
 
       {kind === "pdf" ? (
         <object
           data={url}
           type="application/pdf"
-          className="block h-[600px] w-full rounded-md border bg-muted"
+          className="block h-[600px] w-full border bg-muted"
         >
           <p className="p-4 text-sm text-muted-foreground">
             PDF preview not supported here.{" "}
-            <a href={url} className="underline" target="_blank" rel="noreferrer">
+            <a
+              href={url}
+              className="underline"
+              target="_blank"
+              rel="noreferrer"
+            >
               Open in a new tab
             </a>
             .
           </p>
         </object>
       ) : kind === "zip" ? (
-        <div className="rounded-md border bg-muted p-4 text-sm text-muted-foreground">
+        <div className="border bg-muted p-4 text-sm text-muted-foreground">
           Zip is ready — open it after downloading to find one PNG per slide,
           ready to upload to Instagram or post anywhere else.
         </div>
       ) : (
-        <div className="rounded-md border bg-muted p-2">
+        <div className="border bg-muted p-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt="rendered infographic" className="mx-auto max-w-full" />
+          <img
+            src={url}
+            alt="rendered infographic"
+            className="mx-auto max-w-full"
+          />
         </div>
       )}
 
@@ -136,35 +149,35 @@ export function RenderResult({
         <a
           href={url}
           download
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="inline-flex h-10 items-center bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer outline-none focus-visible:border-ring"
         >
           {meta.download}
         </a>
         <button
           type="button"
           onClick={() => setEditingTrack((v) => !v)}
-          className="inline-flex h-10 items-center rounded-md border px-5 text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="inline-flex h-10 items-center border px-5 text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         >
           {tracked ? "Edit tracking" : "Track"}
         </button>
         <button
           type="button"
           onClick={() => setConfirmingDelete(true)}
-          className="inline-flex h-10 items-center rounded-md border border-destructive/40 px-5 text-sm font-medium text-destructive hover:bg-destructive/10 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="inline-flex h-10 items-center border border-destructive/40 px-5 text-sm font-medium text-destructive hover:bg-destructive/10 cursor-pointer outline-none focus-visible:border-ring"
         >
           Delete
         </button>
         <button
           type="button"
           onClick={onReset}
-          className="ml-auto inline-flex h-10 items-center rounded-md border px-5 text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="ml-auto inline-flex h-10 items-center border px-5 text-sm font-medium hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         >
           New
         </button>
       </div>
 
       {error && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+        <p className="border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
           {error}
         </p>
       )}
@@ -183,24 +196,24 @@ export function RenderResult({
       {!editingTrack && tracked && <TrackingSummary tracking={tracking} />}
 
       {confirmingDelete && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+        <div className="border border-destructive/40 bg-destructive/5 p-3 text-sm">
           <p className="text-destructive">
-            Delete this render? The {meta.label} file is removed from storage and the
-            tracking row is gone too. Can&apos;t be undone.
+            Delete this render? The {meta.label} file is removed from storage
+            and the tracking row is gone too. Can&apos;t be undone.
           </p>
           <div className="mt-2 flex gap-2">
             <button
               type="button"
               onClick={deleteRender}
               disabled={pending}
-              className="inline-flex h-9 items-center rounded-md bg-destructive px-3 text-xs font-medium text-destructive-foreground disabled:opacity-50"
+              className="inline-flex h-9 items-center bg-destructive px-3 text-xs font-medium text-destructive-foreground disabled:opacity-50"
             >
               {pending ? "Deleting..." : "Yes, delete"}
             </button>
             <button
               type="button"
               onClick={() => setConfirmingDelete(false)}
-              className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+              className="inline-flex h-9 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
             >
               Cancel
             </button>
@@ -210,4 +223,3 @@ export function RenderResult({
     </div>
   );
 }
-

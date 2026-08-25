@@ -44,7 +44,9 @@ export function RequestAccessForm() {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(typeof data.error === "string" ? data.error : "Submit failed.");
+        setError(
+          typeof data.error === "string" ? data.error : "Submit failed.",
+        );
         return;
       }
       setSubmitted(true);
@@ -53,8 +55,10 @@ export function RequestAccessForm() {
 
   if (submitted) {
     return (
-      <div className="space-y-3 rounded-md border bg-card p-6 text-card-foreground">
-        <h2 className="text-xl font-semibold">Got it. We&apos;ll be in touch.</h2>
+      <div className="space-y-3 border bg-card p-6 text-card-foreground">
+        <h2 className="text-xl font-semibold">
+          Got it. We&apos;ll be in touch.
+        </h2>
         <p className="text-sm text-muted-foreground">
           Your request is on its way to the team. If you&apos;re a fit,
           you&apos;ll get an invite link by email — usually within a few days.
@@ -64,7 +68,7 @@ export function RequestAccessForm() {
   }
 
   return (
-    <div className="space-y-4 rounded-md border p-6">
+    <div className="space-y-4 border p-6">
       <Field
         label="Your name"
         value={name}
@@ -114,7 +118,7 @@ export function RequestAccessForm() {
       />
 
       {/* Honeypot — invisible to humans, irresistible to bots. The
-        * server rejects any submission where this field is non-empty. */}
+       * server rejects any submission where this field is non-empty. */}
       <div aria-hidden className="sr-only">
         <label>
           Leave this empty
@@ -127,7 +131,7 @@ export function RequestAccessForm() {
         </label>
       </div>
 
-      <label className="flex items-start gap-3 rounded-md border bg-muted/40 p-3 text-sm">
+      <label className="flex items-start gap-3 border bg-muted/40 p-3 text-sm">
         <input
           type="checkbox"
           checked={agreed}
@@ -137,8 +141,8 @@ export function RequestAccessForm() {
         <span>
           <span className="font-medium">I&apos;ll show up and post.</span>{" "}
           <span className="text-muted-foreground">
-            Members who go quiet for an extended stretch get removed — we
-            keep this group active on purpose.
+            Members who go quiet for an extended stretch get removed — we keep
+            this group active on purpose.
           </span>
         </span>
       </label>
@@ -149,7 +153,7 @@ export function RequestAccessForm() {
         type="button"
         onClick={submit}
         disabled={pending}
-        className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="inline-flex h-10 items-center bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
       >
         {pending ? "Sending..." : "Submit request"}
       </button>
@@ -189,7 +193,7 @@ function Field({
           placeholder={placeholder}
           rows={3}
           required={required}
-          className="rounded-md border bg-background px-3 py-2 text-sm"
+          className="border bg-background px-3 py-2 text-sm"
         />
       ) : (
         <input
@@ -198,7 +202,7 @@ function Field({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           required={required}
-          className="h-10 rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="h-10 border bg-background px-3 text-sm outline-none focus-visible:border-ring"
         />
       )}
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}

@@ -56,11 +56,11 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
   const title = post.filename;
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div className="overflow-hidden border bg-card text-card-foreground">
       <div className="aspect-[4/5] bg-muted">
         {isExternal ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-3 px-4 text-center text-muted-foreground">
-            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium">
+            <span className="bg-secondary px-3 py-1 text-[10px] font-medium">
               External · LinkedIn
             </span>
             {title && (
@@ -78,7 +78,7 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
           />
         ) : isPdf ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
+            <span className="bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
               Carousel · PDF
             </span>
             {post.url && (
@@ -106,10 +106,10 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
             <img
               src={post.author.image}
               alt={author}
-              className="h-5 w-5 rounded-full object-cover"
+              className="h-5 w-5 object-cover"
             />
           ) : (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] font-medium uppercase">
+            <span className="flex h-5 w-5 items-center justify-center bg-secondary text-[10px] font-medium uppercase">
               {author.charAt(0)}
             </span>
           )}
@@ -119,12 +119,14 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
           >
             {author}
           </Link>
-          {dateStr && <span className="text-muted-foreground">· {dateStr}</span>}
+          {dateStr && (
+            <span className="text-muted-foreground">· {dateStr}</span>
+          )}
         </div>
 
         {/* Post-text excerpt — usually carries more signal than
-          * the visual. line-clamp keeps cards uniform. Hidden when
-          * the author hasn't logged it yet. */}
+         * the visual. line-clamp keeps cards uniform. Hidden when
+         * the author hasn't logged it yet. */}
         {post.postText && (
           <p className="line-clamp-3 whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">
             {post.postText}
@@ -143,7 +145,7 @@ export function FeedPostCard({ post, showLinkedInLink = true }: Props) {
             href={post.postUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-7 items-center border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
           >
             Open on LinkedIn ↗
           </a>

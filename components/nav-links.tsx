@@ -23,22 +23,23 @@ export function NavLinks() {
   return (
     <nav className="flex items-center gap-1">
       {LINKS.map(({ href, label }) => {
-        const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+        const active =
+          href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "group relative rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200",
+              "group relative px-3 py-1.5 text-sm font-medium",
               active
-                ? "bg-accent text-accent-foreground shadow-sm"
-                : "text-muted-foreground hover:translate-y-[-1px] hover:bg-accent/60 hover:text-accent-foreground",
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-accent/60 hover:text-accent-foreground",
             )}
           >
             <span
               className={cn(
-                "absolute inset-x-3 bottom-0.5 h-0.5 rounded-full bg-primary transition-all duration-200",
+                "absolute inset-x-3 bottom-0.5 h-0.5 bg-primary",
                 active ? "opacity-100" : "opacity-0 group-hover:opacity-40",
               )}
             />

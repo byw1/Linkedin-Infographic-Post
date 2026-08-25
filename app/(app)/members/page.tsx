@@ -8,7 +8,7 @@ export default function MembersPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Members</h1>
         <p className="text-sm text-muted-foreground">
-          Everyone using viral. Add tags and link your social accounts on your
+          Everyone using Viral. Add tags and link your social accounts on your
           own card; click someone else&apos;s tags to filter.
         </p>
       </header>

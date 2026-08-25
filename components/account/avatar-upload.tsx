@@ -55,7 +55,9 @@ export function AvatarUpload({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(typeof data.error === "string" ? data.error : "Upload failed.");
+        setError(
+          typeof data.error === "string" ? data.error : "Upload failed.",
+        );
         return;
       }
       const data = await res.json();
@@ -71,7 +73,9 @@ export function AvatarUpload({
       const res = await fetch(endpoint, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(typeof data.error === "string" ? data.error : "Remove failed.");
+        setError(
+          typeof data.error === "string" ? data.error : "Remove failed.",
+        );
         return;
       }
       onChange(null);
@@ -84,7 +88,7 @@ export function AvatarUpload({
         type="button"
         onClick={pickFile}
         disabled={pending}
-        className="group relative shrink-0 overflow-hidden rounded-full border bg-secondary disabled:opacity-50"
+        className="group relative shrink-0 overflow-hidden border bg-secondary disabled:opacity-50"
         style={{ width: size, height: size }}
         title="Change profile picture"
       >
@@ -103,9 +107,7 @@ export function AvatarUpload({
             {initials || "?"}
           </span>
         )}
-        <span
-          className="absolute inset-0 flex items-center justify-center bg-black/0 text-[10px] font-medium text-transparent transition-colors group-hover:bg-black/50 group-hover:text-white"
-        >
+        <span className="absolute inset-0 flex items-center justify-center bg-off-black/0 text-[10px] font-medium text-transparent group-hover:bg-off-black/50 group-hover:text-chalk">
           {pending ? "…" : "Change"}
         </span>
       </button>

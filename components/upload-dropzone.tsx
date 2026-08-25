@@ -1,6 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { FileUp, Loader2, X } from "lucide-react";
 import type { ResolvedEntity } from "@/types/entity";
 import { Button } from "@/components/ui/button";
@@ -15,7 +21,11 @@ import {
 import { cn } from "@/lib/utils";
 
 interface Props {
-  onParsed: (entities: ResolvedEntity[], html: string, filename: string | null) => void;
+  onParsed: (
+    entities: ResolvedEntity[],
+    html: string,
+    filename: string | null,
+  ) => void;
 }
 
 // Pull the data-entity slugs out of the pasted source so we can show a
@@ -105,7 +115,9 @@ export function UploadDropzone({ onParsed }: Props) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(typeof data.error === "string" ? data.error : "Upload failed.");
+        setError(
+          typeof data.error === "string" ? data.error : "Upload failed.",
+        );
         return;
       }
       const data = await res.json();
@@ -168,15 +180,17 @@ export function UploadDropzone({ onParsed }: Props) {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit();
             }}
             spellCheck={false}
-            placeholder={'<div data-entity="tesla" style="width:64px;height:64px"></div>'}
+            placeholder={
+              '<div data-entity="tesla" style="width:64px;height:64px"></div>'
+            }
             className={cn(
-              "block w-full resize-none overflow-auto rounded-md border border-input bg-transparent p-3 font-mono text-xs leading-relaxed shadow-sm outline-none ring-offset-0 transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30",
-              dragging && "border-ring ring-[3px] ring-ring/50",
+              "block w-full resize-none overflow-auto border border-input bg-transparent p-3 font-mono text-xs leading-relaxed outline-none placeholder:text-muted-foreground focus-visible:border-ring dark:bg-input/30",
+              dragging && "border-ring",
             )}
           />
 
           {dragging && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-md bg-accent/80 text-sm font-medium">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-accent/80 text-sm font-medium">
               Drop to load the file
             </div>
           )}
@@ -208,20 +222,23 @@ export function UploadDropzone({ onParsed }: Props) {
                 )}
                 <span className="tabular-nums">{kb.toFixed(1)} KB</span>
                 <span className="tabular-nums">
-                  {entities.length} placeholder{entities.length === 1 ? "" : "s"}
+                  {entities.length} placeholder
+                  {entities.length === 1 ? "" : "s"}
                 </span>
                 {entities.length > 0 && (
                   <span className="flex flex-wrap items-center gap-1">
                     {entities.slice(0, 6).map((slug) => (
                       <span
                         key={slug}
-                        className="inline-flex items-center rounded-full border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-foreground"
+                        className="inline-flex items-center border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-foreground"
                       >
                         {slug}
                       </span>
                     ))}
                     {entities.length > 6 && (
-                      <span className="tabular-nums">+{entities.length - 6}</span>
+                      <span className="tabular-nums">
+                        +{entities.length - 6}
+                      </span>
                     )}
                   </span>
                 )}
@@ -238,7 +255,11 @@ export function UploadDropzone({ onParsed }: Props) {
                 Clear
               </Button>
             )}
-            <Button type="button" onClick={submit} disabled={pending || !text.trim()}>
+            <Button
+              type="button"
+              onClick={submit}
+              disabled={pending || !text.trim()}
+            >
               {pending && <Loader2 className="animate-spin" />}
               {pending ? "Parsing…" : "Continue"}
             </Button>

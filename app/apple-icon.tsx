@@ -19,41 +19,39 @@ export default async function AppleIcon() {
   // canvas with equal margin on either side.
   const bars = [
     { x: 36, y: 110, w: 22, h: 38 }, // short
-    { x: 70, y: 80, w: 22, h: 68 },  // mid
+    { x: 70, y: 80, w: 22, h: 68 }, // mid
     { x: 104, y: 50, w: 22, h: 98 }, // tall
   ];
 
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          backgroundColor: "#0a0a0f",
-          display: "flex",
-          // Each bar lives in absolute position so the parent only
-          // has flex set for satori's sake; the bars themselves are
-          // siblings without nested children.
-          position: "relative",
-        }}
-      >
-        {bars.map((b, i) => (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: b.x,
-              top: b.y,
-              width: b.w,
-              height: b.h,
-              borderRadius: 4,
-              // Lightest → darkest matches the SVG logo.
-              backgroundColor: ["#a5b4fc", "#818cf8", "#6366f1"][i],
-            }}
-          />
-        ))}
-      </div>
-    ),
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        backgroundColor: "#101010",
+        display: "flex",
+        // Each bar lives in absolute position so the parent only
+        // has flex set for satori's sake; the bars themselves are
+        // siblings without nested children.
+        position: "relative",
+      }}
+    >
+      {bars.map((b, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: b.x,
+            top: b.y,
+            width: b.w,
+            height: b.h,
+            // Concrete, Chalk, Signal — matches the SVG logo. The
+            // rising bar is the only place Signal appears in the mark.
+            backgroundColor: ["#55534E", "#F1EFEA", "#FF4D00"][i],
+          }}
+        />
+      ))}
+    </div>,
     size,
   );
 }

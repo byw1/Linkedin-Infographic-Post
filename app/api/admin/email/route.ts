@@ -78,13 +78,13 @@ export async function PUT(req: Request) {
   try {
     await sendMail({
       to: parsed.data.to,
-      subject: "viral: test email",
+      subject: "Viral: test email",
       text: `Hi ${admin.email ?? ""},
 
-This is a test from viral's admin panel. If you got it, your SMTP settings are working.
+This is a test from Viral's admin panel. If you got it, your SMTP settings are working.
 
-— viral`,
-      html: `<p>Hi ${admin.email ?? ""},</p><p>This is a test from viral's admin panel. If you got it, your SMTP settings are working.</p><p>— viral</p>`,
+— Viral`,
+      html: `<p>Hi ${admin.email ?? ""},</p><p>This is a test from Viral's admin panel. If you got it, your SMTP settings are working.</p><p>— Viral</p>`,
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

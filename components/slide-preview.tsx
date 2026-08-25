@@ -117,7 +117,9 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
   ) {
     const onThemeAppliedRef = useRef(onThemeApplied);
     onThemeAppliedRef.current = onThemeApplied;
-    const diagnosticsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const diagnosticsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+      null,
+    );
     const iframeRef = useRef<HTMLIFrameElement>(null);
     // Per-element snapshot of the original placeholder HTML, used to
     // revert on unresolve. WeakMap so we can transfer the snapshot from
@@ -127,7 +129,9 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
     const entitiesRef = useRef<ResolvedEntity[]>(entities);
     entitiesRef.current = entities;
     onSlugClickRef.current = onSlugClick;
-    const observersRef = useRef<{ ro?: ResizeObserver; mo?: MutationObserver }>({});
+    const observersRef = useRef<{ ro?: ResizeObserver; mo?: MutationObserver }>(
+      {},
+    );
 
     const [iframeReady, setIframeReady] = useState(false);
     const [autoHeight, setAutoHeight] = useState<number>(
@@ -215,7 +219,11 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
             if (!doc.body || !doc.documentElement) return;
             const body = doc.body;
             const root = doc.documentElement;
-            const h = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight);
+            const h = Math.max(
+              body.scrollHeight,
+              body.offsetHeight,
+              root.scrollHeight,
+            );
             setAutoHeight((prev) => (prev === h ? prev : h));
           };
           measure();
@@ -223,7 +231,11 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
           ro.observe(doc.body);
           ro.observe(doc.documentElement);
           const mo = new MutationObserver(measure);
-          mo.observe(doc.body, { childList: true, subtree: true, attributes: true });
+          mo.observe(doc.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+          });
           observersRef.current = { ro, mo };
         }
 
@@ -355,7 +367,9 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
           const win = iframe.contentWindow;
           const isOpaque = (c: string) =>
             !!c && c !== "transparent" && !/^rgba?\([^)]*,\s*0\s*\)$/i.test(c);
-          const bodyBg = win ? win.getComputedStyle(doc.body).backgroundColor : "";
+          const bodyBg = win
+            ? win.getComputedStyle(doc.body).backgroundColor
+            : "";
           const htmlBg = win ? win.getComputedStyle(root).backgroundColor : "";
           const canvasBg = isOpaque(bodyBg)
             ? bodyBg
@@ -385,7 +399,9 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
       el.style.outline = isImg ? OUTLINE_RESOLVED : OUTLINE_UNRESOLVED;
 
       el.addEventListener("mouseenter", () => {
-        el.style.outline = isImg ? OUTLINE_HOVER_RESOLVED : OUTLINE_HOVER_UNRESOLVED;
+        el.style.outline = isImg
+          ? OUTLINE_HOVER_RESOLVED
+          : OUTLINE_HOVER_UNRESOLVED;
       });
       el.addEventListener("mouseleave", () => {
         el.style.outline = isImg ? OUTLINE_RESOLVED : OUTLINE_UNRESOLVED;
@@ -451,7 +467,7 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
               height: `${iframeHeight}px`,
               maxWidth: "100%",
             }}
-            className="block rounded-md border bg-white"
+            className="block border bg-chalk"
           />
         </div>
       );
@@ -469,7 +485,7 @@ export const SlidePreview = forwardRef<SlidePreviewHandle, Props>(
             height: `${iframeHeight * scale}px`,
             overflow: "hidden",
           }}
-          className="rounded-md border bg-white"
+          className="border bg-chalk"
         >
           <iframe
             ref={iframeRef}
@@ -579,8 +595,7 @@ function captureDiagnostics(doc: Document): ThemeDiagnostics | null {
   // returned "Helvetica Neue"). First-comma-entry is unambiguous.
   const familyValue = cs.fontFamily ?? "";
   const firstEntry = familyValue.split(",")[0]?.trim() ?? "";
-  const fontFamily =
-    firstEntry.replace(/^['"]|['"]$/g, "") || null;
+  const fontFamily = firstEntry.replace(/^['"]|['"]$/g, "") || null;
 
   // document.fonts.check() returns true only if *every* face required
   // for the spec is loaded. Wrap in try/catch — older browsers /
@@ -594,16 +609,14 @@ function captureDiagnostics(doc: Document): ThemeDiagnostics | null {
     }
   }
 
-  const inlineStyled = doc.querySelectorAll('[style]');
+  const inlineStyled = doc.querySelectorAll("[style]");
   const tokenized = doc.querySelectorAll('[style*="var(--"]');
 
   const rootFontFamilyVar = win
     .getComputedStyle(doc.documentElement)
     .getPropertyValue("--font-family-base")
     .trim();
-  const themeLinks = doc.querySelectorAll(
-    'link[data-viral-theme]',
-  ).length;
+  const themeLinks = doc.querySelectorAll("link[data-viral-theme]").length;
 
   return {
     fontFamily,

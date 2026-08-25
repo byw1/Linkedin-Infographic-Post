@@ -160,22 +160,22 @@ const CALLOUT_META: Record<
   note: {
     label: "Note",
     icon: <Info size={14} aria-hidden />,
-    cls: "border-blue-500/40 bg-blue-500/10 text-blue-200",
+    cls: "border-chalk/40 bg-chalk/10 text-chalk",
   },
   tip: {
     label: "Tip",
     icon: <Lightbulb size={14} aria-hidden />,
-    cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-200",
+    cls: "border-chalk/40 bg-chalk/10 text-chalk",
   },
   warning: {
     label: "Warning",
     icon: <AlertTriangle size={14} aria-hidden />,
-    cls: "border-amber-500/40 bg-amber-500/10 text-amber-200",
+    cls: "border-signal/40 bg-off-black/10 text-signal",
   },
   important: {
     label: "Important",
     icon: <AlertTriangle size={14} aria-hidden />,
-    cls: "border-rose-500/40 bg-rose-500/10 text-rose-200",
+    cls: "border-signal/40 bg-off-black/10 text-signal",
   },
 };
 
@@ -188,7 +188,7 @@ function Callout({
 }) {
   const meta = CALLOUT_META[kind];
   return (
-    <div className={`docs-callout my-4 rounded-md border ${meta.cls} px-4 py-3`}>
+    <div className={`docs-callout my-4 border ${meta.cls} px-4 py-3`}>
       <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold">
         {meta.icon}
         {meta.label}
@@ -209,7 +209,9 @@ function detectCallout(
   const arr = Array.isArray(children) ? [...children] : [children];
   // Skip leading whitespace strings react-markdown sometimes
   // emits between tags.
-  let firstIdx = arr.findIndex((c) => !(typeof c === "string" && /^\s*$/.test(c)));
+  let firstIdx = arr.findIndex(
+    (c) => !(typeof c === "string" && /^\s*$/.test(c)),
+  );
   if (firstIdx === -1) return null;
   const first = arr[firstIdx];
   if (!isElement(first) || first.props == null) return null;
@@ -259,7 +261,7 @@ function ToolInlineCard({
     // pill with the label the author wrote so the layout doesn't
     // jump and the broken reference is obvious.
     return (
-      <span className="inline-flex h-7 items-center gap-1.5 rounded-md border border-dashed bg-secondary/40 px-2 align-middle text-xs text-muted-foreground">
+      <span className="inline-flex h-7 items-center gap-1.5 border border-dashed bg-secondary/40 px-2 align-middle text-xs text-muted-foreground">
         <Wrench size={12} aria-hidden />
         {fallbackLabel || `tool:${id}`}
         <span className="text-[10px] text-muted-foreground/70">?</span>
@@ -286,10 +288,10 @@ function ToolInlineCard({
       target="_blank"
       rel="noopener noreferrer"
       title={tool.name}
-      className="docs-tool-link inline-flex items-center gap-2 rounded-xl border-2 border-primary/25 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-primary/70 hover:bg-accent hover:text-accent-foreground hover:shadow-md"
+      className="docs-tool-link inline-flex items-center gap-2 border-2 border-primary/25 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline hover:border-primary/70 hover:bg-accent hover:text-accent-foreground"
     >
       <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary text-[10px] font-semibold uppercase leading-none text-primary-foreground"
+        className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden bg-primary text-[10px] font-semibold uppercase leading-none text-primary-foreground"
         aria-hidden
       >
         {logo ? (
@@ -305,14 +307,14 @@ function ToolInlineCard({
             }}
           />
         ) : (
-          <span className="text-white">{initial}</span>
+          <span className="text-chalk">{initial}</span>
         )}
       </span>
       <span>{fallbackLabel || tool.name}</span>
       <ExternalLink
         size={11}
         aria-hidden
-        className="text-muted-foreground transition-colors group-hover:text-foreground"
+        className="text-muted-foreground group-hover:text-foreground"
       />
     </a>
   );
@@ -331,7 +333,7 @@ function SkillInlineCard({
 }) {
   if (!skill) {
     return (
-      <span className="inline-flex h-7 items-center gap-1.5 rounded-md border border-dashed bg-secondary/40 px-2 align-middle text-xs text-muted-foreground">
+      <span className="inline-flex h-7 items-center gap-1.5 border border-dashed bg-secondary/40 px-2 align-middle text-xs text-muted-foreground">
         <Download size={12} aria-hidden />
         {fallbackLabel || `skill:${id}`}
         <span className="text-[10px] text-muted-foreground/70">?</span>
@@ -342,10 +344,10 @@ function SkillInlineCard({
     <a
       href={`/api/skills/${skill.id}/download`}
       title={skill.filename}
-      className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-500/30 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-emerald-500/70 hover:bg-accent hover:text-accent-foreground hover:shadow-md"
+      className="inline-flex items-center gap-2 border-2 border-chalk/30 bg-card px-2.5 py-1 align-middle text-sm font-semibold text-card-foreground no-underline hover:border-chalk/70 hover:bg-accent hover:text-accent-foreground"
     >
       <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-emerald-600 text-white ring-1 ring-emerald-500/30"
+        className="flex h-5 w-5 shrink-0 items-center justify-center bg-chalk text-chalk"
         aria-hidden
       >
         <Download size={11} />

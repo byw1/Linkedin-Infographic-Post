@@ -102,24 +102,26 @@ export function RenderPoller({
   const seconds = Math.floor(elapsedMs / 1000);
   return (
     <div className="space-y-4">
-      <div className="rounded-md border p-6 text-sm">
+      <div className="border p-6 text-sm">
         <div className="mb-2 flex items-baseline justify-between gap-3">
           <span className="font-medium text-foreground">
-            {status === "pending" ? "Queued — waiting for the worker…" : "Rendering…"}
+            {status === "pending"
+              ? "Queued — waiting for the worker…"
+              : "Rendering…"}
           </span>
           <span className="text-xs text-muted-foreground tabular-nums">
             {seconds}s
           </span>
         </div>
         {message && <p className="text-xs text-muted-foreground">{message}</p>}
-        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="mt-3 h-1.5 w-full overflow-hidden bg-muted">
           <div className="h-full w-1/3 animate-pulse bg-primary" />
         </div>
       </div>
       <button
         type="button"
         onClick={onCancel}
-        className="inline-flex h-9 items-center rounded-md border px-4 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+        className="inline-flex h-9 items-center border px-4 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
       >
         Cancel
       </button>

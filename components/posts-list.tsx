@@ -65,10 +65,12 @@ export function PostsList() {
 
   return (
     <div className="space-y-4">
-      <div className="inline-flex h-9 items-center rounded-lg bg-muted p-[3px] text-sm">
+      <div className="inline-flex h-9 items-center bg-muted p-[3px] text-sm">
         <TabButton
           active={tab === "mine"}
-          onClick={() => setQuery({ tab: null, view: null, period: null, sort: null })}
+          onClick={() =>
+            setQuery({ tab: null, view: null, period: null, sort: null })
+          }
         >
           My posts
         </TabButton>
@@ -86,12 +88,8 @@ export function PostsList() {
           view={view}
           period={period}
           sort={sort}
-          onViewChange={(v) =>
-            setQuery({ view: v === "recent" ? null : v })
-          }
-          onPeriodChange={(p) =>
-            setQuery({ period: p === "month" ? null : p })
-          }
+          onViewChange={(v) => setQuery({ view: v === "recent" ? null : v })}
+          onPeriodChange={(p) => setQuery({ period: p === "month" ? null : p })}
           onSortChange={(s) =>
             setQuery({ sort: s === "engagement" ? null : s })
           }
@@ -122,9 +120,9 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`cursor-pointer rounded-md px-3 py-1 font-medium outline-none ring-offset-0 transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+      className={`cursor-pointer px-3 py-1 font-medium outline-none focus-visible:border-ring ${
         active
-          ? "bg-background text-foreground shadow-sm"
+          ? "bg-background text-foreground"
           : "text-foreground/60 hover:text-foreground"
       }`}
     >
@@ -168,14 +166,13 @@ function MinePosts() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Tip: come back any time to update tracking as your post matures —
-          the &ldquo;Updated X ago&rdquo; label shows when you last logged
-          numbers.
+          Tip: come back any time to update tracking as your post matures — the
+          &ldquo;Updated X ago&rdquo; label shows when you last logged numbers.
         </p>
         <button
           type="button"
           onClick={() => setAddingExternal((v) => !v)}
-          className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="inline-flex h-8 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         >
           {addingExternal ? "Cancel" : "+ Add external post"}
         </button>
@@ -194,10 +191,13 @@ function MinePosts() {
       {renders === null ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : renders.length === 0 ? (
-        <div className="rounded-xl border bg-card p-8 text-center text-card-foreground">
+        <div className="border bg-card p-8 text-center text-card-foreground">
           <p className="text-sm font-medium">No posts yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Generate one from <Link href="/" className="underline">New post</Link>{" "}
+            Generate one from{" "}
+            <Link href="/" className="underline">
+              New post
+            </Link>{" "}
             or click <strong>+ Add external post</strong> above to log a
             LinkedIn post you made elsewhere.
           </p>
@@ -215,7 +215,7 @@ function MinePosts() {
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+                className="inline-flex h-9 items-center border px-4 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
               >
                 {loadingMore ? "Loading…" : "Load more"}
               </button>
@@ -284,14 +284,12 @@ function ExternalPostForm({
   }
 
   return (
-    <div className="space-y-3 rounded-md border bg-card p-4">
-      <div className="text-xs text-muted-foreground">
-        Add external post
-      </div>
+    <div className="space-y-3 border bg-card p-4">
+      <div className="text-xs text-muted-foreground">Add external post</div>
       <p className="text-xs text-muted-foreground">
         Logs a LinkedIn post you posted somewhere else (or earlier) so its
-        metrics count toward your stats and the community feed. No file
-        upload needed — just title + numbers.
+        metrics count toward your stats and the community feed. No file upload
+        needed — just title + numbers.
       </p>
       <label className="block text-sm">
         <span className="block text-[11px] text-muted-foreground">Title</span>
@@ -300,7 +298,7 @@ function ExternalPostForm({
           onChange={(e) => setTitle(e.target.value)}
           maxLength={120}
           placeholder="e.g. 'Why I left FAANG' carousel"
-          className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="h-9 w-full border bg-background px-2 text-sm outline-none focus-visible:border-ring"
         />
       </label>
       <button
@@ -326,14 +324,14 @@ function ExternalPostForm({
             type="button"
             onClick={() => create()}
             disabled={pending}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-50"
+            className="inline-flex h-9 items-center bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-50"
           >
             {pending ? "Adding..." : "Add post"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-9 items-center border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
           >
             Cancel
           </button>
@@ -459,9 +457,11 @@ function CommunityFeed({
         <p className="text-sm text-muted-foreground">Loading…</p>
       )}
       {posts && posts.length === 0 && (
-        <div className="space-y-2 rounded-xl border bg-card p-8 text-center text-card-foreground">
+        <div className="space-y-2 border bg-card p-8 text-center text-card-foreground">
           <p className="text-sm font-medium">
-            {view === "recent" ? "Nothing in the feed yet" : "No wins to show yet"}
+            {view === "recent"
+              ? "Nothing in the feed yet"
+              : "No wins to show yet"}
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
             {view === "recent" ? (
@@ -472,8 +472,8 @@ function CommunityFeed({
                 <Link href="/settings/sharing" className="underline">
                   Sharing
                 </Link>
-                . Once you publish a post, hit <strong>Track</strong> on it
-                from the <em>My posts</em> tab to seed the feed.
+                . Once you publish a post, hit <strong>Track</strong> on it from
+                the <em>My posts</em> tab to seed the feed.
               </>
             ) : (
               <>
@@ -499,7 +499,7 @@ function CommunityFeed({
             type="button"
             onClick={loadMoreRecent}
             disabled={loadingMore}
-            className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-9 items-center border px-4 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
           >
             {loadingMore ? "Loading…" : "Load more"}
           </button>
@@ -521,15 +521,15 @@ function Pills<T extends string>({
   onChange: (next: T) => void;
 }) {
   return (
-    <div className="inline-flex h-8 items-center rounded-lg bg-muted p-[3px] text-xs">
+    <div className="inline-flex h-8 items-center bg-muted p-[3px] text-xs">
       {values.map((v) => (
         <button
           key={v}
           type="button"
           onClick={() => onChange(v)}
-          className={`cursor-pointer rounded-md px-3 py-1 font-medium outline-none ring-offset-0 transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 ${
+          className={`cursor-pointer px-3 py-1 font-medium outline-none focus-visible:border-ring ${
             active === v
-              ? "bg-background text-foreground shadow-sm"
+              ? "bg-background text-foreground"
               : "text-foreground/60 hover:text-foreground"
           }`}
         >
@@ -572,7 +572,9 @@ function PostCard({
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(typeof data.error === "string" ? data.error : "Save failed.");
+      throw new Error(
+        typeof data.error === "string" ? data.error : "Save failed.",
+      );
     }
     setEditingTrack(false);
     onChange();
@@ -610,16 +612,17 @@ function PostCard({
   // home page doesn't have to fetch the render twice (once on
   // /posts and once on / to figure out which mode to show).
   // External posts have no source HTML, so Remix is hidden for them.
-  const remixHref = r.hasSource && r.format && !isExternal
-    ? `/?remix=${r.id}&format=${r.format}`
-    : null;
+  const remixHref =
+    r.hasSource && r.format && !isExternal
+      ? `/?remix=${r.id}&format=${r.format}`
+      : null;
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+    <div className="overflow-hidden border bg-card text-card-foreground">
       <div className="aspect-[4/5] bg-muted">
         {isExternal ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-medium">
+            <span className="bg-secondary px-3 py-1 text-[10px] font-medium">
               External · LinkedIn
             </span>
             {t.post_url && (
@@ -642,7 +645,7 @@ function PostCard({
           />
         ) : isPdf ? (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
+            <span className="bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
               Carousel · PDF
             </span>
             {r.url && (
@@ -675,9 +678,9 @@ function PostCard({
             </div>
             <div className="text-[11px] text-muted-foreground">
               {/* Anchor date is "posted on" when the user has filled
-                * it in (the truth they care about) — fall back to
-                * createdAt for legacy rows / drafts that haven't
-                * been logged yet. */}
+               * it in (the truth they care about) — fall back to
+               * createdAt for legacy rows / drafts that haven't
+               * been logged yet. */}
               {publishedLabel ?? dateStr}
               {!isExternal && !isTweet && r.entityCount !== null && (
                 <>
@@ -692,7 +695,7 @@ function PostCard({
         </div>
 
         {/* Post body excerpt — truncated to keep cards compact;
-          * the full text lives in the tracking edit form. */}
+         * the full text lives in the tracking edit form. */}
         {t.post_text && (
           <p className="line-clamp-3 whitespace-pre-wrap text-[11px] leading-snug text-muted-foreground">
             {t.post_text}
@@ -703,36 +706,50 @@ function PostCard({
           <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
             {t.impressions !== null && (
               <span title="Impressions">
-                <strong className="text-foreground">{fmtCount(t.impressions)}</strong> imp
+                <strong className="text-foreground">
+                  {fmtCount(t.impressions)}
+                </strong>{" "}
+                imp
               </span>
             )}
             {t.reactions !== null && (
               <span title="Reactions">
-                <strong className="text-foreground">{fmtCount(t.reactions)}</strong> rxn
+                <strong className="text-foreground">
+                  {fmtCount(t.reactions)}
+                </strong>{" "}
+                rxn
               </span>
             )}
             {t.comments !== null && (
               <span title="Comments">
-                <strong className="text-foreground">{fmtCount(t.comments)}</strong> cmt
+                <strong className="text-foreground">
+                  {fmtCount(t.comments)}
+                </strong>{" "}
+                cmt
               </span>
             )}
             {t.reposts !== null && (
               <span title="Reposts">
-                <strong className="text-foreground">{fmtCount(t.reposts)}</strong> rep
+                <strong className="text-foreground">
+                  {fmtCount(t.reposts)}
+                </strong>{" "}
+                rep
               </span>
             )}
           </div>
         )}
 
         {updatedLabel && (
-          <div className="text-[10px] text-muted-foreground">{updatedLabel}</div>
+          <div className="text-[10px] text-muted-foreground">
+            {updatedLabel}
+          </div>
         )}
 
         <div className="flex flex-wrap gap-1.5">
           {remixHref && (
             <Link
               href={remixHref}
-              className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="inline-flex h-8 items-center bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer outline-none focus-visible:border-ring"
             >
               Remix
             </Link>
@@ -742,7 +759,7 @@ function PostCard({
               href={r.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+              className="inline-flex h-8 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
             >
               Open
             </a>
@@ -750,7 +767,7 @@ function PostCard({
           <button
             type="button"
             onClick={() => setEditingTrack((v) => !v)}
-            className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-8 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
           >
             {tracked ? "Update stats" : "Track"}
           </button>
@@ -758,7 +775,7 @@ function PostCard({
             type="button"
             onClick={deleteRender}
             disabled={pending}
-            className="ml-auto inline-flex h-8 items-center rounded-md border border-destructive/40 px-2.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="ml-auto inline-flex h-8 items-center border border-destructive/40 px-2.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
           >
             Delete
           </button>

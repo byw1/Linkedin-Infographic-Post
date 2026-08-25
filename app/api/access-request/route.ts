@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   }
 
   const reviewUrl = `${getOrigin(req)}/admin/access-requests`;
-  const subject = `[viral] Access request from ${name}`;
+  const subject = `[Viral] Access request from ${name}`;
   const text = [
     `${name} (${email}) is asking for access.`,
     ``,

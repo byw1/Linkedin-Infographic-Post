@@ -132,14 +132,14 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+      <div className="border bg-card p-4 text-sm text-muted-foreground">
         Loading theme…
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl border bg-card p-4">
+    <form onSubmit={submit} className="space-y-3 border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold">
@@ -152,8 +152,11 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border p-0.5 text-xs">
-            <TabButton active={tab === "visual"} onClick={() => switchTab("visual")}>
+          <div className="inline-flex border p-0.5 text-xs">
+            <TabButton
+              active={tab === "visual"}
+              onClick={() => switchTab("visual")}
+            >
               Visual
             </TabButton>
             <TabButton active={tab === "css"} onClick={() => switchTab("css")}>
@@ -163,14 +166,14 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-9 items-center border px-3 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting || !name.trim()}
-            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="inline-flex h-9 items-center bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
           >
             {submitting ? "Saving..." : "Save"}
           </button>
@@ -178,14 +181,12 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
       </div>
 
       <label className="block space-y-1">
-        <span className="text-xs text-muted-foreground">
-          Name
-        </span>
+        <span className="text-xs text-muted-foreground">Name</span>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={80}
-          className="h-9 w-full rounded-md border bg-background px-3 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="h-9 w-full border bg-background px-3 text-sm outline-none focus-visible:border-ring"
           placeholder="e.g. Acme — Dark"
           required
         />
@@ -205,17 +206,18 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
           {tab === "visual" ? (
             <VisualBuilder values={values} onChange={setField} />
           ) : (
-            <CssEditor
-              value={rawCss}
-              onChange={setRawCss}
-            />
+            <CssEditor value={rawCss} onChange={setRawCss} />
           )}
         </div>
         <div className="space-y-2">
-          <span className="text-xs text-muted-foreground">
-            Live preview
-          </span>
-          <SampleSlide css={tab === "visual" ? composeCss(values, fontUrlsFor(values)) : rawCss} />
+          <span className="text-xs text-muted-foreground">Live preview</span>
+          <SampleSlide
+            css={
+              tab === "visual"
+                ? composeCss(values, fontUrlsFor(values))
+                : rawCss
+            }
+          />
           <p className="text-[11px] text-muted-foreground">
             What the active tokens look like on a sample slide. Edits update
             instantly; Google Fonts load on first use.
@@ -238,18 +240,16 @@ export function ThemeForm({ mode, existing, onCancel, onSaved }: Props) {
 function PresetRow({ onPick }: { onPick: (values: ThemeFormValues) => void }) {
   return (
     <div className="space-y-1.5">
-      <span className="text-xs text-muted-foreground">
-        Start from a preset
-      </span>
+      <span className="text-xs text-muted-foreground">Start from a preset</span>
       <div className="flex gap-2 overflow-x-auto pb-1">
         {PRESETS.map((preset) => (
           <button
             key={preset.id}
             type="button"
             onClick={() => onPick(preset.values)}
-            className="group flex w-44 shrink-0 flex-col gap-1.5 rounded-md border bg-background p-2 text-left hover:border-primary"
+            className="group flex w-44 shrink-0 flex-col gap-1.5 border bg-background p-2 text-left hover:border-primary"
           >
-            <div className="flex h-10 overflow-hidden rounded">
+            <div className="flex h-10 overflow-hidden">
               <div
                 className="flex-1"
                 style={{ background: preset.values.bgPrimary }}
@@ -300,7 +300,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-sm px-2 py-1 font-medium transition-colors ${
+      className={`px-2 py-1 font-medium ${
         active
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:text-foreground"
@@ -461,13 +461,17 @@ function VisualBuilder({ values, onChange }: VisualProps) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
-      <div className="text-xs text-muted-foreground">
-        {title}
-      </div>
-      <div className="space-y-1.5 rounded-md border bg-background p-3">{children}</div>
+      <div className="text-xs text-muted-foreground">{title}</div>
+      <div className="space-y-1.5 border bg-background p-3">{children}</div>
     </div>
   );
 }
@@ -492,15 +496,19 @@ function ColorRow({ label, value, onChange }: ColorRowProps) {
         value={hex ?? "#000000"}
         onChange={(e) => onChange(e.target.value)}
         disabled={hex === null}
-        title={hex === null ? "Edit the text input — value isn't a plain hex." : undefined}
-        className="h-7 w-10 cursor-pointer rounded border bg-transparent disabled:opacity-40"
+        title={
+          hex === null
+            ? "Edit the text input — value isn't a plain hex."
+            : undefined
+        }
+        className="h-7 w-10 cursor-pointer border bg-transparent disabled:opacity-40"
       />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
-        className="h-7 w-36 rounded border bg-background px-2 font-mono text-[11px]"
+        className="h-7 w-36 border bg-background px-2 font-mono text-[11px]"
       />
     </div>
   );
@@ -514,7 +522,10 @@ interface FontRowProps {
 }
 
 function FontRow({ label, value, options, onChange }: FontRowProps) {
-  const matched = useMemo(() => matchFontOption(value, options), [value, options]);
+  const matched = useMemo(
+    () => matchFontOption(value, options),
+    [value, options],
+  );
   return (
     <div className="flex items-center gap-2 text-xs">
       <label className="flex-1 text-muted-foreground">{label}</label>
@@ -524,7 +535,7 @@ function FontRow({ label, value, options, onChange }: FontRowProps) {
           const opt = options.find((o) => o.label === e.target.value);
           if (opt) onChange(opt.value);
         }}
-        className="h-7 rounded border bg-background px-2 text-[11px]"
+        className="h-7 border bg-background px-2 text-[11px]"
       >
         {options.map((o) => (
           <option key={o.label} value={o.label}>
@@ -572,7 +583,7 @@ function RadiusRow({ label, value, onChange }: RadiusRowProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         spellCheck={false}
-        className="h-7 w-20 rounded border bg-background px-2 font-mono text-[11px]"
+        className="h-7 w-20 border bg-background px-2 font-mono text-[11px]"
       />
     </div>
   );
@@ -587,14 +598,12 @@ function CssEditor({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs text-muted-foreground">
-        CSS tokens
-      </span>
+      <span className="text-xs text-muted-foreground">CSS tokens</span>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={28}
-        className="w-full rounded-md border bg-background p-3 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="w-full border bg-background p-3 font-mono text-xs outline-none focus-visible:border-ring"
         spellCheck={false}
         required
       />

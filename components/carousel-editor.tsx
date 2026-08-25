@@ -3,7 +3,10 @@
 import { useState, useTransition } from "react";
 import type { ResolvedEntity } from "@/types/entity";
 import { EditorPanel } from "@/components/editor-panel";
-import { SlidePreview, type ThemeDiagnostics } from "@/components/slide-preview";
+import {
+  SlidePreview,
+  type ThemeDiagnostics,
+} from "@/components/slide-preview";
 import { SlideRail } from "@/components/carousel/slide-rail";
 import type { CarouselSlide } from "@/components/carousel-upload-dropzone";
 import { ThemePicker, type ActiveTheme } from "@/components/theme-picker";
@@ -52,12 +55,16 @@ export function CarouselEditor({
   const total = entities.length;
   const resolvedCount = entities.filter((e) => e.resolved).length;
   const allResolved = total > 0 && resolvedCount === total;
-  const activeEntity = activeSlug ? entities.find((e) => e.slug === activeSlug) : null;
+  const activeEntity = activeSlug
+    ? entities.find((e) => e.slug === activeSlug)
+    : null;
   const currentSlide = slides[activeIndex];
   const unresolved = entities.filter((e) => !e.resolved);
 
   function update(slug: string, patch: Partial<ResolvedEntity>) {
-    const next = entities.map((e) => (e.slug === slug ? { ...e, ...patch } : e));
+    const next = entities.map((e) =>
+      e.slug === slug ? { ...e, ...patch } : e,
+    );
     onEntitiesChange(next);
   }
 
@@ -108,18 +115,24 @@ export function CarouselEditor({
             {!allResolved && (
               <>
                 {" "}
-                · <span className="text-amber-600">click any dashed box</span>
+                · <span className="text-signal">click any dashed box</span>
               </>
             )}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <ThemePicker onChange={setTheme} diagnostics={diagnostics} />
-          <div className="inline-flex rounded-md border p-0.5 text-xs">
-            <FormatTab active={format === "pdf"} onClick={() => setFormat("pdf")}>
+          <div className="inline-flex border p-0.5 text-xs">
+            <FormatTab
+              active={format === "pdf"}
+              onClick={() => setFormat("pdf")}
+            >
               PDF
             </FormatTab>
-            <FormatTab active={format === "png-zip"} onClick={() => setFormat("png-zip")}>
+            <FormatTab
+              active={format === "png-zip"}
+              onClick={() => setFormat("png-zip")}
+            >
               PNG zip
             </FormatTab>
           </div>
@@ -127,7 +140,7 @@ export function CarouselEditor({
             type="button"
             onClick={startRenderClick}
             disabled={!allResolved || submitting || !storageReady}
-            className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="inline-flex h-10 items-center bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
             title={
               format === "png-zip"
                 ? "One PNG per slide, zipped — for Instagram or anywhere that doesn't take PDFs."
@@ -177,7 +190,7 @@ export function CarouselEditor({
               type="button"
               onClick={() => setActiveIndex((i) => Math.max(0, i - 1))}
               disabled={activeIndex === 0}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-accent hover:text-accent-foreground disabled:opacity-40 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+              className="inline-flex h-9 w-9 items-center justify-center border text-base hover:bg-accent hover:text-accent-foreground disabled:opacity-40 cursor-pointer outline-none focus-visible:border-ring"
               aria-label="Previous slide"
             >
               ←
@@ -194,7 +207,7 @@ export function CarouselEditor({
                 setActiveIndex((i) => Math.min(slides.length - 1, i + 1))
               }
               disabled={activeIndex === slides.length - 1}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base hover:bg-accent hover:text-accent-foreground disabled:opacity-40 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+              className="inline-flex h-9 w-9 items-center justify-center border text-base hover:bg-accent hover:text-accent-foreground disabled:opacity-40 cursor-pointer outline-none focus-visible:border-ring"
               aria-label="Next slide"
             >
               →
@@ -204,7 +217,7 @@ export function CarouselEditor({
       </div>
 
       {!allResolved && unresolved.length > 0 && (
-        <div className="rounded-xl border border-warning/30 bg-warning-bg/60 p-3 text-sm shadow">
+        <div className="border border-warning/30 bg-warning-bg/60 p-3 text-sm">
           <div className="mb-2 text-xs font-medium text-warning">
             Unresolved across the carousel
           </div>
@@ -214,10 +227,10 @@ export function CarouselEditor({
                 key={e.slug}
                 type="button"
                 onClick={() => jumpToSlugSlide(e.slug)}
-                className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-200 hover:bg-amber-500/20"
+                className="inline-flex items-center gap-1 border border-signal/40 bg-off-black/10 px-2 py-1 text-xs text-signal hover:bg-off-black/20"
               >
                 <span className="font-mono">{e.slug}</span>
-                <span className="text-amber-400/70">×{e.count}</span>
+                <span className="text-signal/70">×{e.count}</span>
               </button>
             ))}
           </div>
@@ -263,7 +276,7 @@ function FormatTab({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-sm px-2 py-1 font-medium transition-colors ${
+      className={`px-2 py-1 font-medium ${
         active
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:text-foreground"

@@ -85,7 +85,7 @@ export function TutorialEmbed({ defaultOpen }: Props) {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-xl border bg-muted">
+        <div className="overflow-hidden border bg-muted">
           <iframe
             src={EMBED_SRC}
             title="Viral Content Tool Walkthrough"

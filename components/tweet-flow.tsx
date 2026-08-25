@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import * as htmlToImage from "html-to-image";
 import { jsPDF } from "jspdf";
@@ -232,16 +226,10 @@ async function blobsToPdf(blobs: Blob[]): Promise<Blob> {
     hotfixes: ["px_scaling"],
   });
   for (let i = 0; i < blobs.length; i++) {
-    if (i > 0) pdf.addPage([TWEET_CANVAS.width, TWEET_CANVAS.height], "portrait");
+    if (i > 0)
+      pdf.addPage([TWEET_CANVAS.width, TWEET_CANVAS.height], "portrait");
     const dataUrl = await blobToDataUrl(blobs[i]);
-    pdf.addImage(
-      dataUrl,
-      "PNG",
-      0,
-      0,
-      TWEET_CANVAS.width,
-      TWEET_CANVAS.height,
-    );
+    pdf.addImage(dataUrl, "PNG", 0, 0, TWEET_CANVAS.width, TWEET_CANVAS.height);
   }
   return pdf.output("blob");
 }
@@ -379,7 +367,10 @@ export function TweetFlow({ storageReady }: Props) {
         s.id === activeId
           ? {
               ...s,
-              data: { ...s.data, engagement: { ...s.data.engagement, ...patch } },
+              data: {
+                ...s.data,
+                engagement: { ...s.data.engagement, ...patch },
+              },
             }
           : s,
       ),
@@ -445,9 +436,7 @@ export function TweetFlow({ storageReady }: Props) {
   function loadStyle(p: StyleRow) {
     setSlides((prev) =>
       prev.map((s) =>
-        s.id === activeId
-          ? { ...s, data: applyStyle(s.data, p.data) }
-          : s,
+        s.id === activeId ? { ...s, data: applyStyle(s.data, p.data) } : s,
       ),
     );
   }
@@ -466,7 +455,8 @@ export function TweetFlow({ storageReady }: Props) {
   function onAffiliationFile(file: File | null) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => patchActive({ affiliationLogo: String(reader.result) });
+    reader.onload = () =>
+      patchActive({ affiliationLogo: String(reader.result) });
     reader.readAsDataURL(file);
   }
 
@@ -505,7 +495,11 @@ export function TweetFlow({ storageReady }: Props) {
     return blob;
   }
 
-  async function uploadOne(blob: Blob, slide: SlideRow, index: number): Promise<BatchResult> {
+  async function uploadOne(
+    blob: Blob,
+    slide: SlideRow,
+    index: number,
+  ): Promise<BatchResult> {
     const tag = isThread ? ` ${index + 1}/${slides.length}` : "";
     const filename =
       `Tweet${tag} — ${slide.data.name || slide.data.username}`.slice(0, 80);
@@ -557,15 +551,19 @@ export function TweetFlow({ storageReady }: Props) {
         // file the user can upload to LinkedIn directly.
         if (slides.length > 1 && combineAsPdf) {
           const pdfBlob = await blobsToPdf(blobs);
-          const filename = `Tweet thread (${slides.length}) — ${slides[0].data.name || slides[0].data.username}`.slice(
-            0,
-            80,
-          );
+          const filename =
+            `Tweet thread (${slides.length}) — ${slides[0].data.name || slides[0].data.username}`.slice(
+              0,
+              80,
+            );
           const form = new FormData();
           form.append("file", pdfBlob, "thread.pdf");
           form.append("filename", filename);
           form.append("format", "carousel");
-          const res = await fetch("/api/render", { method: "POST", body: form });
+          const res = await fetch("/api/render", {
+            method: "POST",
+            body: form,
+          });
           if (!res.ok) {
             const errBody = await res.json().catch(() => ({}));
             throw new Error(
@@ -689,16 +687,16 @@ function Form({
 }) {
   const e = data.engagement;
   return (
-    <div className="space-y-3 rounded-md border bg-card p-4 text-card-foreground">
+    <div className="space-y-3 border bg-card p-4 text-card-foreground">
       <div className="text-xs text-muted-foreground">
         Tweet · slide {slideCount > 1 ? "(thread)" : ""}
       </div>
 
       {/* Visuals — single section that holds persona + styling +
-        * the show/hide gear popover. Save Style snapshots
-        * everything in here (persona + visual styling + element
-        * toggles), so loading a saved style swaps the whole look
-        * cleanly. */}
+       * the show/hide gear popover. Save Style snapshots
+       * everything in here (persona + visual styling + element
+       * toggles), so loading a saved style swaps the whole look
+       * cleanly. */}
       <Section
         title="Visuals"
         actions={
@@ -764,8 +762,8 @@ function Form({
         }
       >
         {/* Persona — name / username, avatar + verified badge,
-          * optional affiliation. Lives inside Visuals so a saved
-          * style round-trips persona + style as one bundle. */}
+         * optional affiliation. Lives inside Visuals so a saved
+         * style round-trips persona + style as one bundle. */}
         <div className="grid gap-3 sm:grid-cols-2">
           <Field
             label="Display name"
@@ -789,11 +787,15 @@ function Form({
             onClear={() => patch({ avatarUrl: null })}
           />
           <label className="block text-sm">
-            <span className="block text-[11px] text-muted-foreground">Verified badge</span>
+            <span className="block text-[11px] text-muted-foreground">
+              Verified badge
+            </span>
             <select
               value={data.checkmark}
-              onChange={(ev) => patch({ checkmark: ev.target.value as CheckMark })}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              onChange={(ev) =>
+                patch({ checkmark: ev.target.value as CheckMark })
+              }
+              className="h-9 w-full border bg-background px-2 text-sm outline-none focus-visible:border-ring"
             >
               <option value="none">None</option>
               <option value="blue">Blue · individual</option>
@@ -820,14 +822,14 @@ function Form({
         </div>
 
         {/* Style strip — save / load / delete saved styles. Saving
-          * captures persona + every visual field + every element-
-          * visibility toggle, so jumping between named "looks"
-          * doesn't disturb the body the user is typing. */}
+         * captures persona + every visual field + every element-
+         * visibility toggle, so jumping between named "looks"
+         * doesn't disturb the body the user is typing. */}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={saveStyle}
-            className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+            className="inline-flex h-7 items-center border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
             title="Save persona + every visual setting + element-visibility toggles (excludes body text + engagement counts + time + reposted-by)"
           >
             + Save current style
@@ -838,7 +840,7 @@ function Form({
           {styles.map((p) => (
             <span
               key={p.id}
-              className="inline-flex items-center gap-1 rounded-full border bg-secondary/50 pl-2.5 pr-1 text-[11px]"
+              className="inline-flex items-center gap-1 border bg-secondary/50 pl-2.5 pr-1 text-[11px]"
             >
               <button
                 type="button"
@@ -851,7 +853,7 @@ function Form({
                 type="button"
                 onClick={() => deleteStyle(p.id)}
                 aria-label={`Delete style ${p.label}`}
-                className="ml-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="ml-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground hover:bg-destructive/20 hover:text-destructive cursor-pointer outline-none focus-visible:border-ring"
               >
                 ×
               </button>
@@ -863,11 +865,15 @@ function Form({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">
-            <span className="block text-[11px] text-muted-foreground">Background</span>
+            <span className="block text-[11px] text-muted-foreground">
+              Background
+            </span>
             <select
               value={data.background}
-              onChange={(ev) => patch({ background: ev.target.value as Background })}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              onChange={(ev) =>
+                patch({ background: ev.target.value as Background })
+              }
+              className="h-9 w-full border bg-background px-2 text-sm outline-none focus-visible:border-ring"
             >
               <option value="gradient">Gradient (brand)</option>
               <option value="black">Solid black</option>
@@ -881,24 +887,28 @@ function Form({
                   type="color"
                   value={normalizeHex(data.backgroundColor)}
                   onChange={(ev) => patch({ backgroundColor: ev.target.value })}
-                  className="h-7 w-10 cursor-pointer rounded border bg-background"
+                  className="h-7 w-10 cursor-pointer border bg-background"
                 />
                 <input
                   type="text"
                   value={data.backgroundColor}
                   onChange={(ev) => patch({ backgroundColor: ev.target.value })}
                   placeholder="#0a0a0f"
-                  className="h-7 flex-1 rounded-md border bg-background px-2 font-mono text-xs shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="h-7 flex-1 border bg-background px-2 font-mono text-xs outline-none focus-visible:border-ring"
                 />
               </div>
             )}
           </label>
           <label className="block text-sm">
-            <span className="block text-[11px] text-muted-foreground">Font scale (overall)</span>
+            <span className="block text-[11px] text-muted-foreground">
+              Font scale (overall)
+            </span>
             <select
               value={data.fontScale}
-              onChange={(ev) => patch({ fontScale: ev.target.value as FontScale })}
-              className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              onChange={(ev) =>
+                patch({ fontScale: ev.target.value as FontScale })
+              }
+              className="h-9 w-full border bg-background px-2 text-sm outline-none focus-visible:border-ring"
             >
               <option value="sm">Small</option>
               <option value="md">Default</option>
@@ -908,8 +918,8 @@ function Form({
         </div>
 
         {/* Body font-size override — for the "huge text" viral
-          * post pattern. Toggle on to take direct control of the
-          * body's px size; off lets it inherit from font scale. */}
+         * post pattern. Toggle on to take direct control of the
+         * body's px size; off lets it inherit from font scale. */}
         <BodySizeOverride
           value={data.bodyFontSize}
           onChange={(v) => patch({ bodyFontSize: v })}
@@ -917,26 +927,24 @@ function Form({
       </Section>
 
       {/* Body lives at the bottom — it's the focus, treat it as
-        * the primary writing surface rather than buried in form
-        * fields. No collapsing here on purpose. */}
+       * the primary writing surface rather than buried in form
+       * fields. No collapsing here on purpose. */}
       <fieldset className="space-y-2">
-        <legend className="text-[11px] text-muted-foreground">
-          Body
-        </legend>
+        <legend className="text-[11px] text-muted-foreground">Body</legend>
         <textarea
           value={data.body}
           onChange={(ev) => patch({ body: ev.target.value })}
           rows={5}
           maxLength={4000}
           placeholder="Type the tweet text. Multi-line + line breaks work."
-          className="w-full rounded-md border bg-background px-2 py-1.5 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="w-full border bg-background px-2 py-1.5 text-sm outline-none focus-visible:border-ring"
         />
       </fieldset>
 
       {/* Per-tweet inputs — only the rows for elements actually
-        * enabled in the gear popover render. Time + reposted-by
-        * sit above the engagement values, mirroring the order they
-        * appear on the rendered tweet. */}
+       * enabled in the gear popover render. Time + reposted-by
+       * sit above the engagement values, mirroring the order they
+       * appear on the rendered tweet. */}
       <PerTweetInputs
         data={data}
         patch={patch}
@@ -945,7 +953,7 @@ function Form({
       />
 
       {error && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+        <p className="border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
           {error}
         </p>
       )}
@@ -955,7 +963,7 @@ function Form({
           type="button"
           onClick={onGenerate}
           disabled={pending}
-          className="inline-flex h-10 items-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="inline-flex h-10 items-center bg-primary px-5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
         >
           {pending
             ? "Rendering..."
@@ -971,11 +979,11 @@ function Form({
       </div>
 
       {/* PDF combine — only meaningful when there's >1 slide. The
-        * default is on because most users threading multiple
-        * tweets actually want a single LinkedIn carousel doc to
-        * upload, not a folder of separate PNGs. */}
+       * default is on because most users threading multiple
+       * tweets actually want a single LinkedIn carousel doc to
+       * upload, not a folder of separate PNGs. */}
       {slideCount > 1 && (
-        <label className="flex items-start gap-2 rounded-md border bg-background/40 p-2.5 text-xs">
+        <label className="flex items-start gap-2 border bg-background/40 p-2.5 text-xs">
           <input
             type="checkbox"
             checked={combineAsPdf}
@@ -985,8 +993,8 @@ function Form({
           <span>
             <span className="font-medium">Combine into a single PDF</span>
             <span className="block text-[10px] text-muted-foreground">
-              LinkedIn document carousel format — one upload, one post.
-              Uncheck to ship each slide as its own PNG instead.
+              LinkedIn document carousel format — one upload, one post. Uncheck
+              to ship each slide as its own PNG instead.
             </span>
           </span>
         </label>
@@ -1041,8 +1049,8 @@ function PerTweetInputs({
   if (!showAnything) {
     return (
       <p className="text-[11px] italic text-muted-foreground">
-        Nothing else to fill in. Toggle Time / Reposted by / engagement
-        metrics on in the Visuals gear if you want to surface them.
+        Nothing else to fill in. Toggle Time / Reposted by / engagement metrics
+        on in the Visuals gear if you want to surface them.
       </p>
     );
   }
@@ -1089,7 +1097,11 @@ function PerTweetInputs({
               key={m.key}
               label={m.label}
               value={m.value}
-              onChange={(v) => patchEngagement({ [m.key]: v } as Partial<TweetData["engagement"]>)}
+              onChange={(v) =>
+                patchEngagement({ [m.key]: v } as Partial<
+                  TweetData["engagement"]
+                >)
+              }
             />
           ))}
         </div>
@@ -1127,7 +1139,7 @@ function MetricValueInput({
           if (Number.isFinite(n) && n >= 0) onChange(Math.floor(n));
         }}
         placeholder="0"
-        className="h-8 flex-1 rounded-md border bg-background px-2 text-xs tabular-nums shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="h-8 flex-1 border bg-background px-2 text-xs tabular-nums outline-none focus-visible:border-ring"
       />
     </label>
   );
@@ -1149,7 +1161,7 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <fieldset className="space-y-3 rounded-md border border-input/40 bg-background/40 px-3 py-2.5">
+    <fieldset className="space-y-3 border border-input/40 bg-background/40 px-3 py-2.5">
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
@@ -1189,14 +1201,14 @@ function GearPopover({ children }: { children: React.ReactNode }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+        className="inline-flex h-7 items-center gap-1 border px-2 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         title="Show / hide UI elements"
       >
         <Settings2 size={12} />
         Elements
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-md border bg-card p-3 text-card-foreground shadow-lg">
+        <div className="absolute right-0 top-full z-10 mt-1 w-56 border bg-card p-3 text-card-foreground">
           <div className="mb-2 text-sm font-medium text-muted-foreground">
             Show / hide
           </div>
@@ -1252,7 +1264,7 @@ function BodySizeOverride({
             const n = Number(ev.target.value);
             if (Number.isFinite(n)) onChange(Math.max(12, Math.min(300, n)));
           }}
-          className="h-8 w-16 rounded-md border bg-background px-2 text-xs tabular-nums disabled:opacity-50 shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="h-8 w-16 border bg-background px-2 text-xs tabular-nums disabled:opacity-50 outline-none focus-visible:border-ring"
         />
         <span className="text-[10px] text-muted-foreground">px</span>
       </div>
@@ -1278,7 +1290,7 @@ function Field({
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-md border bg-background px-2 text-sm shadow-sm transition-[color,box-shadow] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="h-9 w-full border bg-background px-2 text-sm outline-none focus-visible:border-ring"
       />
     </label>
   );
@@ -1304,10 +1316,12 @@ function FileField({
         type="file"
         accept="image/*"
         onChange={(ev) => onFile(ev.target.files?.[0] ?? null)}
-        className="block w-full text-xs file:mr-2 file:rounded-md file:border file:bg-secondary file:px-3 file:py-1 file:text-xs file:font-medium file:text-foreground"
+        className="block w-full text-xs file:mr-2 file:border file:bg-secondary file:px-3 file:py-1 file:text-xs file:font-medium file:text-foreground"
       />
       <div className="mt-1 flex items-center justify-between gap-2">
-        {hint && <span className="text-[10px] text-muted-foreground/80">{hint}</span>}
+        {hint && (
+          <span className="text-[10px] text-muted-foreground/80">{hint}</span>
+        )}
         {hasFile && (
           <button
             type="button"
@@ -1364,7 +1378,7 @@ function PreviewSurface({
         Preview · {TWEET_CANVAS.width}×{TWEET_CANVAS.height}
       </div>
       <div
-        className="overflow-hidden rounded-md border bg-black/40"
+        className="overflow-hidden border bg-off-black/40"
         style={{ width: visibleW, height: visibleH }}
       >
         <div
@@ -1408,13 +1422,17 @@ function SlidesStrip({
           return (
             <div
               key={s.id}
-              className={`flex items-center gap-0.5 rounded-md border px-2 py-1 text-xs transition-colors ${
+              className={`flex items-center gap-0.5 border px-2 py-1 text-xs ${
                 active
                   ? "border-primary bg-primary/10 text-foreground"
                   : "hover:bg-secondary"
               }`}
             >
-              <button type="button" onClick={() => onSelect(s.id)} className="px-1">
+              <button
+                type="button"
+                onClick={() => onSelect(s.id)}
+                className="px-1"
+              >
                 Slide {i + 1}
               </button>
               {slides.length > 1 && (
@@ -1455,7 +1473,7 @@ function SlidesStrip({
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex h-8 items-center rounded-md border border-dashed px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="inline-flex h-8 items-center border border-dashed px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         >
           + Add slide
         </button>
@@ -1486,7 +1504,7 @@ function BatchResultView({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border p-4 text-sm">
+      <div className="border p-4 text-sm">
         Done.{" "}
         {isPdfBundle
           ? `Thread of ${slides.length} tweets bundled into one PDF — ready to upload as a LinkedIn document carousel.`
@@ -1500,9 +1518,9 @@ function BatchResultView({
       </div>
 
       {isPdfBundle ? (
-        <div className="rounded-xl border bg-card p-6 text-card-foreground">
+        <div className="border bg-card p-6 text-card-foreground">
           <div className="flex flex-col items-center gap-3 text-center">
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
+            <span className="bg-primary/10 px-3 py-1 text-[10px] font-medium text-primary">
               {slides.length}-slide PDF · LinkedIn carousel
             </span>
             <a
@@ -1516,7 +1534,7 @@ function BatchResultView({
             <a
               href={results[0].pngUrl}
               download
-              className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="inline-flex h-9 items-center bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer outline-none focus-visible:border-ring"
             >
               Download
             </a>
@@ -1527,7 +1545,7 @@ function BatchResultView({
           {results.map((r) => (
             <div
               key={r.slideId}
-              className="overflow-hidden rounded-xl border bg-card text-card-foreground"
+              className="overflow-hidden border bg-card text-card-foreground"
             >
               <div className="bg-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1545,7 +1563,7 @@ function BatchResultView({
                   <a
                     href={r.pngUrl}
                     download
-                    className="inline-flex h-7 items-center rounded-md bg-primary px-2.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    className="inline-flex h-7 items-center bg-primary px-2.5 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer outline-none focus-visible:border-ring"
                   >
                     Download
                   </a>
@@ -1553,7 +1571,7 @@ function BatchResultView({
                     href={r.pngUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+                    className="inline-flex h-7 items-center border px-2.5 text-[11px] hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
                   >
                     Open
                   </a>
@@ -1568,13 +1586,13 @@ function BatchResultView({
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="inline-flex h-9 items-center bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90 cursor-pointer outline-none focus-visible:border-ring"
         >
           Edit again
         </button>
         <Link
           href="/posts"
-          className="inline-flex h-9 items-center rounded-md border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="inline-flex h-9 items-center border px-4 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         >
           Open posts archive
         </Link>

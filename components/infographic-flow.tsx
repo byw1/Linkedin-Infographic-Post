@@ -52,7 +52,8 @@ export function InfographicFlow({
           html: string;
         }>;
         const slide = slides[0];
-        if (!slide?.html) throw new Error("This render has no source HTML to remix.");
+        if (!slide?.html)
+          throw new Error("This render has no source HTML to remix.");
 
         const parseRes = await fetch("/api/parse", {
           method: "POST",
@@ -88,14 +89,14 @@ export function InfographicFlow({
 
   if (remixLoading) {
     return (
-      <p className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
+      <p className="border bg-card p-6 text-sm text-muted-foreground">
         Loading remix…
       </p>
     );
   }
   if (remixError) {
     return (
-      <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+      <div className="space-y-3 border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
         <p>{remixError}</p>
         <button
           type="button"
@@ -103,7 +104,7 @@ export function InfographicFlow({
             setRemixError(null);
             setStage("upload");
           }}
-          className="inline-flex h-9 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="inline-flex h-9 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         >
           Start a new post instead
         </button>
@@ -113,7 +114,12 @@ export function InfographicFlow({
 
   if (stage === "render" && pngUrl && renderId) {
     return (
-      <RenderResult renderId={renderId} url={pngUrl} kind="png" onReset={reset} />
+      <RenderResult
+        renderId={renderId}
+        url={pngUrl}
+        kind="png"
+        onReset={reset}
+      />
     );
   }
 
@@ -136,7 +142,10 @@ export function InfographicFlow({
           // without re-uploading from Claude.
           if (html) form.append("source_html", html);
 
-          const res = await fetch("/api/render", { method: "POST", body: form });
+          const res = await fetch("/api/render", {
+            method: "POST",
+            body: form,
+          });
           if (!res.ok) {
             const raw = await res.text().catch(() => "");
             let detail = raw;
@@ -147,7 +156,10 @@ export function InfographicFlow({
             } catch {
               // raw wasn't JSON — keep the body text as-is
             }
-            const summary = detail.trim().slice(0, 500) || res.statusText || "no response body";
+            const summary =
+              detail.trim().slice(0, 500) ||
+              res.statusText ||
+              "no response body";
             throw new Error(`Render upload failed (${res.status}): ${summary}`);
           }
           const data = await res.json();

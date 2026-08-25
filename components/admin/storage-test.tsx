@@ -37,26 +37,28 @@ export function StorageTest() {
   }
 
   return (
-    <div className="space-y-3 rounded-md border p-4">
+    <div className="space-y-3 border p-4">
       <div className="flex items-center justify-between">
         <div>
           <div className="font-medium">Storage round-trip</div>
           <div className="text-xs text-muted-foreground">
-            Performs HeadBucket → PutObject → GetObject → DeleteObject against the
-            configured bucket. Tells you exactly which step S3 rejects.
+            Performs HeadBucket → PutObject → GetObject → DeleteObject against
+            the configured bucket. Tells you exactly which step S3 rejects.
           </div>
         </div>
         <button
           type="button"
           onClick={run}
           disabled={pending}
-          className="inline-flex h-8 items-center rounded-md border px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+          className="inline-flex h-8 items-center border px-3 text-xs hover:bg-accent hover:text-accent-foreground disabled:opacity-50 cursor-pointer outline-none focus-visible:border-ring"
         >
           {pending ? "Testing..." : "Test storage"}
         </button>
       </div>
 
-      {result?.error && <p className="text-sm text-destructive">{result.error}</p>}
+      {result?.error && (
+        <p className="text-sm text-destructive">{result.error}</p>
+      )}
 
       {result?.config && (
         <div className="space-y-2 text-xs">
@@ -64,7 +66,10 @@ export function StorageTest() {
             <Cfg label="Endpoint" value={result.config.endpoint} />
             <Cfg label="Region" value={result.config.region} />
             <Cfg label="Bucket" value={result.config.bucket} />
-            <Cfg label="Path-style" value={String(result.config.forcePathStyle)} />
+            <Cfg
+              label="Path-style"
+              value={String(result.config.forcePathStyle)}
+            />
             <Cfg label="Access key" value={result.config.accessKey} />
             <Cfg label="Public URL" value={result.config.publicUrlMode} />
           </div>
@@ -72,7 +77,7 @@ export function StorageTest() {
             {result.steps.map((s) => (
               <li key={s.step} className="flex items-start gap-2">
                 <span
-                  className={`mt-1.5 inline-block h-2 w-2 rounded-full ${s.ok ? "bg-green-500" : "bg-red-500"}`}
+                  className={`mt-1.5 inline-block h-2 w-2 ${s.ok ? "bg-concrete" : "bg-signal"}`}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
@@ -82,7 +87,9 @@ export function StorageTest() {
                     )}
                   </div>
                   {s.detail && (
-                    <div className="break-words text-destructive">{s.detail}</div>
+                    <div className="break-words text-destructive">
+                      {s.detail}
+                    </div>
                   )}
                 </div>
               </li>

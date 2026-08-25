@@ -108,45 +108,49 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-9 items-center gap-2 rounded-md border bg-background px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 shadow-sm"
+        className="inline-flex h-9 items-center gap-2 border bg-background px-3 text-xs hover:bg-accent hover:text-accent-foreground cursor-pointer outline-none focus-visible:border-ring"
         title="Pick a theme"
       >
         <span
-          className="h-3 w-3 rounded-full border"
-          style={{ background: active ? swatchAccent(active.tokens) : "transparent" }}
+          className="h-3 w-3 border"
+          style={{
+            background: active ? swatchAccent(active.tokens) : "transparent",
+          }}
         />
-        <span className="max-w-[10rem] truncate">{active?.name ?? "Pick a theme"}</span>
+        <span className="max-w-[10rem] truncate">
+          {active?.name ?? "Pick a theme"}
+        </span>
         <span aria-hidden className="text-muted-foreground">
           ▾
         </span>
       </button>
 
       {open && list && (
-        <div className="absolute right-0 z-30 mt-1 w-72 rounded-md border bg-card p-1 text-card-foreground shadow-md">
+        <div className="absolute right-0 z-30 mt-1 w-72 border bg-card p-1 text-card-foreground">
           {list.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => void pick(t.id)}
-              className={`flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-secondary ${
+              className={`flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-xs hover:bg-secondary ${
                 activeId === t.id ? "bg-secondary" : ""
               }`}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <span
-                  className="h-3 w-3 shrink-0 rounded-full border"
+                  className="h-3 w-3 shrink-0 border"
                   style={{ background: swatchAccent(t.tokens) }}
                 />
                 <span className="truncate">{t.name}</span>
               </span>
               <span className="flex shrink-0 gap-1">
                 {t.isOfficial && (
-                  <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-medium text-primary">
+                  <span className="bg-primary/15 px-1.5 py-0.5 text-[9px] font-medium text-primary">
                     Official
                   </span>
                 )}
                 {t.isMine && !t.isOfficial && (
-                  <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-secondary-foreground">
+                  <span className="bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-secondary-foreground">
                     Mine
                   </span>
                 )}
@@ -159,7 +163,7 @@ export function ThemePicker({ onChange, diagnostics }: Props) {
           <div className="my-1 border-t" />
           <a
             href="/settings/themes"
-            className="flex w-full items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:text-foreground"
+            className="flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:text-foreground"
           >
             Manage themes →
           </a>
@@ -268,10 +272,7 @@ function DiagnosticsPanel({
       </div>
       <div className="space-y-0.5 px-2 pb-2 text-[11px]">
         {declaredFirstFamily && (
-          <DiagnosticRow
-            label="Theme font"
-            value={declaredFirstFamily}
-          />
+          <DiagnosticRow label="Theme font" value={declaredFirstFamily} />
         )}
         <DiagnosticRow
           label="Loader links"
@@ -282,7 +283,7 @@ function DiagnosticsPanel({
           label="Root token"
           value={
             d.rootFontFamilyVar
-              ? firstFamilyOf(d.rootFontFamilyVar) ?? "(empty)"
+              ? (firstFamilyOf(d.rootFontFamilyVar) ?? "(empty)")
               : "(unset)"
           }
           flag={tokenMissing && Boolean(declaredFirstFamily)}
@@ -349,9 +350,7 @@ function DiagnosticRow({
 // in lib/themes.ts but stays client-safe.
 function swatchAccent(tokens: Record<string, string>): string {
   return (
-    tokens["--color-accent-primary"] ??
-    tokens["--accent"] ??
-    "transparent"
+    tokens["--color-accent-primary"] ?? tokens["--accent"] ?? "transparent"
   );
 }
 

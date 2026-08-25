@@ -25,7 +25,13 @@ const LABEL: Record<SocialKey, string> = {
   website: "Website",
 };
 
-const KEYS: SocialKey[] = ["linkedin", "twitter", "github", "instagram", "website"];
+const KEYS: SocialKey[] = [
+  "linkedin",
+  "twitter",
+  "github",
+  "instagram",
+  "website",
+];
 
 interface Props {
   socials: Partial<Record<SocialKey, string>>;
@@ -53,7 +59,7 @@ export function SocialIcons({ socials, size = 14 }: Props) {
             rel="noopener noreferrer"
             title={LABEL[k]}
             aria-label={LABEL[k]}
-            className="inline-flex items-center justify-center rounded-full border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground hover:text-foreground"
+            className="inline-flex items-center justify-center border bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:text-foreground"
             style={{ width: size + 14, height: size + 14 }}
           >
             <Icon size={size} aria-hidden />

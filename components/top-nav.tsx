@@ -26,23 +26,28 @@ export async function TopNav() {
       select: { name: true, image: true },
     });
     displayName = me?.name ?? null;
-    avatarUrl = me?.image
-      ? ((await refreshUrl(me.image)) ?? me.image)
-      : null;
+    avatarUrl = me?.image ? ((await refreshUrl(me.image)) ?? me.image) : null;
   }
 
   return (
-    // Opaque, not translucent — this design has no backdrop-blur anywhere,
-    // and a sticky header is the place the temptation is strongest.
+    // Opaque, and separated by a hairline rather than by elevation.
     <header className="sticky top-0 z-40 border-b bg-background">
       <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between gap-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="group flex items-center gap-2 text-sm font-semibold">
-            <span className="flex size-7 shrink-0 items-center justify-center transition-transform duration-300 group-hover:rotate-6">
+          <Link
+            href="/"
+            className="group flex items-center gap-2 text-sm font-semibold"
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.svg" alt="" aria-hidden="true" className="size-5" />
+              <img
+                src="/logo.svg"
+                alt=""
+                aria-hidden="true"
+                className="size-5"
+              />
             </span>
-            viral
+            Viral
           </Link>
           {user && <NavLinks />}
         </div>

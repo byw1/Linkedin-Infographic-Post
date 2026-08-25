@@ -41,7 +41,9 @@ export function CarouselUploadDropzone({ onParsed }: Props) {
   function pick(file: File) {
     setError(null);
     if (file.size > MAX_ZIP_BYTES) {
-      setError(`Zip is ${(file.size / 1024 / 1024).toFixed(1)} MB; max ${MAX_ZIP_BYTES / 1024 / 1024} MB.`);
+      setError(
+        `Zip is ${(file.size / 1024 / 1024).toFixed(1)} MB; max ${MAX_ZIP_BYTES / 1024 / 1024} MB.`,
+      );
       return;
     }
     setFilename(file.name);
@@ -82,7 +84,9 @@ export function CarouselUploadDropzone({ onParsed }: Props) {
           } catch {
             // raw kept
           }
-          setError(detail.trim().slice(0, 500) || `Parse failed (${res.status}).`);
+          setError(
+            detail.trim().slice(0, 500) || `Parse failed (${res.status}).`,
+          );
           return;
         }
         const data = (await res.json()) as { entities: ResolvedEntity[] };
@@ -114,7 +118,7 @@ export function CarouselUploadDropzone({ onParsed }: Props) {
             if (file) pick(file);
           }}
           className={cn(
-            "flex cursor-pointer items-center gap-3 rounded-md border border-dashed p-4 text-sm transition-colors duration-200",
+            "flex cursor-pointer items-center gap-3 border border-dashed p-4 text-sm",
             filename
               ? "border-foreground/30 bg-accent/50"
               : "border-input hover:border-foreground/30 hover:bg-accent/50",
@@ -185,14 +189,20 @@ async function extractSlides(file: File): Promise<CarouselSlide[]> {
     if (entry.dir) return;
     // Skip macOS resource forks and hidden files which sometimes ship in
     // zips made on macOS / via the Finder.
-    if (path.startsWith("__MACOSX/") || path.split("/").some((p) => p.startsWith("."))) return;
+    if (
+      path.startsWith("__MACOSX/") ||
+      path.split("/").some((p) => p.startsWith("."))
+    )
+      return;
     if (!HTML_PATTERN.test(path)) return;
     entries.push({ path, entry });
   });
 
   // Sort by basename so 01.html, 02.html, ... order naturally.
   entries.sort((a, b) =>
-    basename(a.path).localeCompare(basename(b.path), undefined, { numeric: true }),
+    basename(a.path).localeCompare(basename(b.path), undefined, {
+      numeric: true,
+    }),
   );
 
   const slides: CarouselSlide[] = [];

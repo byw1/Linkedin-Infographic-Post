@@ -47,21 +47,19 @@ export function ConfigView() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border p-3 text-xs text-muted-foreground">
-        Node {data.runtime.node} · {data.runtime.platform}/{data.runtime.arch} · up{" "}
-        {Math.floor(data.runtime.uptime_seconds / 60)}m
+      <div className="border p-3 text-xs text-muted-foreground">
+        Node {data.runtime.node} · {data.runtime.platform}/{data.runtime.arch} ·
+        up {Math.floor(data.runtime.uptime_seconds / 60)}m
       </div>
 
       <div className="space-y-2">
         <div className="flex items-baseline gap-2">
-          <h3 className="text-lg font-semibold">
-            Environment variables
-          </h3>
+          <h3 className="text-lg font-semibold">Environment variables</h3>
           <span className="text-xs text-muted-foreground">
             (read-only — set on Railway)
           </span>
         </div>
-        <div className="overflow-hidden rounded-md border text-sm">
+        <div className="overflow-hidden border text-sm">
           <table className="w-full">
             <tbody>
               {data.env.map((c) => (
@@ -78,7 +76,9 @@ export function ConfigView() {
                     {c.set ? (
                       <span className="font-mono text-xs">{c.value}</span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">not set</span>
+                      <span className="text-xs text-muted-foreground">
+                        not set
+                      </span>
                     )}
                   </td>
                 </tr>
