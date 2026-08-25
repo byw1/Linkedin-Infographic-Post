@@ -198,9 +198,24 @@ export const TweetPreview = forwardRef<HTMLDivElement, Props>(function TweetPrev
           </div>
         )}
 
+        {/* GEOMETRY IS PINNED INLINE ON PURPOSE — DO NOT MOVE TO TAILWIND.
+            This node is the html-to-image capture target, so whatever the
+            app's theme resolves to gets baked into the user's exported PNG.
+            When the theme dropped border radii and shadows for the Shifu
+            Labs brand, `rounded-3xl`/`shadow-2xl` here would have silently
+            turned every exported tweet card into a hard-edged rectangle —
+            compiling clean, no test failing. These values are the ones that
+            were live before that change; they describe the artifact, not
+            the chrome, and they must not track the chrome. */}
         <article
-          className={`relative w-[860px] rounded-3xl px-10 py-9 ${data.border ? "shadow-2xl" : ""} ${cardBg} ${cardText} ${ring}`}
-          style={{ fontFamily: '"Helvetica Neue", system-ui, sans-serif' }}
+          className={`relative w-[860px] px-10 py-9 ${cardBg} ${cardText} ${ring}`}
+          style={{
+            fontFamily: '"Helvetica Neue", system-ui, sans-serif',
+            borderRadius: 24,
+            boxShadow: data.border
+              ? "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+              : undefined,
+          }}
         >
           <header className="flex items-start gap-4">
             <Avatar
@@ -286,7 +301,9 @@ function AffiliationBadge({
       src={src}
       alt={label}
       crossOrigin="anonymous"
-      className="h-[28px] w-[28px] shrink-0 rounded-md object-cover"
+      // Pinned inline — see the note on the capture target above.
+      className="h-[28px] w-[28px] shrink-0 object-cover"
+      style={{ borderRadius: 8 }}
     />
   );
 }
@@ -404,7 +421,10 @@ function Avatar({
   initials: string;
   shape: "circle" | "squircle";
 }) {
-  const radius = shape === "squircle" ? "rounded-2xl" : "rounded-full";
+  // Pinned inline — see the note on the capture target above. A circular
+  // avatar is the whole point of the "circle" shape; if this tracked the
+  // theme it would export as a square the day radii were removed.
+  const radius = { borderRadius: shape === "squircle" ? 16 : 9999 };
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
     return (
@@ -412,13 +432,15 @@ function Avatar({
         src={src}
         alt=""
         crossOrigin="anonymous"
-        className={`h-[80px] w-[80px] shrink-0 border border-white/10 object-cover ${radius}`}
+        className="h-[80px] w-[80px] shrink-0 border border-white/10 object-cover"
+        style={radius}
       />
     );
   }
   return (
     <div
-      className={`flex h-[80px] w-[80px] shrink-0 items-center justify-center border border-white/10 bg-gradient-to-br from-indigo-500 to-violet-600 text-[34px] font-semibold uppercase text-white ${radius}`}
+      className="flex h-[80px] w-[80px] shrink-0 items-center justify-center border border-white/10 bg-gradient-to-br from-indigo-500 to-violet-600 text-[34px] font-semibold uppercase text-white"
+      style={radius}
     >
       {initials}
     </div>
