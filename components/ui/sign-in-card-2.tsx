@@ -38,10 +38,10 @@ interface Props {
   googleEnabled?: boolean;
 }
 
-// Animated glass sign-in card. Visual treatment is the same
-// aurora + traveling light-beams + 3D mouse-tilt as the brand
-// (matches the OG share image and the welcome page); the auth side
-// uses our existing next-auth flow.
+// Animated glass sign-in card — aurora wash, traveling light-beams and
+// a 3D mouse-tilt, matching the /welcome hero. Recoloured onto the
+// Shifu Labs inks (the wash was indigo); the auth side is unchanged and
+// still runs through our existing next-auth flow.
 export function SignInCard2({ googleEnabled = false }: Props) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -91,9 +91,10 @@ export function SignInCard2({ googleEnabled = false }: Props) {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black">
-      {/* Background wash — Signal-tinted, kept faint so the accent
-        * palette as the OG share image and the /welcome hero). */}
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background">
+      {/* Background wash. Signal-tinted and kept faint — at 10% it reads
+        * as a warm cast on the Off-Black ground rather than as an orange
+        * region, which keeps Signal an accent. */}
       <div className="absolute inset-0 bg-gradient-to-b from-signal/10 via-background to-background" />
 
       {/* Subtle SVG noise overlay so the gradient doesn't band. */}
