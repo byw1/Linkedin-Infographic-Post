@@ -252,7 +252,9 @@ function useMediaQuery(query: string) {
 
 // Shifu Labs is the parent brand; Viral is one of its tools. Change
 // this in one place if the domain settles differently.
-const SHIFU_URL = "https://shifulabs.com";
+// Note the domain is singular while the brand name is plural: the link
+// is shifulab.com, the wordmark stays "Shifu Labs".
+const SHIFU_URL = "https://shifulab.com";
 const SHIFU_LABEL = SHIFU_URL.replace(/^https?:\/\//, "");
 
 const SOCIALS = [
