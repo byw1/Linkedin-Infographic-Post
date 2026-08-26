@@ -20,6 +20,7 @@ import {
 } from "react";
 import * as Color from "color-bits";
 import { Github, Globe, Instagram, Linkedin } from "lucide-react";
+import { Asterisk } from "@/components/ui/asterisk";
 import { cn } from "@/lib/utils";
 
 // Resolve any CSS color (hex, rgb, hsl, var(--…)) to an rgba string
@@ -249,6 +250,11 @@ function useMediaQuery(query: string) {
   return match;
 }
 
+// Shifu Labs is the parent brand; Viral is one of its tools. Change
+// this in one place if the domain settles differently.
+const SHIFU_URL = "https://shifulabs.com";
+const SHIFU_LABEL = SHIFU_URL.replace(/^https?:\/\//, "");
+
 const SOCIALS = [
   {
     label: "LinkedIn",
@@ -288,6 +294,21 @@ export function FlickeringFooter() {
           <p className="text-sm text-muted-foreground">
             Making our friends famous, one platform at a time.
           </p>
+          <a
+            href={SHIFU_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Asterisk
+              size={14}
+              className="text-signal transition-transform duration-300 group-hover:rotate-90"
+            />
+            <span>
+              A <span className="font-semibold text-foreground">Shifu Labs</span>{" "}
+              tool
+            </span>
+          </a>
           <div className="flex items-center gap-2">
             {SOCIALS.map(({ label, href, Icon }) => (
               <a
@@ -305,18 +326,28 @@ export function FlickeringFooter() {
           </div>
         </div>
 
-        {/* Tagline */}
-        <p className="text-xs text-muted-foreground">
-          Built by{" "}
+        {/* Credit. Shifu Labs leads; William keeps the byline. */}
+        <div className="flex flex-col gap-1 text-xs text-muted-foreground md:items-end">
           <a
-            href="https://bywilliaml.com"
+            href={SHIFU_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-foreground"
+            className="font-semibold text-foreground underline decoration-signal underline-offset-4 hover:text-signal"
           >
-            @bywilliaml
+            {SHIFU_LABEL}
           </a>
-        </p>
+          <p>
+            Built by{" "}
+            <a
+              href="https://bywilliaml.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              @bywilliaml
+            </a>
+          </p>
+        </div>
       </div>
 
       {/* Animated grid block — renders the handle in flickering pixels.
@@ -326,13 +357,13 @@ export function FlickeringFooter() {
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-transparent to-background from-40%" />
         <div className="absolute inset-0 mx-6">
           <FlickeringGrid
-            text="@bywilliaml"
+            text="SHIFU LABS"
             fontSize={tablet ? 70 : 110}
             className="h-full w-full"
             squareSize={2}
             gridGap={tablet ? 2 : 3}
-            color="#6B7280"
-            maxOpacity={0.3}
+            color="#FF4D00"
+            maxOpacity={0.45}
             flickerChance={0.1}
           />
         </div>

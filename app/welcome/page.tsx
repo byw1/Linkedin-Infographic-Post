@@ -29,7 +29,7 @@ export default async function WelcomePage() {
         {/* Aurora background — large radial-gradient blobs that drift. */}
         <div
           aria-hidden
-          className="welcome-aurora pointer-events-none absolute -inset-32 -z-10 opacity-70 [background:radial-gradient(ellipse_at_30%_20%,hsl(var(--primary)/0.35),transparent_55%),radial-gradient(ellipse_at_70%_60%,hsl(var(--primary)/0.2),transparent_50%)]"
+          className="welcome-aurora pointer-events-none absolute -inset-32 -z-10 opacity-70 [background:radial-gradient(ellipse_at_30%_20%,hsl(var(--primary)/0.28),transparent_55%),radial-gradient(ellipse_at_72%_35%,hsl(var(--ring)/0.30),transparent_50%),radial-gradient(ellipse_at_55%_75%,hsl(var(--ring)/0.16),transparent_55%)]"
         />
 
         <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
@@ -43,7 +43,7 @@ export default async function WelcomePage() {
           </Link>
           <h1 className="welcome-hero-headline text-balance text-5xl font-bold tracking-tight sm:text-6xl">
             We figured out how to{" "}
-            <span className="text-primary">hack virality</span>.
+            <span className="text-signal">hack virality</span>.
           </h1>
           <p className="welcome-hero-sub mt-6 max-w-2xl text-balance text-lg text-muted-foreground sm:text-xl">
             One platform at a time, we&apos;re making our friends famous.
@@ -53,7 +53,7 @@ export default async function WelcomePage() {
             {signedIn ? (
               <Link
                 href="/"
-                className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="inline-flex h-11 items-center rounded-md bg-signal px-6 text-sm font-semibold text-background hover:bg-signal/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 Open the app →
               </Link>
@@ -61,7 +61,7 @@ export default async function WelcomePage() {
               <>
                 <Link
                   href="/welcome/request"
-                  className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                  className="inline-flex h-11 items-center rounded-md bg-signal px-6 text-sm font-semibold text-background hover:bg-signal/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
                   Request access
                 </Link>
@@ -80,7 +80,7 @@ export default async function WelcomePage() {
       {/* Big number */}
       <section className="px-6 py-16 sm:py-24">
         <div className="mx-auto max-w-4xl text-center" data-reveal>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-signal">
             Last 30 days
           </p>
           <p className="mt-3 text-6xl font-bold tracking-tight tabular-nums sm:text-7xl md:text-8xl">
@@ -162,7 +162,7 @@ export default async function WelcomePage() {
       {/* Final CTA */}
       <section className="px-6 py-24">
         <div
-          className="mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-2xl border bg-card p-10 text-center"
+          className="mx-auto flex max-w-3xl flex-col items-center gap-6 rounded-2xl border border-signal/30 bg-card p-10 text-center shadow-[0_0_60px_-20px_hsl(var(--ring)/0.35)]"
           data-reveal
         >
           <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
@@ -175,14 +175,14 @@ export default async function WelcomePage() {
           {signedIn ? (
             <Link
               href="/"
-              className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="inline-flex h-11 items-center rounded-md bg-signal px-6 text-sm font-semibold text-background hover:bg-signal/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Open the app →
             </Link>
           ) : (
             <Link
               href="/welcome/request"
-              className="inline-flex h-11 items-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="inline-flex h-11 items-center rounded-md bg-signal px-6 text-sm font-semibold text-background hover:bg-signal/90 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.97] outline-none ring-offset-0 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Request access →
             </Link>
@@ -203,7 +203,8 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-5 text-card-foreground">
+    <div className="relative overflow-hidden rounded-xl border bg-card p-5 text-card-foreground">
+      <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-signal/60" />
       <div className="mb-1 text-sm font-semibold">{title}</div>
       <p className="text-sm text-muted-foreground">{children}</p>
     </div>

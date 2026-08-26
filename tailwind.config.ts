@@ -19,6 +19,15 @@ const config: Config = {
         mono: ["var(--font-geist-mono)", ...defaultTheme.fontFamily.mono],
       },
       colors: {
+        // The four Shifu Labs inks, addressable by name. The semantic
+        // tokens below map onto these same values — this block just lets
+        // markup say `text-signal` when it means the brand accent rather
+        // than "the focus ring colour", which is what `ring` means.
+        "off-black": "hsl(var(--background))",
+        chalk: "hsl(var(--foreground))",
+        concrete: "hsl(var(--border))",
+        signal: "hsl(var(--ring))",
+
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
