@@ -19,7 +19,7 @@ import {
   useState,
 } from "react";
 import * as Color from "color-bits";
-import { Github, Globe, Instagram, Linkedin } from "lucide-react";
+import { Github, Instagram, Linkedin } from "lucide-react";
 import { Asterisk } from "@/components/ui/asterisk";
 import { cn } from "@/lib/utils";
 
@@ -257,25 +257,35 @@ function useMediaQuery(query: string) {
 const SHIFU_URL = "https://shifulab.com";
 const SHIFU_LABEL = SHIFU_URL.replace(/^https?:\/\//, "");
 
+function XMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.22-6.82-5.97 6.82H1.66l7.73-8.83L1.24 2.25h6.83l4.71 6.23 5.46-6.23Zm-1.16 17.52h1.83L7.08 4.13H5.12l11.96 15.64Z" />
+    </svg>
+  );
+}
+
+// Shifu Labs' channels, not William's. Viral is one of the lab's tools,
+// so the footer speaks for the parent brand.
 const SOCIALS = [
   {
     label: "LinkedIn",
-    href: "https://linkedin.com/in/bywilliaml",
+    href: "https://www.linkedin.com/company/shifulab/",
     Icon: Linkedin,
   },
   {
+    label: "X",
+    href: "https://x.com/shifulab",
+    Icon: XMark,
+  },
+  {
     label: "Instagram",
-    href: "https://instagram.com/bywilliaml",
+    href: "https://www.instagram.com/shifu",
     Icon: Instagram,
   },
   {
-    label: "Website",
-    href: "https://bywilliaml.com",
-    Icon: Globe,
-  },
-  {
     label: "GitHub",
-    href: "https://github.com/byw1",
+    href: "https://github.com/shifulaboratories",
     Icon: Github,
   },
 ];
@@ -328,28 +338,15 @@ export function FlickeringFooter() {
           </div>
         </div>
 
-        {/* Credit. Shifu Labs leads; William keeps the byline. */}
-        <div className="flex flex-col gap-1 text-xs text-muted-foreground md:items-end">
-          <a
-            href={SHIFU_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-foreground underline decoration-signal underline-offset-4 hover:text-signal"
-          >
-            {SHIFU_LABEL}
-          </a>
-          <p>
-            Built by{" "}
-            <a
-              href="https://bywilliaml.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-foreground"
-            >
-              @bywilliaml
-            </a>
-          </p>
-        </div>
+        {/* Credit — the parent brand's domain, nothing else. */}
+        <a
+          href={SHIFU_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs font-semibold text-foreground underline decoration-signal underline-offset-4 hover:text-signal"
+        >
+          {SHIFU_LABEL}
+        </a>
       </div>
 
       {/* Animated grid block — renders the handle in flickering pixels.
